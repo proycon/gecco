@@ -36,27 +36,27 @@ Features:
      - Automatic input conversion from plain text using ucto
     
 Dependencies:
-    Python 3:
-        - pynlpl (for FoLiA)
-        - python-timbl
-        - python-ucto
-    Python 2:
-        - CLAM (No python 3 support yet unfortunately)
-    Module-specific:
-        - Timbl
-        - WOPR
-        - Aspell
-        - colibri-core (py3)
-        - ucto
+ - Python 3:
+  - pynlpl (for FoLiA)
+  - python-timbl
+  - python-ucto
+ - Python 2:
+  - CLAM (No python 3 support yet unfortunately)
+ - Module-specific:
+  - Timbl
+  - WOPR
+  - Aspell
+  - colibri-core (py3)
+ - ucto
 
 Workload:
-    - Build framework
-        - Abstract Module
-            - Client/server functionality
-        - Load balancing
-    - Reimplement all modules within new framework
-    - CLAM integration
-        - Generic client (separate from main command line tool)
+ - Build framework
+ - Abstract Module
+   - Client/server functionality
+ - Load balancing
+ - Reimplement all modules within new framework
+ - CLAM integration
+ - Generic client (separate from main command line tool)
 
 
 ----------------
@@ -65,14 +65,11 @@ Workload:
 
 A simple Python script forms the configuration of a system, it can be invoked over the command-line and offers a number of subcommands exposing all functionality:
 
-``fowlt_stub.py``:
-
- corrector = Corrector("fowlt", "/path/to/fowlt/", traintxt="train.txt", testtxt="test.txt")
- corrector.append( IGTreeConfusibleModule("confusibles", confusibles=[("then","than"), ("it's","its") ]) )
- corrector.append( ErrorListModule("errorlist", file="errorlist.txt", servers=[("blah",1234),("blah2",1234)]  )
- corrector.append( LexiconModule("lexicon", file="lexicon.txt", servers=[("blah",1235)]  )
-
- corrector.main()
+	corrector = Corrector("fowlt", "/path/to/fowlt/", traintxt="train.txt", testtxt="test.txt")
+	corrector.append( IGTreeConfusibleModule("confusibles", confusibles=[("then","than"), ("it's","its") ]) )
+	corrector.append( ErrorListModule("errorlist", file="errorlist.txt", servers=[("blah",1234),("blah2",1234)]  )
+	corrector.append( LexiconModule("lexicon", file="lexicon.txt", servers=[("blah",1235)]  )
+	corrector.main()
 
 
 Subcommands:
