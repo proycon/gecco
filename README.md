@@ -1,5 +1,5 @@
 ========================================================================
-GECCO - Generic Enviroment for Context-Aware Correction of Orthography
+GECCO - Generic Environment for Context-Aware Correction of Orthography
 =======================================================================
 
 A generic modular framework for spelling correction
