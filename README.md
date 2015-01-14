@@ -20,6 +20,7 @@ Features:
     - Runon Module
     - Garbage Module
     - Punctuation Module (new)
+    - Language Detection
  - Easily extendible by adding modules using the gecco module API
  - Language independent
  - Built-in training pipeline (given corpus input)
@@ -28,13 +29,13 @@ Features:
  - Built-in tuning pipeline (given development corpus), tunes and stores parameter
    weights
  - Distributable & Scalable:
-    - Load balancing: backend servers can run on multiple host, master process chooses host
+    - Load balancing: backend servers can run on multiple hosts, master process chooses host
         with least load
     - Master process always on a single host (reduces network load and increases performance)
         - Multithreaded, modules can be run in parallel
  - Input and output is FoLiA XML
      - Automatic input conversion from plain text using ucto
-    
+   
 Dependencies:
  - Python 3:
   - pynlpl (for FoLiA)
@@ -54,7 +55,7 @@ Workload:
  - Abstract Module
    - Client/server functionality
  - Load balancing
- - Reimplement all modules within new framework
+ - Reimplement all modules within new framework, in Python. Using python-timbl
  - CLAM integration
  - Generic client (separate from main command line tool)
 
@@ -65,11 +66,48 @@ Workload:
 
 A simple Python script forms the configuration of a system, it can be invoked over the command-line and offers a number of subcommands exposing all functionality:
 
-	corrector = Corrector("fowlt", "/path/to/fowlt/", traintxt="train.txt", testtxt="test.txt")
-	corrector.append( IGTreeConfusibleModule("confusibles", confusibles=[("then","than"), ("it's","its") ]) )
-	corrector.append( ErrorListModule("errorlist", file="errorlist.txt", servers=[("blah",1234),("blah2",1234)]  )
-	corrector.append( LexiconModule("lexicon", file="lexicon.txt", servers=[("blah",1235)]  )
+	corrector = Corrector("fowlt", "/path/to/fowlt/")
+	corrector.append( IGTreeConfusibleModule("thenthan", source="train.txt",test_crossvalidate=True,test=0.1,tune=0.1,model="confusibles.model", confusible=('then','than')))
+	corrector.append( IGTreeConfusibleModule("its", source="train.txt",test_crossvalidate=True,test=0.1,tune=0.1,model="confusibles.model", confusible=('its',"it's")))
+	corrector.append( ErrorListModule("errorlist", source="errorlist.txt",model="errorlist.model", servers=[("blah",1234),("blah2",1234)]  )
+	corrector.append( LexiconModule("lexicon", source=["lexicon.txt","lexicon2.txt"],model=["lexicon.model","lexicon2.model"], servers=[("blah",1235)]  )
+
 	corrector.main()
+
+The configuration can also be in an external YAML file and read on the fly:
+
+ corrector = Corrector(config="blah.yml")
+ corrector.main()
+
+
+YAML configuration:
+
+    name: fowlt
+    path: /path/to/fowlt
+    language: en
+    modules:
+        - module: IGTreeConfusibleModule
+          id: confusibles
+          source: train.txt
+          test: test.txt                        [or a floating point value to automatically reserve a portion of the train set]
+          tune: tune.txt                        [or a floating point value to automatically reserve a portion of the train set]
+          model: confusible.model
+          servers:
+              - host: blah
+                port: 12345
+          confusible: [then,than]
+
+---------------------
+Command line usage
+---------------------
+
+Invoke all gecco functionality through a single command line tool
+
+ $ gecco myconfig.yml [subcommand] 
+
+or 
+
+ $ myspellingcorrector.py [subcommand]
 
 
 Subcommands:

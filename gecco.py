@@ -14,6 +14,7 @@ from threading import Thread, Queue, Lock
 from pynlpl.formats import folia
 from ucto import Tokenizer
 
+import import argparse
 
 UCTOSEARCHDIRS = ('/usr/local/etc/ucto','/etc/ucto/','.')
 
@@ -119,6 +120,17 @@ class Corrector:
             errout( "Saving document")
             doc.save()
 
+    def main(self):
+        #command line tool
+        parser = argparse.ArgumentParser(description="", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        #parser.add_argument('--run',dest='settype',help="", action='store_const',const='somevalue')
+        #parser.add_argument('-f','--dataset', type=str,help="", action='store',default="",required=False)
+        #parser.add_argument('-i','--number',dest="num", type=int,help="", action='store',default="",required=False)
+        #parser.add_argument('bar', nargs='+', help='bar help')
+        args = parser.parse_args()
+        #args.storeconst, args.dataset, args.num, args.bar
+        pass
+
 
 class Module:
     def __init__(self,id, **settings):
@@ -137,7 +149,8 @@ class Module:
     def save(self):
         pass
 
-    def run(self, foliadoc, **parameters)
+    def run(self, foliadoc, **parameters):
+        pass
 
 
 
