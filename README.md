@@ -110,27 +110,27 @@ Command line usage
 
 Invoke all gecco functionality through a single command line tool
 
- $ gecco myconfig.yml [subcommand] 
+    $ gecco myconfig.yml [subcommand] 
 
 or 
 
- $ myspellingcorrector.py [subcommand]
+    $ myspellingcorrector.py [subcommand]
 
 
 Subcommands:
 
- * reset [$id] -- delete models for all modules or specified module
- * train [$id] -- train all modules or specified module
- * test [$id] -- test all modules or specified module
- * tune [$id] -- tune all modules or specified module
+ * `reset [$id]` -- delete models for all modules or specified module
+ * `train [$id]` -- train all modules or specified module
+ * `test [$id]` -- test all modules or specified module
+ * `tune [$id]` -- tune all modules or specified module
 
- * start [$id] -- Start module servers (all or specified) that match the
+ * `start [$id]` -- Start module servers (all or specified) that match the
     current host, this will have to be run for each host 
 
- * run [filename] [$id] [$parameters] -- Run (all or specified module) on specified FoLiA document
+ * `run [filename] [$id] [$parameters]` -- Run (all or specified module) on specified FoLiA document
  
- * build -- Builds CLAM configuration and wrapper and django webinterface
- * runserver -- Starts CLAM webservice (using development server, not
+ * `build` -- Builds CLAM configuration and wrapper and django webinterface
+ * `runserver` -- Starts CLAM webservice (using development server, not
    recommended for production use) and Django interface (using development
    server, not for producion use)
 
@@ -153,69 +153,6 @@ automatically generated. Web-application access is available either through the
 generic interface in CLAM, as well as the more user-friendly interface of
 Valkuil/Fowlt.
 
-
----------------
-Architecture
----------------
-
-    class Corrector:
-        init(id, root, **settings)
-
-        settings:
-            traintxt: plaintext corpus for training
-            tunetxt: plaintext corpus for development
-            testtxt: plaintext corpus for testing
-
-        modules #list
-
-        start(id=None) 
-
-        train(id=None) 
-
-        test(id=None)
-
-        tune(id=None)
-
-        append(module) #adds a module
-
-        __getitem__(id) #gets a module by ID
-
-        run(foliadoc, id=None,**parameters)
-
-        build()
-
-        runserver()
-
-        main()
-
-
-    class Module
-        init(id,**settings)
-        train()
-        tune()
-        test()
-        start()
-
-        save(filename)
-        load(filename)
-
-        run(foliadoc, **parameters)
-
-
-
-    class IGTreeConfusibleModule(Module):
-        #**settings expects:
-        #	confusibles: list of words (2 at least)
-        
-    class ColibriConfusibleModule(Module):
-        #**settings expects:
-        #	confusibles: list of words (2 at least)
-
-
-    class LoadBalancer:
-        init(host,port)
-        getload()
-        
 
 	
 
