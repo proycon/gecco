@@ -2,13 +2,21 @@
 GECCO - Generic Environment for Context-Aware Correction of Orthography
 =======================================================================
 
-A generic modular framework for spelling correction
+A generic modular framework for spelling correction. Aimed to quickly build a
+complete context-aware spelling correction system given your own data set.
+Most components will be language independent and trainable from a source
+corpus, training is explicitly included in the framework. The frameworks aims
+to easily extendible, modules can be written in Python 3. Moreover, the framework
+is scalable and distributable over multiple server. 
+
+The system can be invoked from the command-line, as a Python binding, as a RESTful webservice, or
+through the web application (two interfaces).
+
 
 Features:
- - Generic built-in modules:
+ - Generic built-in modules (all will have a server mode):
     - Confusible Module
         - Timbl-based (IGTree)
-        - allows multiple independent confusibles to be combined in one model (increases performance, allow single socket)
         - alternative: Colibri-Core based
     - Language Model Module
         - WOPR based
@@ -32,7 +40,7 @@ Features:
     - Load balancing: backend servers can run on multiple hosts, master process chooses host
         with least load
     - Master process always on a single host (reduces network load and increases performance)
-        - Multithreaded, modules can be run in parallel
+        - Multithreaded, modules can be invoked in parallel
  - Input and output is FoLiA XML
      - Automatic input conversion from plain text using ucto
    
@@ -41,8 +49,7 @@ Dependencies:
   - pynlpl (for FoLiA)
   - python-timbl
   - python-ucto
- - Python 2:
-  - CLAM (No python 3 support yet unfortunately)
+  - CLAM (port to Python 3 still in progress)
  - Module-specific:
   - Timbl
   - WOPR
@@ -64,7 +71,8 @@ Workload:
  Configuration
 ----------------
 
-A simple Python script forms the configuration of a system, it can be invoked over the command-line and offers a number of subcommands exposing all functionality:
+A Gecco system consist of a configuration, either in the form of a simplee Python
+script or an external. YAML configuration file.
 
 	corrector = Corrector("fowlt", "/path/to/fowlt/")
 	corrector.append( IGTreeConfusibleModule("thenthan", source="train.txt",test_crossvalidate=True,test=0.1,tune=0.1,model="confusibles.model", confusible=('then','than')))
@@ -74,13 +82,10 @@ A simple Python script forms the configuration of a system, it can be invoked ov
 
 	corrector.main()
 
-The configuration can also be in an external YAML file and read on the fly:
+If the Python script is used, the script is the command line tool that exposes
+all funcionality of the system.
 
- corrector = Corrector(config="blah.yml")
- corrector.main()
-
-
-YAML configuration:
+Example YAML configuration:
 
     name: fowlt
     path: /path/to/fowlt
@@ -94,6 +99,8 @@ YAML configuration:
           model: confusible.model
           servers:
               - host: blah
+                port: 12345
+              - host: blah2
                 port: 12345
           confusible: [then,than]
 
@@ -126,6 +133,26 @@ Subcommands:
  * runserver -- Starts CLAM webservice (using development server, not
    recommended for production use) and Django interface (using development
    server, not for producion use)
+
+----------------
+Server setup
+---------------
+
+On each server that runs one or more modules a `gecco myconfig.yml start` has
+to be issued to start the modules. Modules not set up to run as a server will
+simply be started and invoked lokally at request.
+
+`gecco run <input.folia.xml>` is executed on the master server to process a
+given FoLiA document or plaintext document, it will invoke all the modules
+which may be distributed over multiple servers, if multiple server instances of
+the same module are running, the one with the lowest load is selected. Output will
+be delivered in FoLiA XML.
+
+RESTUL webservice access is available through CLAM, the CLAM service can be
+automatically generated. Web-application access is available either through the
+generic interface in CLAM, as well as the more user-friendly interface of
+Valkuil/Fowlt.
+
 
 ---------------
 Architecture
