@@ -140,7 +140,7 @@ Server setup
 
 On each server that runs one or more modules a `gecco myconfig.yml start` has
 to be issued to start the modules. Modules not set up to run as a server will
-simply be started and invoked lokally at request.
+simply be started and invoked locally on request.
 
 `gecco run <input.folia.xml>` is executed on the master server to process a
 given FoLiA document or plaintext document, it will invoke all the modules
