@@ -5,9 +5,9 @@ GECCO - Generic Environment for Context-Aware Correction of Orthography
 A generic modular framework for spelling correction. Aimed to quickly build a
 complete context-aware spelling correction system given your own data set.
 Most components will be language independent and trainable from a source
-corpus, training is explicitly included in the framework. The frameworks aims
+corpus, training is explicitly included in the framework. The framework aims
 to easily extendible, modules can be written in Python 3. Moreover, the framework
-is scalable and distributable over multiple server. 
+is scalable and distributable over multiple servers. 
 
 The system can be invoked from the command-line, as a Python binding, as a RESTful webservice, or
 through the web application (two interfaces).
@@ -71,7 +71,7 @@ Workload:
  Configuration
 ----------------
 
-A Gecco system consist of a configuration, either in the form of a simplee Python
+A Gecco system consists of a configuration, either in the form of a simplee Python
 script or an external. YAML configuration file.
 
 	corrector = Corrector("fowlt", "/path/to/fowlt/")
