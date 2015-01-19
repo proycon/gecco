@@ -73,6 +73,7 @@ class Corrector:
     def append(self, id, module):
         assert isinstance(module, Module)
         self.modules[id] = module
+        module.parent = self
 
     def train(self,id=None):
         return self.modules[id]
@@ -124,7 +125,11 @@ class Corrector:
         #process results and integrate into FoLiA
         for module in self:
             if id is None or module.id == id:
-                module.run(foliadoc)
+                if module.local:
+                    module.run(foliadoc)
+                else:
+                    module.client(foliadoc)
+
 
         #Store FoLiA document
         if save:
@@ -148,27 +153,43 @@ class Module:
     def __init__(self,id, **settings):
         self.id = id
         self.settings = settings
+        self.verifysettings()
 
-    def train(self):
-        pass
 
-    def test(self):
-        pass
+    def verifysettings():
+        self.local = 'servers' in self.settings
+        if 'source' in self.settings:
+            is isinstance(self.settings['source'],str):
+                self.sources = [ self.settings['source'] ]
+            else:
+                self.sources = self.settings['source']
+        elif 'sources' in self.settings:
+            self.sources = self.settings['sources']
 
-    def load(self):
-        pass
+        if 'model' in self.settings:
+            is isinstance(self.settings['model'],str):
+                self.models = [ self.settings['model'] ]
+            else:
+                self.models = self.settings['model']
+        elif 'models' in self.settings:
+            self.models = self.settings['models']
 
-    def save(self):
-        pass
+
+    #callbacks:
+
+    def train(self, **parameters):
+        """This method gets invoked by the Corrector to train the model. Override it in your own model, use the input files in self.sources and for each entry create the corresponding file in self.models """
 
     def run(self, foliadoc, **parameters):
-        pass
+        """This method gets invoked by the Corrector when it runs locally"""
 
-    def client(self, foliadoc):
+    def client(self, foliadoc, host, port, **parameters):
+        """This method gets invoked by the Corrector when it should connect to a remote server, the host and port are passed"""
+
+    def server(self, port):
+        """This methods gets called by the Corrector to start the module's server"""
 
 
-
-    def server(self):
 
 
 
