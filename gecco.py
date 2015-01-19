@@ -96,7 +96,9 @@ class Corrector:
                     outputtextfile = inputtextfile + '.folia.xml'
 
                 tokenizer = Tokenizer(self.settings['ucto'],xmloutput=True)
-                tokenizer.process(foliadoc)
+                tokenizer.process(inputtextfile, outputtextfile)
+
+                foliadoc = outputtextfile
 
                 self.log("Tokeniser finished")
 
