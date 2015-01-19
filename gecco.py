@@ -77,22 +77,32 @@ class Corrector:
     def train(self,id=None):
         return self.modules[id]
 
+
+
+
     def run(self, foliadoc, id=None, **parameters):
         if isinstance(foliadoc, str):
-            #We got a filename instead of a FoLiA document
+            #We got a filename instead of a FoLiA document, that's okay
             ext = foliadoc.split('.')[-1].lower()
-            if ext in ('xml','folia','gz','bz2'):
-                #good, load
-                self.log("Reading FoLiA document")
-                foliadoc = folia.Document(file=foliadoc)
-            else:
+            if not ext in ('xml','folia','gz','bz2'):
                 #Preprocessing - Tokenize input text (plaintext) and produce FoLiA output
                 self.log("Starting Tokeniser")
 
-                #TODO: Upgrade python-ucto
-                #os.system(self.settings.ucto + ' -L nl -x ' + id + ' ' + inputfile + ' > ' + outputdir + id + '.xml')
+                inputtextfile = foliadoc
+
+                if ext == 'txt':
+                    ouputtextfile = '.'.join(inputtextfile.split('.')[:-1]) + '.folia.xml'
+                else:
+                    outputtextfile = inputtextfile + '.folia.xml'
+
+                tokenizer = Tokenizer(self.settings['ucto'],xmloutput=True)
+                tokenizer.process(foliadoc)
 
                 self.log("Tokeniser finished")
+
+            #good, load
+            self.log("Reading FoLiA document")
+            foliadoc = folia.Document(file=foliadoc)
 
 
         queue = Queue()
@@ -151,6 +161,12 @@ class Module:
 
     def run(self, foliadoc, **parameters):
         pass
+
+    def client(self, foliadoc):
+
+
+
+    def server(self):
 
 
 
