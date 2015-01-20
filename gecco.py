@@ -15,6 +15,7 @@ import sys
 import os
 import socket
 import socketserver
+import yaml
 from pynlpl.formats import folia
 from ucto import Tokenizer
 
@@ -55,10 +56,10 @@ class ProcessorThread(Thread):
         self.abort = True
 
 
+
+
 class Corrector:
-    def __init__(self, id, root=".", **settings):
-        self.id = id
-        self.root = root
+    def __init__(self, **settings):
         self.settings = settings
         self.verifysettings()
         self.tokenizer = Tokenizer(self.settings['ucto'])
@@ -76,6 +77,17 @@ class Corrector:
         self.units = set( [m.server for m in self] )
 
     def verifysettings():
+        if 'config' in self.settings:
+            self.settings, modules = self.parseconfig(self.settings['config'])
+            for module in modules:
+                self.append(module)
+
+        if 'id' not in self.settings:
+            raise Exception("No ID specified")
+
+        if 'root' not in self.settings:
+            self.root = self.settings['root'] = os.path.abspath('.')
+
         if not 'ucto' in self.settings:
             if 'language' in self.settings:
                 for dir in UCTOSEARCHDIRS:
@@ -103,6 +115,10 @@ class Corrector:
             self.settings['minpollinterval'] = 30 #30 sec
 
 
+    def parseconfig(self,configfile):
+        config = yaml.load(configfile)
+        #TODO: Parse!
+        return settings, modules
 
     def __len__(self):
         return len(self.modules)
@@ -485,8 +501,11 @@ class Module:
 
 
 
-
-
-
-
+if __name__ == '__main__':
+    try:
+        configfile = sys.argv[1]
+    except:
+        print("Syntax: gecco [configfile.yml]" ,file=sys.stderr)
+    corrector = Corrector(config=configfile)
+    corrector.main()
 
