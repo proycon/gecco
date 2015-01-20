@@ -415,10 +415,12 @@ class Module:
     ######################### FOLIA EDITING ##############################
     #
     # These methods are *NOT* available to server_handler() !
+    # Locks ensure that the state of the FoLiA document can't be corrupted by partial unfinished edits
 
-    def addwordsuggestions(self, word, suggestions, confidence=None  ):
+    def addwordsuggestions(self, lock, word, suggestions, confidence=None  ):
         self.log("Adding correction for " + word.id + " " + word.text())
 
+        lock.acquire()
         #Determine an ID for the next correction
         correction_id = word.generate_id(folia.Correction)
 
@@ -433,12 +435,14 @@ class Module:
             datetime=datetime.datetime.now(),
             confidence=confidence
         )
+        lock.release()
 
 
 
-    def adderrordetection(self, word):
+    def adderrordetection(self, lock, word):
         self.log("Adding correction for " + word.id + " " + word.text())
 
+        lock.acquire()
         #add the correction
         word.append(
             folia.ErrorDetection(
@@ -450,8 +454,10 @@ class Module:
                 datetime=datetime.datetime.now()
             )
         )
+        lock.release()
 
-    def splitcorrection(self, word, newwords,**kwargs):
+    def splitcorrection(self, lock, word, newwords,**kwargs):
+        lock.acquire()
         sentence = word.sentence()
         newwords = [ folia.Word(self.doc, generate_id_in=sentence, text=w) for w in newwords ]
         kwargs['suggest'] = True
@@ -460,8 +466,10 @@ class Module:
             *newwords,
             **kwargs
         )
+        lock.release()
 
-    def mergecorrection(self, newword, originalwords, **kwargs):
+    def mergecorrection(self, lock, newword, originalwords, **kwargs):
+        lock.acquire()
         sentence = originalwords[0].sentence()
         if not sentence:
             raise Exception("Expected sentence for " + str(repr(originalwords[0])) + ", got " + str(repr(sentence)))
@@ -473,6 +481,7 @@ class Module:
             *originalwords,
             **kwargs
         )
+        lock.release()
 
 
 
