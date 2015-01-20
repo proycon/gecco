@@ -88,7 +88,7 @@ class Corrector:
 
 
         if not 'logfunction' in self.settings:
-            self.settings['logfunction'] = lambda x: print(x,file=sys.stderr)
+            self.settings['logfunction'] = lambda x: print("[" + self.__class__.__name__ + "] " + x,file=sys.stderr)
         self.log = self.settings['logfunction']
 
 
@@ -230,7 +230,7 @@ class Module:
         self.verifysettings()
 
 
-    def verifysettings():
+    def verifysettings(self):
         self.local = 'servers' in self.settings
         if 'source' in self.settings:
             is isinstance(self.settings['source'],str):
@@ -248,6 +248,19 @@ class Module:
         elif 'models' in self.settings:
             self.models = self.settings['models']
 
+
+        if not 'logfunction' in self.settings:
+            self.settings['logfunction'] = lambda x: print(x,file=sys.stderr) #will be rather messy when multithreaded
+        self.log = self.settings['logfunction']
+
+        #Some defaults for FoLiA processing
+        if not 'set' in self.settings:
+            self.settings['set'] = "https://raw.githubusercontent.com/proycon/folia/master/setdefinitions/spellingcorrection.foliaset.xml"
+        if not 'class' in self.settings:
+            self.settings['class'] = "nonworderror"
+        if not 'annotator' in self.settings:
+            self.settings['annotator'] = "Gecco-" + self.__class__.__name__
+
     def findserver(self, loadbalanceserver):
         """Finds a suitable server for this module"""
         if self.local:
@@ -262,12 +275,17 @@ class Module:
 
     ####################### CALLBACKS ###########################
 
+    # These callbacks are called by the Corrector
+
 
     def init(self, foliadoc):
         """Initialises the module on the document. This method should set all the necessary declarations if they are not already present. It will be called sequentially."""
+        if 'set' in self.settings and self.settings['set']:
+            if not foliadoc.declared(folia.Correction, self.settings['set']):
+                foliadoc.declare(folia.Correction, self.settings['set'])
 
     def finish(self, foliadoc):
-        """Initialises the module on the document. This method can do post-processing. It will be called sequentially."""
+        """Finishes the module on the document. This method can do post-processing. It will be called sequentially."""
 
     def train(self, **parameters):
         """This method gets invoked by the Corrector to train the model. Override it in your own model, use the input files in self.sources and for each entry create the corresponding file in self.models """
@@ -279,12 +297,99 @@ class Module:
         """This method gets invoked by the Corrector when it should connect to a remote server, the host and port are passed."""
 
 
-
-
     def server(self, port):
         """This methods gets called by the Corrector to start the module's server"""
 
 
+    ######################## OPTIONAL CALLBACKS  ####################################
+
+    # These callbacks are called by the module itself
+
+    def load(self):
+        """Load the requested modules from self.models, module-specific so doesn't do anything by default"""
+        pass
+
+    def process(self, word, suggestions):
+        """This callback is not directly invoked by the Corrector, but can be invoked by run() or client() to process the obtained list of suggestions. The default implementation of client() uses it"""
+        if not isinstance(suggestions, tuple):
+            self.addcorrection(word, suggestion=suggestions)
+        else:
+            self.addcorrection(word, suggestions=suggestions)
+
+    ######################### FOLIA EDITING ##############################
+
+
+    def addcorrection(self, word, confidence=None  ):
+        self.log("Adding correction for " + word.id + " " + word.text())
+
+        #Determine an ID for the next correction
+        correction_id = word.generate_id(folia.Correction)
+
+        if 'suggestions' in kwargs:
+            #add the correction
+            word.correct(
+                suggestions=kwargs['suggestions'],
+                id=correction_id,
+                set=self.settings['set'],
+                cls=self.settings['class'],
+                annotator=self.settings['annotator'],
+                annotatortype=folia.AnnotatorType.AUTO,
+                datetime=datetime.datetime.now(),
+                confidence=confidence
+            )
+        elif 'suggestion' in kwargs:
+            #add the correction
+            word.correct(
+                suggestion=kwargs['suggestion'],
+                id=correction_id,
+                set=self.settings['set'],
+                cls=self.settings['class'],
+                annotator=self.settings['annotator'],
+                annotatortype=folia.AnnotatorType.AUTO,
+                datetime=datetime.datetime.now(),
+                confidence=confidence
+            )
+        else:
+            raise Exception("No suggestions= specified!")
+
+
+    def adderrordetection(self, word):
+        self.log("Adding correction for " + word.id + " " + word.text())
+
+        #add the correction
+        word.append(
+            folia.ErrorDetection(
+                self.doc,
+                set=self.settings['set'],
+                cls=self.settings['class'],
+                annotator=self.settings['annotator'],
+                annotatortype='auto',
+                datetime=datetime.datetime.now()
+            )
+        )
+
+    def splitcorrection(self, word, newwords,**kwargs):
+        sentence = word.sentence()
+        newwords = [ folia.Word(self.doc, generate_id_in=sentence, text=w) for w in newwords ]
+        kwargs['suggest'] = True
+        kwargs['datetime'] = datetime.datetime.now()
+        word.split(
+            *newwords,
+            **kwargs
+        )
+
+    def mergecorrection(self, newword, originalwords, **kwargs):
+        sentence = originalwords[0].sentence()
+        if not sentence:
+            raise Exception("Expected sentence for " + str(repr(originalwords[0])) + ", got " + str(repr(sentence)))
+        newword = folia.Word(self.doc, generate_id_in=sentence, text=newword)
+        kwargs['suggest'] = True
+        kwargs['datetime'] = datetime.datetime.now()
+        sentence.mergewords(
+            newword,
+            *originalwords,
+            **kwargs
+        )
 
 
 
