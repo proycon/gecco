@@ -13,6 +13,7 @@ class WordErrorListModule(gecco.Module):
             self.settings['reversedformat'] = False
 
     def load(self):
+        """Load the requested modules from self.models"""
         self.errorlist = {}
 
         if not self.models:
@@ -44,17 +45,27 @@ class WordErrorListModule(gecco.Module):
                             self.errorlist[wrong] = correct
 
     def run(self, word, lock, **parameters):
+        """This method gets invoked by the Corrector when it runs locally. word is a folia.Word instance"""
         wordstr = str(word)
         if wordstr in self.errorlist:
             suggestions = self.errorlist[wordstr]
-            self.process(word, suggestions)
+            self.addwordsuggestions(word, suggestions)
 
-
-    def client(self, word, lock, client, **parameters):
+    def runclient(self, word, lock, client, **parameters):
+        """This method gets invoked by the Corrector when it should connect to a remote server, the client instance is passed and already available (will connect on first communication). word is a folia.Word instance"""
         wordstr = str(word)
         response = client.communicate(wordstr)
-        if response != wordstr: #server will echo back the same thing if it's not in error list
+        if response != wordstr: #server will echo back the same thing if it's not in the error list
             suggestions = response.split("\t")
-            self.process(word, suggestions)
+            self.addwordsuggestions(word, suggestions)
 
-
+    def server_handler(self, word):
+        """This methods gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
+        if word in self.errorlist:
+            suggestions = self.errorlist[word]
+            if isinstance(suggestions, str):
+                return suggestions
+            else:
+                return "\t".join(suggestions)
+        else:
+            return word   #server will echo back the same thing if it's not in the error list

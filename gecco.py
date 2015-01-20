@@ -11,6 +11,8 @@
 
 from collections import OrderedDict
 from threading import Thread, Queue, Lock
+import sys
+import os
 import socket
 import socketserver
 from pynlpl.formats import folia
@@ -35,7 +37,7 @@ class ProcessorThread(Thread):
         self.loadbalancemaster = loadbalancemaster
         self.parameters = parameters
 
-        self.clients = {} #each thread keeps a bunch of clients open to the servers of the various modules
+        self.clients = {} #each thread keeps a bunch of clients open to the servers of the various modules so we don't have to reconnect constantly (= faster)
 
     def run(self):
         while not self.abort:
@@ -47,7 +49,7 @@ class ProcessorThread(Thread):
                     server, port = module.findserver(self.loadbalancemaster)
                     if (server,port) not in self.clients:
                         self.clients[(server,port)] = module.CLIENT(host,port)
-                    module.client(data, lock, self.clients[(server,port)], **parameters)
+                    module.runclient( self.clients[(server,port)], data, lock,  **parameters)
 
     def abort(self):
         self.abort = True
@@ -195,6 +197,31 @@ class Corrector:
         #Store FoLiA document
         foliadoc.save()
 
+    def server(self):
+        """Starts all servers for the current host"""
+
+        HOST = socket.getfqdn()
+        for module in self:
+            if not module.local:
+                for h,port in module.settings['servers']:
+                    if h == host:
+                        #Start this server *in a separate subprocess*
+                        #TODO:
+                        pass
+
+        os.wait() #blocking
+        self.log("All servers ended..")
+
+
+    def moduleserver(self, module_id, host, port):
+        """Start one particular module's server. This method will be launched by server() in different processes"""
+        module = self.module[module_id]
+        self.log("Loading module")
+        module.load()
+        self.log("Running server...")
+        module.runserver(host,port) #blocking
+        self.log("Server ended..")
+
     def main(self):
         #command line tool
         parser = argparse.ArgumentParser(description="", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -249,14 +276,36 @@ class LineByLineClient:
         while cont_recv:
             buffer += socket.recv(1024)
             if buffer[-1] == b"\n":
-                cont_resv = False
+                cont_recv = False
         return str(buffer,'utf-8')
 
+class LineByLineServerHandler(socketserver.BaseRequestHandler):
+    """
+    The generic RequestHandler class for our server. Instantiated once per connection to the server, invokes the module's server_handler()
+    """
+
+    def handle(self):
+        # self.request is the TCP socket connected to the client, self.server is the server
+        cont_recv = True
+        while cont_recv:
+            buffer += self.request.recv(1024)
+            if buffer[-1] == b"\n":
+                cont_recv = False
+        msg = str(buffer,'utf-8')
+        response = self.server.module.server_handler(msg)
+        if isinstance(response,str):
+            response = response.encode('utf-8')
+        if response[-1] != b"\n": response += b"\n"
+        self.request.sendall(response)
+
+class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+    pass
 
 class Module:
 
     UNIT = folia.Document #Specifies on type of input tbe module gets. An entire FoLiA document is the default, any smaller structure element can be assigned, such as folia.Sentence or folia.Word . More fine-grained levels usually increase efficiency.
     CLIENT = LineByLineClient
+    SERVER = LineByLineServerHandler
 
     def __init__(self,id, **settings):
         self.id = id
@@ -267,7 +316,7 @@ class Module:
     def verifysettings(self):
         self.local = 'servers' in self.settings
         if 'source' in self.settings:
-            is isinstance(self.settings['source'],str):
+            if isinstance(self.settings['source'],str):
                 self.sources = [ self.settings['source'] ]
             else:
                 self.sources = self.settings['source']
@@ -275,7 +324,7 @@ class Module:
             self.sources = self.settings['sources']
 
         if 'model' in self.settings:
-            is isinstance(self.settings['model'],str):
+            if isinstance(self.settings['model'],str):
                 self.models = [ self.settings['model'] ]
             else:
                 self.models = self.settings['model']
@@ -308,12 +357,10 @@ class Module:
 
 
 
-
-
     ####################### CALLBACKS ###########################
 
-    # These callbacks are called by the Corrector
 
+    ##### Optional callbacks invoked by the Corrector (defaults may suffice)
 
     def init(self, foliadoc):
         """Initialises the module on the document. This method should set all the necessary declarations if they are not already present. It will be called sequentially."""
@@ -321,6 +368,16 @@ class Module:
             if not foliadoc.declared(folia.Correction, self.settings['set']):
                 foliadoc.declare(folia.Correction, self.settings['set'])
         return True
+
+    def runserver(self, host, port):
+        """Runs the server. Invoked by the Corrector on start. """
+        server = ThreadedTCPServer((host, port), LineByLineServerHandler)
+        # Start a thread with the server -- that thread will then start one more thread for each request
+        server_thread = Thread(target=server.serve_forever)
+        # Exit the server thread when the main thread terminates
+        server_thread.daemon = True
+        server_thread.start()
+
 
     def finish(self, foliadoc):
         """Finishes the module on the document. This method can do post-processing. It will be called sequentially."""
@@ -330,70 +387,53 @@ class Module:
         """This method gets invoked by the Corrector to train the model. Override it in your own model, use the input files in self.sources and for each entry create the corresponding file in self.models """
         return False #Implies there is nothing to train for this module
 
+
+    ##### Callbacks invoked by the Corrector that MUST be implemented:
+
     def run(self, data, lock, **parameters):
         """This method gets invoked by the Corrector when it runs locally."""
         raise NotImplementedError
 
-    def client(self, data, lock, client=None, **parameters):
-        """This method gets invoked by the Corrector when it should connect to a remote server, the host and port are passed."""
+    def runclient(self, client, data, lock,  **parameters):
+        """This method gets invoked by the Corrector when it should connect to a remote server, the client instance is passed and already available (will connect on first communication)"""
+        raise NotImplementedError
 
-        return client
+    ##### Callback invoked by module's server, MUST be implemented:
+
+    def server_handler(self, msg):
+        """This methods gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
+        raise NotImplementedError
 
 
-    def server(self, port):
-        """This methods gets called by the Corrector to start the module's server"""
-
-
-    ######################## OPTIONAL CALLBACKS  ####################################
-
-    # These callbacks are called by the module itself
+    #### Callback invoked by the module itself, MUST be implemented
 
     def load(self):
         """Load the requested modules from self.models, module-specific so doesn't do anything by default"""
         pass
 
-    def process(self, word, suggestions):
-        """This callback is not directly invoked by the Corrector, but can be invoked by run() or client() to process the obtained list of suggestions. The default implementation of client() uses it"""
-        if not isinstance(suggestions, tuple):
-            self.addcorrection(word, suggestion=suggestions)
-        else:
-            self.addcorrection(word, suggestions=suggestions)
 
     ######################### FOLIA EDITING ##############################
+    #
+    # These methods are *NOT* available to server_handler() !
 
-
-    def addcorrection(self, word, confidence=None  ):
+    def addwordsuggestions(self, word, suggestions, confidence=None  ):
         self.log("Adding correction for " + word.id + " " + word.text())
 
         #Determine an ID for the next correction
         correction_id = word.generate_id(folia.Correction)
 
-        if 'suggestions' in kwargs:
-            #add the correction
-            word.correct(
-                suggestions=kwargs['suggestions'],
-                id=correction_id,
-                set=self.settings['set'],
-                cls=self.settings['class'],
-                annotator=self.settings['annotator'],
-                annotatortype=folia.AnnotatorType.AUTO,
-                datetime=datetime.datetime.now(),
-                confidence=confidence
-            )
-        elif 'suggestion' in kwargs:
-            #add the correction
-            word.correct(
-                suggestion=kwargs['suggestion'],
-                id=correction_id,
-                set=self.settings['set'],
-                cls=self.settings['class'],
-                annotator=self.settings['annotator'],
-                annotatortype=folia.AnnotatorType.AUTO,
-                datetime=datetime.datetime.now(),
-                confidence=confidence
-            )
-        else:
-            raise Exception("No suggestions= specified!")
+        #add the correction
+        word.correct(
+            suggestions=suggestion,
+            id=correction_id,
+            set=self.settings['set'],
+            cls=self.settings['class'],
+            annotator=self.settings['annotator'],
+            annotatortype=folia.AnnotatorType.AUTO,
+            datetime=datetime.datetime.now(),
+            confidence=confidence
+        )
+
 
 
     def adderrordetection(self, word):
