@@ -11,6 +11,8 @@
 
 from collections import OrderedDict
 from threading import Thread, Queue, Lock
+import socket
+import socketserver
 from pynlpl.formats import folia
 from ucto import Tokenizer
 
@@ -33,6 +35,8 @@ class ProcessorThread(Thread):
         self.loadbalancemaster = loadbalancemaster
         self.parameters = parameters
 
+        self.clients = {} #each thread keeps a bunch of clients open to the servers of the various modules
+
     def run(self):
         while not self.abort:
             if not q.empty():
@@ -40,15 +44,13 @@ class ProcessorThread(Thread):
                 if module.local:
                     module.run(data, lock, **self.parameters)
                 else:
-                    host, port = module.findserver(self.loadbalancemaster)
-                    module.client(data, lock, host, port, **parameters)
+                    server, port = module.findserver(self.loadbalancemaster)
+                    if (server,port) not in self.clients:
+                        self.clients[(server,port)] = module.CLIENT(host,port)
+                    module.client(data, lock, self.clients[(server,port)], **parameters)
 
     def abort(self):
         self.abort = True
-
-
-
-
 
 
 class Corrector:
@@ -220,9 +222,41 @@ class LoadBalanceServer: #Reports load balance back to master
     pass
 
 
+class LineByLineClient:
+    """Simple communication protocol between client and server, newline-delimited"""
+
+    def __init__(self, host, port):
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.connected = False
+
+    def connect(self):
+        self.socket.connect( (host,port) )
+        self.connected = True
+
+    def communicate(self, msg):
+        self.send(msg)
+        answer = self.receive()
+
+    def send(self, msg):
+        if not self.connected: self.connect()
+        if isinstance(msg, str): msg = msg.encode('utf-8')
+        if msg[-1] != b"\n": msg += b"\n"
+        self.sock.sendall(msg)
+
+    def receive(self):
+        buffer = b''
+        cont_recv = True
+        while cont_recv:
+            buffer += socket.recv(1024)
+            if buffer[-1] == b"\n":
+                cont_resv = False
+        return str(buffer,'utf-8')
+
+
 class Module:
 
     UNIT = folia.Document #Specifies on type of input tbe module gets. An entire FoLiA document is the default, any smaller structure element can be assigned, such as folia.Sentence or folia.Word . More fine-grained levels usually increase efficiency.
+    CLIENT = LineByLineClient
 
     def __init__(self,id, **settings):
         self.id = id
@@ -273,6 +307,9 @@ class Module:
             return loadbalancemaster.get(self.settings['servers'])
 
 
+
+
+
     ####################### CALLBACKS ###########################
 
     # These callbacks are called by the Corrector
@@ -283,18 +320,24 @@ class Module:
         if 'set' in self.settings and self.settings['set']:
             if not foliadoc.declared(folia.Correction, self.settings['set']):
                 foliadoc.declare(folia.Correction, self.settings['set'])
+        return True
 
     def finish(self, foliadoc):
         """Finishes the module on the document. This method can do post-processing. It will be called sequentially."""
+        return False #Nothing to finish for this module
 
     def train(self, **parameters):
         """This method gets invoked by the Corrector to train the model. Override it in your own model, use the input files in self.sources and for each entry create the corresponding file in self.models """
+        return False #Implies there is nothing to train for this module
 
     def run(self, data, lock, **parameters):
         """This method gets invoked by the Corrector when it runs locally."""
+        raise NotImplementedError
 
-    def client(self, data, lock, host, port, **parameters):
+    def client(self, data, lock, client=None, **parameters):
         """This method gets invoked by the Corrector when it should connect to a remote server, the host and port are passed."""
+
+        return client
 
 
     def server(self, port):

@@ -50,7 +50,11 @@ class WordErrorListModule(gecco.Module):
             self.process(word, suggestions)
 
 
-
-
+    def client(self, word, lock, client, **parameters):
+        wordstr = str(word)
+        response = client.communicate(wordstr)
+        if response != wordstr: #server will echo back the same thing if it's not in error list
+            suggestions = response.split("\t")
+            self.process(word, suggestions)
 
 
