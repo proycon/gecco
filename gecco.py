@@ -232,7 +232,7 @@ class Corrector:
             if not module.local:
                 if not module_ids or module.id in module_ids:
                     for h,port in module.settings['servers']:
-                        if h == host:
+                        if h == HOST:
                             #Start this server *in a separate subprocess*
                             if 'config' in settings:
                                 cmd = "gecco " + settings['config'] + " "
@@ -253,9 +253,10 @@ class Corrector:
         module.load()
         self.log("Running server...")
         module.runserver(host,port) #blocking
-        self.log("Server ended..")
+        self.log("Server ended.")
 
     def main(self):
+
         #command line tool
         parser = argparse.ArgumentParser(description="Gecco is a generic, scalable and modular spelling correction framework", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
         subparsers = parser.add_subparsers(dest='command',title='Commands')
@@ -263,22 +264,31 @@ class Corrector:
         parser_run.add_argument('-o',dest="outputfile", help="Output filename (if not specified, the input file will be edited in-place",required=False,default="")
         parser_run.add_argument('filename', help="The file to correct, can be either a FoLiA XML file or a plain-text file which will be automatically tokenised and converted on-the-fly. The XML file will also be the output file. The XML file is edited in place, it will also be the output file unless -o is specified", required=True)
         parser_run.add_argument('modules', help="Only run the modules with the specified IDs (comma-separated list) (if omitted, all modules are run)", required=False,default="")
+        parser_run.add_argument('-p',dest=parameters, help="Custom parameters passed to the modules, specify as -p parameter=value. This option can be issued multiple times", required=False, action="append")
         parser_startservers = subparsers.add_parser('startservers', help="Starts all the module servers that are configured to run on the current host. Issue once for each server used.")
         parser_startservers.add_argument('modules', help="Only start server for modules with the specified IDs (comma-separated list) (if omitted, all modules are run)", required=False,default="")
         parser_startserver = subparsers.add_parser('startserver', help="Start one module's server on the specified port, use 'startservers' instead")
         parser_startserver.add_argument('module', help="Module ID")
         parser_startserver.add_argument('host', help="Host/IP to bind to", required=True)
         parser_startserver.add_argument('port', type=int, help="Port")
+        parser_train = subparsers.add_parser('train', help="Train modules")
+        parser_train.add_argument('modules', help="Only train for modules with the specified IDs (comma-separated list) (if omitted, all modules are run)", required=False,default="")
+        parser_test = subparsers.add_parser('test', help="Test modules")
+        parser_test.add_argument('modules', help="Only train for modules with the specified IDs (comma-separated list) (if omitted, all modules are run)", required=False,default="")
+        parser_tune = subparsers.add_parser('tune', help="Tune modules")
+        parser_tune.add_argument('modules', help="Only train for modules with the specified IDs (comma-separated list) (if omitted, all modules are run)", required=False,default="")
 
 
         args = parser.parse_args()
         if args.command == 'run':
-            self.run(args.filename,args.modules.split(","), args.outputfile)
+            parameters = dict(( tuple(p.split('=')) for p in args.parameters))
+            self.run(args.filename,args.modules.split(","), args.outputfile, **parameters)
         elif args.command == 'startservers':
             self.startservers(args.modules.split(","))
         elif args.command == 'startserver':
             self.startserver(args.module, args.host, args.port)
         elif args.command == 'train':
+            self.train(args.modules.split(","))
             raise NotImplementedError #TODO
         elif args.command == 'test':
             raise NotImplementedError #TODO
