@@ -136,14 +136,11 @@ class Corrector:
         for module in self:
             if not module_ids or module.id in module_ids:
                 for sourcefile, modelfile in zip(module.sources, module.models):
-                    if not os.path.exists(modelfile):
+                    if (isinstance(modelfile, tuple) and not all([os.path.exists(f) for f in modelfile])) or not os.path.exists(modelfile):
                         self.log("Training module " + module.id + "...")
-                        if not os.path.exists(sourcefile):
+                        if (isinstance(sourcefile, tuple) and not all([os.path.exists(f) for f in sourcefile])) or not os.path.exists(sourcefile):
                             raise Exception("[" + module.id + "] Source file not found: " + sourcefile)
-
-
-                module.train(**parameters)
-
+                        module.train(sourcefile, modelfile, **parameters)
 
     def test(self,module_ids=[], **parameters):
         for module in self:
@@ -429,6 +426,8 @@ class Module:
             self.models = self.settings['models']
         self.models = [ self.getfilename(f) for f in self.models ]
 
+        if len(self.sources) != len(self.models):
+            raise Exception("Number of specified sources and models for module " + self.id + " should be equal!")
 
         if not 'logfunction' in self.settings:
             self.settings['logfunction'] = lambda x: print("[" + self.id + "] " + x,file=sys.stderr) #will be rather messy when multithreaded
@@ -482,7 +481,7 @@ class Module:
         return False #Nothing to finish for this module
 
     def train(self, sourcefile, modelfile, **parameters):
-        """This method gets invoked by the Corrector to train the model. Override it in your own model, use the input files in self.sources and for each entry create the corresponding file in self.models """
+        """This method gets invoked by the Corrector to train the model. Build modelfile out of sourcefile. Either may be a tuple if multiple files are required/requested. The function may be invoked multiple times with differences source and model files"""
         return False #Implies there is nothing to train for this module
 
     def test(self, **parameters):
