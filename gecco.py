@@ -41,12 +41,12 @@ class ProcessorThread(Thread):
             if not q.empty():
                 module, data = q.get() #data is an instance of module.UNIT
                 if module.local:
-                    module.run(data, lock, **self.parameters)
+                    module.run(data, self.lock, **self.parameters)
                 else:
                     server, port = module.findserver(self.loadbalancemaster)
                     if (server,port) not in self.clients:
                         self.clients[(server,port)] = module.CLIENT(host,port)
-                    module.runclient( self.clients[(server,port)], data, lock,  **parameters)
+                    module.runclient( self.clients[(server,port)], data, self.lock,  **parameters)
                 q.task_done()
 
     def abort(self):
