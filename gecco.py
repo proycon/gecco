@@ -24,10 +24,6 @@ import argparse
 UCTOSEARCHDIRS = ('/usr/local/etc/ucto','/etc/ucto/','.')
 
 
-def processor(queue, lock, data, parameters):
-    while True:
-        module = queue.get()
-        queue.task_done()
 
 
 class ProcessorThread(Thread):
@@ -51,6 +47,7 @@ class ProcessorThread(Thread):
                     if (server,port) not in self.clients:
                         self.clients[(server,port)] = module.CLIENT(host,port)
                     module.runclient( self.clients[(server,port)], data, lock,  **parameters)
+                q.task_done()
 
     def abort(self):
         self.abort = True
