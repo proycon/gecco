@@ -13,7 +13,8 @@
 
 
 from collections import OrderedDict
-from threading import Thread, Queue, Lock
+from threading import Thread, Lock
+from queue import Queue
 import sys
 import os
 import socket

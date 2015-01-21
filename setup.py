@@ -54,5 +54,5 @@ setup(
         ]
     },
     package_data = {'gecco':[] },
-    install_requires=['lxml >= 2.2','pynlpl']
+    install_requires=['lxml >= 2.2','pynlpl >= 0.6.18','pyyaml','python-ucto >= 0.1.1']
 )
