@@ -72,9 +72,9 @@ class Corrector:
                 for host, port in module.settings['servers']:
                     self.servers.add( (host,port) )
 
-        self.loadbalancemaster = LoadBalanceMaster(self.servers)
+        self.loadbalancemaster = LoadBalanceMaster(self)
 
-        self.units = set( [m.server for m in self] )
+        self.units = set( [m.servers for m in self if not m.local] )
 
     def verifysettings(self):
         if 'config' in self.settings:
@@ -300,24 +300,24 @@ class Corrector:
         subparsers = parser.add_subparsers(dest='command',title='Commands')
         parser_run = subparsers.add_parser('run', help="Run the spelling corrector on the specified input file")
         parser_run.add_argument('-o',dest="outputfile", help="Output filename (if not specified, the input file will be edited in-place",required=False,default="")
-        parser_run.add_argument('filename', help="The file to correct, can be either a FoLiA XML file or a plain-text file which will be automatically tokenised and converted on-the-fly. The XML file will also be the output file. The XML file is edited in place, it will also be the output file unless -o is specified", required=True)
-        parser_run.add_argument('modules', help="Only run the modules with the specified IDs (comma-separated list) (if omitted, all modules are run)", required=False,default="")
+        parser_run.add_argument('filename', help="The file to correct, can be either a FoLiA XML file or a plain-text file which will be automatically tokenised and converted on-the-fly. The XML file will also be the output file. The XML file is edited in place, it will also be the output file unless -o is specified")
+        parser_run.add_argument('modules', help="Only run the modules with the specified IDs (comma-separated list) (if omitted, all modules are run)", nargs='?',default="")
         parser_run.add_argument('-p',dest='parameters', help="Custom parameters passed to the modules, specify as -p parameter=value. This option can be issued multiple times", required=False, action="append")
         parser_startservers = subparsers.add_parser('startservers', help="Starts all the module servers that are configured to run on the current host. Issue once for each server used.")
-        parser_startservers.add_argument('modules', help="Only start server for modules with the specified IDs (comma-separated list) (if omitted, all modules are run)", required=False,default="")
+        parser_startservers.add_argument('modules', help="Only start server for modules with the specified IDs (comma-separated list) (if omitted, all modules are run)", nargs='?',default="")
         parser_startserver = subparsers.add_parser('startserver', help="Start one module's server on the specified port, use 'startservers' instead")
         parser_startserver.add_argument('module', help="Module ID")
-        parser_startserver.add_argument('host', help="Host/IP to bind to", required=True)
+        parser_startserver.add_argument('host', help="Host/IP to bind to")
         parser_startserver.add_argument('port', type=int, help="Port")
         parser_train = subparsers.add_parser('train', help="Train modules")
-        parser_train.add_argument('modules', help="Only train for modules with the specified IDs (comma-separated list) (if omitted, all modules are run)", required=False,default="")
-        parser_run.add_argument('-p',dest='parameters', help="Custom parameters passed to the modules, specify as -p parameter=value. This option can be issued multiple times", required=False, action="append")
+        parser_train.add_argument('modules', help="Only train for modules with the specified IDs (comma-separated list) (if omitted, all modules are run)", nargs='?',default="")
+        parser_train.add_argument('-p',dest='parameters', help="Custom parameters passed to the modules, specify as -p parameter=value. This option can be issued multiple times", required=False, action="append")
         parser_test = subparsers.add_parser('test', help="Test modules")
-        parser_test.add_argument('modules', help="Only train for modules with the specified IDs (comma-separated list) (if omitted, all modules are run)", required=False,default="")
-        parser_run.add_argument('-p',dest='parameters', help="Custom parameters passed to the modules, specify as -p parameter=value. This option can be issued multiple times", required=False, action="append")
+        parser_test.add_argument('modules', help="Only train for modules with the specified IDs (comma-separated list) (if omitted, all modules are run)", nargs='?',default="")
+        parser_test.add_argument('-p',dest='parameters', help="Custom parameters passed to the modules, specify as -p parameter=value. This option can be issued multiple times", required=False, action="append")
         parser_tune = subparsers.add_parser('tune', help="Tune modules")
-        parser_tune.add_argument('modules', help="Only train for modules with the specified IDs (comma-separated list) (if omitted, all modules are run)", required=False,default="")
-        parser_run.add_argument('-p',dest='parameters', help="Custom parameters passed to the modules, specify as -p parameter=value. This option can be issued multiple times", required=False, action="append")
+        parser_tune.add_argument('modules', help="Only train for modules with the specified IDs (comma-separated list) (if omitted, all modules are run)", nargs='?',default="")
+        parser_tune.add_argument('-p',dest='parameters', help="Custom parameters passed to the modules, specify as -p parameter=value. This option can be issued multiple times", required=False, action="append")
 
         args = parser.parse_args()
 
@@ -337,15 +337,18 @@ class Corrector:
         elif args.command == 'tune':
             parameters = dict(( tuple(p.split('=')) for p in args.parameters))
             self.tune(args.modules.split(","))
+        elif not args.command:
+            parser.print_help()
         else:
             print("No such command: " + args.command,file=sys.stderr)
             sys.exit(2)
         sys.exit(0)
 
 class LoadBalanceMaster: #will cache thingies
-    def __init__(self, availableservers, minpollinterval):
-        self.availableservers = availableservers
-        self.minpollinterval = minpollinterval
+    def __init__(self, parent):
+        self.parent = parent
+        self.availableservers = self.parent.servers
+        self.minpollinterval = self.parent.settings['minpollinterval']
 
 
     def get(self,servers):
