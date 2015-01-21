@@ -1,0 +1,12 @@
+id: mygecco
+root: /path/to/mygecco/
+language: en
+threads: 4
+modules:
+    - id: errorlist
+      module: gecco.modules.errorlist.WordErrorListModule
+      models:
+        - sources/errorlist.txt
+      servers:
+        - host: myserver.mydomain.com
+          port: 12345
