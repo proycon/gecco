@@ -1,3 +1,15 @@
+#========================================================================
+#GECCO - Generic Enviroment for Context-Aware Correction of Orthography
+# Maarten van Gompel, Wessel Stoop, Antal van den Bosch
+# Centre for Language and Speech Technology
+# Radboud University Nijmegen
+#
+# Sponsored by Revisely (http://revise.ly)
+#
+# Licensed under the GNU Public License v3
+#
+#=======================================================================
+
 from pynlpl.formats import folia
 from gecco import gecco
 

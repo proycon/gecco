@@ -5,7 +5,10 @@
 # Centre for Language and Speech Technology
 # Radboud University Nijmegen
 #
-# Licensed under GPLv3
+# Sponsored by Revisely (http://revise.ly)
+#
+# Licensed under the GNU Public License v3
+#
 #=======================================================================
 
 
