@@ -116,8 +116,26 @@ class Corrector:
 
 
     def parseconfig(self,configfile):
-        config = yaml.load(configfile)
-        #TODO: Parse!
+        config = yaml.load(open(configfile,'r',encoding='utf-8').read())
+
+        if 'modules' not in config:
+            raise Exception("No Modules specified")
+
+        modules = []
+        for modulespec in config['modules']:
+            #import modules:
+            pymodule = '.'.join(modulespec['module'].split('.')[:-1])
+            moduleclass = modulespec['module'].split('.')[-1]
+            exec("from " + pymodule + " import " + moduleclass)
+            ModuleClass = globals()[moduleclass]
+            if 'servers' in modulespec:
+                modulespec['servers'] =  tuple( ( (x['host'],x['port']) for x in modulespec['servers']) )
+            module = ModuleClass(**modulespec)
+            modules.append(modules)
+
+        settings = config
+        del settings['modules']
+
         return settings, modules
 
     def __len__(self):
@@ -395,8 +413,7 @@ class Module:
     CLIENT = LineByLineClient
     SERVER = LineByLineServerHandler
 
-    def __init__(self,id, **settings):
-        self.id = id
+    def __init__(self,**settings):
         self.settings = settings
         self.verifysettings()
 
@@ -409,6 +426,10 @@ class Module:
             return self.parent.root + filename
 
     def verifysettings(self):
+        if 'id' not in self.settings:
+            raise Exception("Module must have an ID!")
+        self.id = self.settings['id']
+
         self.local = 'servers' in self.settings
         if 'source' in self.settings:
             if isinstance(self.settings['source'],str):
