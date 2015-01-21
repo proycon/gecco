@@ -591,8 +591,7 @@ class Module:
         lock.release()
 
 
-
-if __name__ == '__main__':
+def main():
     try:
         configfile = sys.argv[1]
         sys.argv = [sys.argv[0]] + sys.argv[2:]
@@ -602,3 +601,6 @@ if __name__ == '__main__':
     corrector = Corrector(config=configfile)
     corrector.main()
 
+
+if __name__ == '__main__':
+    main()
