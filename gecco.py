@@ -46,7 +46,7 @@ class ProcessorThread(Thread):
                     server, port = module.findserver(self.loadbalancemaster)
                     if (server,port) not in self.clients:
                         self.clients[(server,port)] = module.CLIENT(host,port)
-                    module.runclient( self.clients[(server,port)], data, self.lock,  **parameters)
+                    module.runclient( self.clients[(server,port)], data, self.lock,  **self.parameters)
                 q.task_done()
 
     def abort(self):
