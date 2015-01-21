@@ -1,5 +1,5 @@
-id: mygecco
-root: /path/to/mygecco/
+id: example
+root: example #should ideally be an absolute path!
 language: en
 threads: 4
 modules:
@@ -8,5 +8,5 @@ modules:
       models:
         - sources/errorlist.txt
       servers:
-        - host: myserver.mydomain.com
-          port: 12345
+         - host: 127.0.0.1
+           port: 12345
