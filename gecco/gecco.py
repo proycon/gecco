@@ -128,7 +128,7 @@ class Corrector:
             pymodule = '.'.join(modulespec['module'].split('.')[:-1])
             moduleclass = modulespec['module'].split('.')[-1]
             exec("from " + pymodule + " import " + moduleclass)
-            ModuleClass = globals()[moduleclass]
+            ModuleClass = locals()[moduleclass]
             if 'servers' in modulespec:
                 modulespec['servers'] =  tuple( ( (x['host'],x['port']) for x in modulespec['servers']) )
             module = ModuleClass(**modulespec)
