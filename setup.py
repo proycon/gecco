@@ -8,6 +8,20 @@ import sys
 from setuptools import setup
 
 
+try:
+   os.chdir(os.path.dirname(sys.argv[0]))
+except:
+   pass
+
+if not os.path.exists('gecco'):
+    print("Preparing build",file=sys.stderr)
+    if not os.path.exists('build'): os.mkdir('build')
+    os.chdir('build')
+    if not os.path.exists('gecco'): os.mkdir('gecco')
+    os.system('cp -Rpfv ../*py ../*.yml ../modules ../example gecco/')
+    os.system('find gecco/ -type l | xargs rm')
+    os.system('mv -f gecco/setup.py .')
+    os.system('cp -f ../README* ../INSTALL ../ChangeLog ../COPYING ../LICENSE .')
 
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
