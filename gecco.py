@@ -132,11 +132,24 @@ class Corrector:
         self.modules[id] = module
         module.parent = self
 
-    def train(self,id=None):
-        return self.modules[id]
+    def train(self,module_ids=[], **parameters):
+        for module in self:
+            if not module_ids or module.id in module_ids:
+                self.log("Training module " + module.id + "...")
+                module.train(**parameters)
 
 
+    def test(self,module_ids=[], **parameters):
+        for module in self:
+            if not module_ids or module.id in module_ids:
+                self.log("Testing module " + module.id + "...")
+                module.test(**parameters)
 
+    def tune(self,module_ids=[], **parameters):
+        for module in self:
+            if not module_ids or module.id in module_ids:
+                self.log("Tuning module " + module.id + "...")
+                module.tune(**parameters)
 
     def run(self, foliadoc, module_ids=[], outputfile="",**parameters):
         if isinstance(foliadoc, str):
@@ -264,7 +277,7 @@ class Corrector:
         parser_run.add_argument('-o',dest="outputfile", help="Output filename (if not specified, the input file will be edited in-place",required=False,default="")
         parser_run.add_argument('filename', help="The file to correct, can be either a FoLiA XML file or a plain-text file which will be automatically tokenised and converted on-the-fly. The XML file will also be the output file. The XML file is edited in place, it will also be the output file unless -o is specified", required=True)
         parser_run.add_argument('modules', help="Only run the modules with the specified IDs (comma-separated list) (if omitted, all modules are run)", required=False,default="")
-        parser_run.add_argument('-p',dest=parameters, help="Custom parameters passed to the modules, specify as -p parameter=value. This option can be issued multiple times", required=False, action="append")
+        parser_run.add_argument('-p',dest='parameters', help="Custom parameters passed to the modules, specify as -p parameter=value. This option can be issued multiple times", required=False, action="append")
         parser_startservers = subparsers.add_parser('startservers', help="Starts all the module servers that are configured to run on the current host. Issue once for each server used.")
         parser_startservers.add_argument('modules', help="Only start server for modules with the specified IDs (comma-separated list) (if omitted, all modules are run)", required=False,default="")
         parser_startserver = subparsers.add_parser('startserver', help="Start one module's server on the specified port, use 'startservers' instead")
@@ -273,13 +286,16 @@ class Corrector:
         parser_startserver.add_argument('port', type=int, help="Port")
         parser_train = subparsers.add_parser('train', help="Train modules")
         parser_train.add_argument('modules', help="Only train for modules with the specified IDs (comma-separated list) (if omitted, all modules are run)", required=False,default="")
+        parser_run.add_argument('-p',dest='parameters', help="Custom parameters passed to the modules, specify as -p parameter=value. This option can be issued multiple times", required=False, action="append")
         parser_test = subparsers.add_parser('test', help="Test modules")
         parser_test.add_argument('modules', help="Only train for modules with the specified IDs (comma-separated list) (if omitted, all modules are run)", required=False,default="")
+        parser_run.add_argument('-p',dest='parameters', help="Custom parameters passed to the modules, specify as -p parameter=value. This option can be issued multiple times", required=False, action="append")
         parser_tune = subparsers.add_parser('tune', help="Tune modules")
         parser_tune.add_argument('modules', help="Only train for modules with the specified IDs (comma-separated list) (if omitted, all modules are run)", required=False,default="")
-
+        parser_run.add_argument('-p',dest='parameters', help="Custom parameters passed to the modules, specify as -p parameter=value. This option can be issued multiple times", required=False, action="append")
 
         args = parser.parse_args()
+
         if args.command == 'run':
             parameters = dict(( tuple(p.split('=')) for p in args.parameters))
             self.run(args.filename,args.modules.split(","), args.outputfile, **parameters)
@@ -288,12 +304,14 @@ class Corrector:
         elif args.command == 'startserver':
             self.startserver(args.module, args.host, args.port)
         elif args.command == 'train':
+            parameters = dict(( tuple(p.split('=')) for p in args.parameters))
             self.train(args.modules.split(","))
-            raise NotImplementedError #TODO
         elif args.command == 'test':
-            raise NotImplementedError #TODO
+            parameters = dict(( tuple(p.split('=')) for p in args.parameters))
+            self.test(args.modules.split(","))
         elif args.command == 'tune':
-            raise NotImplementedError #TODO
+            parameters = dict(( tuple(p.split('=')) for p in args.parameters))
+            self.tune(args.modules.split(","))
         else:
             raise Exception("Invalid command: " +  args.command)
 
@@ -455,6 +473,13 @@ class Module:
         """This method gets invoked by the Corrector to train the model. Override it in your own model, use the input files in self.sources and for each entry create the corresponding file in self.models """
         return False #Implies there is nothing to train for this module
 
+    def test(self, **parameters):
+        """This method gets invoked by the Corrector to test the model. Override it in your own model, use the input files in self.sources and for each entry create the corresponding file in self.models """
+        return False #Implies there is nothing to test for this module
+
+    def tune(self, **parameters):
+        """This method gets invoked by the Corrector to test the model. Override it in your own model, use the input files in self.sources and for each entry create the corresponding file in self.models """
+        return False #Implies there is nothing to tune for this module
 
     ##### Callbacks invoked by the Corrector that MUST be implemented:
 
