@@ -269,8 +269,7 @@ class Corrector:
         self.log("Server ended.")
 
     def main(self):
-
-        #command line tool
+        """Parse command line options and run the desired part of the system"""
         parser = argparse.ArgumentParser(description="Gecco is a generic, scalable and modular spelling correction framework", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
         subparsers = parser.add_subparsers(dest='command',title='Commands')
         parser_run = subparsers.add_parser('run', help="Run the spelling corrector on the specified input file")
@@ -313,12 +312,9 @@ class Corrector:
             parameters = dict(( tuple(p.split('=')) for p in args.parameters))
             self.tune(args.modules.split(","))
         else:
-            raise Exception("Invalid command: " +  args.command)
-
-
-        #args.storeconst, args.dataset, args.num, args.bar
-        pass
-
+            print("No such command: " + args.command,file=sys.stderr)
+            sys.exit(2)
+        sys.exit(0)
 
 class LoadBalanceMaster: #will cache thingies
     def __init__(self, availableservers, minpollinterval):
@@ -332,7 +328,7 @@ class LoadBalanceMaster: #will cache thingies
 
 
 class LoadBalanceServer: #Reports load balance back to master
-    pass
+    pass #TODO
 
 
 class LineByLineClient:
@@ -584,6 +580,7 @@ if __name__ == '__main__':
         sys.argv = [sys.argv[0]] + sys.argv[2:]
     except:
         print("Syntax: gecco [configfile.yml]" ,file=sys.stderr)
+        sys.exit(2)
     corrector = Corrector(config=configfile)
     corrector.main()
 
