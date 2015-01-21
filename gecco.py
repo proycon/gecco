@@ -30,14 +30,14 @@ class ProcessorThread(Thread):
     def __init__(self, q, lock, loadbalancemaster, **parameters):
         self.q = q
         self.lock = lock
-        self.abort = False
+        self.stop = False
         self.loadbalancemaster = loadbalancemaster
         self.parameters = parameters
 
         self.clients = {} #each thread keeps a bunch of clients open to the servers of the various modules so we don't have to reconnect constantly (= faster)
 
     def run(self):
-        while not self.abort:
+        while not self.stop:
             if not q.empty():
                 module, data = q.get() #data is an instance of module.UNIT
                 if module.local:
@@ -49,8 +49,8 @@ class ProcessorThread(Thread):
                     module.runclient( self.clients[(server,port)], data, self.lock,  **self.parameters)
                 q.task_done()
 
-    def abort(self):
-        self.abort = True
+    def stop(self):
+        self.stop = True
 
 
 
@@ -201,6 +201,9 @@ class Corrector:
 
         self.log("Processing all modules....")
         queue.join()
+
+        for thread in threads:
+            thread.stop()
 
         self.log("Finalising modules on document") #not parellel, acts on same document anyway, should be fairly quick depending on module
         for module in self:
