@@ -79,15 +79,17 @@ class Corrector:
 
     def verifysettings(self):
         if 'config' in self.settings:
+            #Settings are in external configuration, parse config and return (verifysettings will be reinvoked from parseconfig)
             self.settings, modules = self.parseconfig(self.settings['config'])
-            for module in modules:
-                self.append(module)
+            return
 
         if 'id' not in self.settings:
             raise Exception("No ID specified")
 
         if 'root' not in self.settings:
             self.root = self.settings['root'] = os.path.abspath('.')
+        else:
+            self.root = os.path.abspath(self.settings['root'])
 
         if not 'ucto' in self.settings:
             if 'language' in self.settings:
@@ -122,8 +124,12 @@ class Corrector:
         if 'modules' not in config:
             raise Exception("No Modules specified")
 
-        modules = []
-        for modulespec in config['modules']:
+        modulespecs = config['modules']
+        del config['modules']
+        self.settings = config
+        self.verifysettings()
+
+        for modulespec in modulespecs:
             #import modules:
             pymodule = '.'.join(modulespec['module'].split('.')[:-1])
             moduleclass = modulespec['module'].split('.')[-1]
@@ -131,13 +137,10 @@ class Corrector:
             ModuleClass = locals()[moduleclass]
             if 'servers' in modulespec:
                 modulespec['servers'] =  tuple( ( (x['host'],x['port']) for x in modulespec['servers']) )
-            module = ModuleClass(**modulespec)
-            modules.append(modules)
+            module = ModuleClass(self, **modulespec)
+            self.append(module)
 
-        settings = config
-        del settings['modules']
 
-        return settings, modules
 
     def __len__(self):
         return len(self.modules)
@@ -152,7 +155,6 @@ class Corrector:
     def append(self, id, module):
         assert isinstance(module, Module)
         self.modules[id] = module
-        module.parent = self
 
     def train(self,module_ids=[], **parameters):
         for module in self:
@@ -414,7 +416,8 @@ class Module:
     CLIENT = LineByLineClient
     SERVER = LineByLineServerHandler
 
-    def __init__(self,**settings):
+    def __init__(self, parent,**settings):
+        self.parent = parent
         self.settings = settings
         self.verifysettings()
 
@@ -439,6 +442,8 @@ class Module:
                 self.sources = self.settings['source']
         elif 'sources' in self.settings:
             self.sources = self.settings['sources']
+        else:
+            self.sources = []
         self.sources = [ self.getfilename(f) for f in self.sources ]
 
 
@@ -449,6 +454,8 @@ class Module:
                 self.models = self.settings['model']
         elif 'models' in self.settings:
             self.models = self.settings['models']
+        else:
+            self.models = []
         self.models = [ self.getfilename(f) for f in self.models ]
 
         if len(self.sources) != len(self.models):
