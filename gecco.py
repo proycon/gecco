@@ -224,6 +224,9 @@ class Corrector:
     def startservers(self, module_ids=[]):
         """Starts all servers for the current host"""
 
+        processes = []
+
+        self.log("Starting servers...")
         HOST = socket.getfqdn()
         for module in self:
             if not module.local:
@@ -231,11 +234,16 @@ class Corrector:
                     for h,port in module.settings['servers']:
                         if h == host:
                             #Start this server *in a separate subprocess*
-                            #TODO:
-                            pass
+                            if 'config' in settings:
+                                cmd = "gecco " + settings['config'] + " "
+                            else:
+                                cmd = sys.argv[0] + " "
+                            cmd += "startserver " + module.id + " " + host + " " + str(port)
+                            processes.append( subprocess.Popen(cmd) )
 
+        self.log("Servers started..")
         os.wait() #blocking
-        self.log("All servers ended..")
+        self.log("All servers ended.")
 
 
     def startserver(self, module_id, host, port):

@@ -71,10 +71,10 @@ Workload:
  Configuration
 ----------------
 
-A Gecco system consists of a configuration, either in the form of a simplee Python
+A Gecco system consists of a configuration, either in the form of a simple Python
 script or an external. YAML configuration file.
 
-	corrector = Corrector("fowlt", "/path/to/fowlt/")
+	corrector = Corrector(id="fowlt", root="/path/to/fowlt/")
 	corrector.append( IGTreeConfusibleModule("thenthan", source="train.txt",test_crossvalidate=True,test=0.1,tune=0.1,model="confusibles.model", confusible=('then','than')))
 	corrector.append( IGTreeConfusibleModule("its", source="train.txt",test_crossvalidate=True,test=0.1,tune=0.1,model="confusibles.model", confusible=('its',"it's")))
 	corrector.append( ErrorListModule("errorlist", source="errorlist.txt",model="errorlist.model", servers=[("blah",1234),("blah2",1234)]  )
