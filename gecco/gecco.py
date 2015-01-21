@@ -77,7 +77,7 @@ class Corrector:
 
         self.units = set( [m.server for m in self] )
 
-    def verifysettings():
+    def verifysettings(self):
         if 'config' in self.settings:
             self.settings, modules = self.parseconfig(self.settings['config'])
             for module in modules:

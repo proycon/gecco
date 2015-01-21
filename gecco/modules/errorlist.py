@@ -11,9 +11,9 @@
 #=======================================================================
 
 from pynlpl.formats import folia
-from gecco import gecco
+from gecco.gecco import Module
 
-class WordErrorListModule(gecco.Module):
+class WordErrorListModule(Module):
     UNIT = folia.Word
 
     def verifysettings(self):
