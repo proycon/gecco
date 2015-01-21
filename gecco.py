@@ -101,7 +101,7 @@ class Corrector:
 
 
         if not 'logfunction' in self.settings:
-            self.settings['logfunction'] = lambda x: print("[" + self.__class__.__name__ + "] " + x,file=sys.stderr)
+            self.settings['logfunction'] = lambda x: print(x,file=sys.stderr)
         self.log = self.settings['logfunction']
 
 
@@ -135,7 +135,13 @@ class Corrector:
     def train(self,module_ids=[], **parameters):
         for module in self:
             if not module_ids or module.id in module_ids:
-                self.log("Training module " + module.id + "...")
+                for sourcefile, modelfile in zip(module.sources, module.models):
+                    if not os.path.exists(modelfile):
+                        self.log("Training module " + module.id + "...")
+                        if not os.path.exists(sourcefile):
+                            raise Exception("[" + module.id + "] Source file not found: " + sourcefile)
+
+
                 module.train(**parameters)
 
 
@@ -394,6 +400,13 @@ class Module:
         self.settings = settings
         self.verifysettings()
 
+    def getfilename(self, filename):
+        if isinstance(filename, tuple):
+            return tuple( ( self.getfilename(x) for x in filename ) )
+        elif filename[0] == '/':
+            return filename
+        else:
+            return self.parent.root + filename
 
     def verifysettings(self):
         self.local = 'servers' in self.settings
@@ -404,6 +417,8 @@ class Module:
                 self.sources = self.settings['source']
         elif 'sources' in self.settings:
             self.sources = self.settings['sources']
+        self.sources = [ self.getfilename(f) for f in self.sources ]
+
 
         if 'model' in self.settings:
             if isinstance(self.settings['model'],str):
@@ -412,10 +427,11 @@ class Module:
                 self.models = self.settings['model']
         elif 'models' in self.settings:
             self.models = self.settings['models']
+        self.models = [ self.getfilename(f) for f in self.models ]
 
 
         if not 'logfunction' in self.settings:
-            self.settings['logfunction'] = lambda x: print(x,file=sys.stderr) #will be rather messy when multithreaded
+            self.settings['logfunction'] = lambda x: print("[" + self.id + "] " + x,file=sys.stderr) #will be rather messy when multithreaded
         self.log = self.settings['logfunction']
 
         #Some defaults for FoLiA processing
@@ -465,7 +481,7 @@ class Module:
         """Finishes the module on the document. This method can do post-processing. It will be called sequentially."""
         return False #Nothing to finish for this module
 
-    def train(self, **parameters):
+    def train(self, sourcefile, modelfile, **parameters):
         """This method gets invoked by the Corrector to train the model. Override it in your own model, use the input files in self.sources and for each entry create the corresponding file in self.models """
         return False #Implies there is nothing to train for this module
 
