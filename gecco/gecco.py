@@ -37,7 +37,6 @@ class ProcessorThread(Thread):
         self.stop = False
         self.loadbalancemaster = loadbalancemaster
         self.parameters = parameters
-
         self.clients = {} #each thread keeps a bunch of clients open to the servers of the various modules so we don't have to reconnect constantly (= faster)
 
     def run(self):
@@ -62,9 +61,9 @@ class ProcessorThread(Thread):
 class Corrector:
     def __init__(self, **settings):
         self.settings = settings
+        self.modules = OrderedDict()
         self.verifysettings()
         self.tokenizer = Tokenizer(self.settings['ucto'])
-        self.modules = OrderedDict()
 
         #Gather servers
         self.servers = set()
@@ -80,7 +79,7 @@ class Corrector:
     def verifysettings(self):
         if 'config' in self.settings:
             #Settings are in external configuration, parse config and return (verifysettings will be reinvoked from parseconfig)
-            self.settings, modules = self.parseconfig(self.settings['config'])
+            self.parseconfig(self.settings['config'])
             return
 
         if 'id' not in self.settings:
@@ -152,9 +151,9 @@ class Corrector:
         for module in self.modules.values():
             yield module
 
-    def append(self, id, module):
+    def append(self, module):
         assert isinstance(module, Module)
-        self.modules[id] = module
+        self.modules[module.id] = module
 
     def train(self,module_ids=[], **parameters):
         for module in self:
@@ -458,7 +457,7 @@ class Module:
             self.models = []
         self.models = [ self.getfilename(f) for f in self.models ]
 
-        if len(self.sources) != len(self.models):
+        if self.sources and len(self.sources) != len(self.models):
             raise Exception("Number of specified sources and models for module " + self.id + " should be equal!")
 
         if not 'logfunction' in self.settings:

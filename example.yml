@@ -1,6 +1,7 @@
 id: example
 root: example #should ideally be an absolute path!
 language: en
+ucto: /home/proycon/env/etc/ucto/tokconfig-en
 threads: 4
 modules:
     - id: errorlist
