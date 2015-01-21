@@ -23,7 +23,7 @@ import argparse
 
 UCTOSEARCHDIRS = ('/usr/local/etc/ucto','/etc/ucto/','.')
 
-
+VERSION = 0.1
 
 
 class ProcessorThread(Thread):
@@ -138,7 +138,7 @@ class Corrector:
 
 
 
-    def run(self, foliadoc, id=None, **parameters):
+    def run(self, foliadoc, module_ids=[], outputfile="",**parameters):
         if isinstance(foliadoc, str):
             #We got a filename instead of a FoLiA document, that's okay
             ext = foliadoc.split('.')[-1].lower()
@@ -167,7 +167,8 @@ class Corrector:
 
         self.log("Initialising modules on document") #not parellel, acts on same document anyway, should be very quick
         for module in self:
-            module.init(foliadoc)
+            if not module_ids or module.id in module_ids:
+                module.init(foliadoc)
 
         self.log("Initialising threads")
 
@@ -187,16 +188,18 @@ class Corrector:
             self.log("\tQueuing modules handling " + str(type(folia.Document)))
 
             for module in self:
-                if module.UNIT is folia.Document:
-                    queue.put( (module, foliadoc) )
+                if not module_ids or module.id in module_ids:
+                    if module.UNIT is folia.Document:
+                        queue.put( (module, foliadoc) )
 
         for unit in units:
             if unit is not folia.Document:
                 self.log("\tQueuing modules handling " + str(type(unit)))
                 for data in foliadoc.select(unit):
                     for module in self:
-                        if module.UNIT is unit:
-                            queue.put( (module, data) )
+                        if not module_ids or module.id in module_ids:
+                            if module.UNIT is unit:
+                                queue.put( (module, data) )
 
 
         self.log("Processing all modules....")
@@ -207,29 +210,35 @@ class Corrector:
 
         self.log("Finalising modules on document") #not parellel, acts on same document anyway, should be fairly quick depending on module
         for module in self:
-            module.finish(foliadoc)
+            if not module_ids or module.id in module_ids:
+                module.finish(foliadoc)
 
         self.log("Processing all modules....")
-        #Store FoLiA document
-        foliadoc.save()
 
-    def server(self):
+        #Store FoLiA document
+        if outputfile:
+            foliadoc.save(outputfile)
+        else:
+            foliadoc.save()
+
+    def startservers(self, module_ids=[]):
         """Starts all servers for the current host"""
 
         HOST = socket.getfqdn()
         for module in self:
             if not module.local:
-                for h,port in module.settings['servers']:
-                    if h == host:
-                        #Start this server *in a separate subprocess*
-                        #TODO:
-                        pass
+                if not module_ids or module.id in module_ids:
+                    for h,port in module.settings['servers']:
+                        if h == host:
+                            #Start this server *in a separate subprocess*
+                            #TODO:
+                            pass
 
         os.wait() #blocking
         self.log("All servers ended..")
 
 
-    def moduleserver(self, module_id, host, port):
+    def startserver(self, module_id, host, port):
         """Start one particular module's server. This method will be launched by server() in different processes"""
         module = self.module[module_id]
         self.log("Loading module")
@@ -240,12 +249,37 @@ class Corrector:
 
     def main(self):
         #command line tool
-        parser = argparse.ArgumentParser(description="", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-        #parser.add_argument('--run',dest='settype',help="", action='store_const',const='somevalue')
-        #parser.add_argument('-f','--dataset', type=str,help="", action='store',default="",required=False)
-        #parser.add_argument('-i','--number',dest="num", type=int,help="", action='store',default="",required=False)
-        #parser.add_argument('bar', nargs='+', help='bar help')
+        parser = argparse.ArgumentParser(description="Gecco is a generic, scalable and modular spelling correction framework", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        subparsers = parser.add_subparsers(dest='command',title='Commands')
+        parser_run = subparsers.add_parser('run', help="Run the spelling corrector on the specified input file")
+        parser_run.add_argument('-o',dest="outputfile", help="Output filename (if not specified, the input file will be edited in-place",required=False,default="")
+        parser_run.add_argument('filename', help="The file to correct, can be either a FoLiA XML file or a plain-text file which will be automatically tokenised and converted on-the-fly. The XML file will also be the output file. The XML file is edited in place, it will also be the output file unless -o is specified", required=True)
+        parser_run.add_argument('modules', help="Only run the modules with the specified IDs (comma-separated list) (if omitted, all modules are run)", required=False,default="")
+        parser_startservers = subparsers.add_parser('startservers', help="Starts all the module servers that are configured to run on the current host. Issue once for each server used.")
+        parser_startservers.add_argument('modules', help="Only start server for modules with the specified IDs (comma-separated list) (if omitted, all modules are run)", required=False,default="")
+        parser_startserver = subparsers.add_parser('startserver', help="Start one module's server on the specified port, use 'startservers' instead")
+        parser_startserver.add_argument('module', help="Module ID")
+        parser_startserver.add_argument('host', help="Host/IP to bind to", required=True)
+        parser_startserver.add_argument('port', type=int, help="Port")
+
+
         args = parser.parse_args()
+        if args.command == 'run':
+            self.run(args.filename,args.modules.split(","), args.outputfile)
+        elif args.command == 'startservers':
+            self.startservers(args.modules.split(","))
+        elif args.command == 'startserver':
+            self.startserver(args.module, args.host, args.port)
+        elif args.command == 'train':
+            raise NotImplementedError #TODO
+        elif args.command == 'test':
+            raise NotImplementedError #TODO
+        elif args.command == 'tune':
+            raise NotImplementedError #TODO
+        else:
+            raise Exception("Invalid command: " +  args.command)
+
+
         #args.storeconst, args.dataset, args.num, args.bar
         pass
 
@@ -504,6 +538,7 @@ class Module:
 if __name__ == '__main__':
     try:
         configfile = sys.argv[1]
+        sys.argv = [sys.argv[0]] + sys.argv[2:]
     except:
         print("Syntax: gecco [configfile.yml]" ,file=sys.stderr)
     corrector = Corrector(config=configfile)
