@@ -90,6 +90,31 @@ class Corrector:
         self.servers = set( [m.servers for m in self if not m.local] )
         self.units = set( [m.UNIT for m in self] )
 
+        self.log("Loading local modules")
+
+        queue = Queue()
+        threads = []
+        for i in range(self.settings['threads']):
+            thread = LoaderThread(queue)
+            thread.setDaemon(True)
+            threads.append(thread)
+
+
+        self.log(str(len(threads)) + " threads ready.")
+
+        for module in self:
+            if module.local:
+                queue.put( module )
+
+        for thread in threads:
+            thread.start()
+            del thread
+        del threads
+
+        queue.join()
+        del queue
+
+
     def verifysettings(self):
         if 'config' in self.settings:
             #Settings are in external configuration, parse config and return (verifysettings will be reinvoked from parseconfig)
@@ -221,28 +246,6 @@ class Corrector:
 
 
 
-
-        self.log("Loading local modules")
-
-        queue = Queue()
-        threads = []
-        for i in range(self.settings['threads']):
-            thread = LoaderThread(queue)
-            thread.setDaemon(True)
-            threads.append(thread)
-
-
-        self.log(str(len(threads)) + " threads ready.")
-
-        for module in self:
-            if module.local:
-                if not module_ids or module.id in module_ids:
-                    queue.put( module )
-
-        for thread in threads:
-            thread.start()
-
-        queue.join()
 
 
         self.log("Initialising modules on document") #not parellel, acts on same document anyway, should be very quick
