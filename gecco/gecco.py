@@ -50,17 +50,19 @@ class ProcessorThread(Thread):
                 else:
                     skipservers= []
                     connected = False
-                    while not connected:
-                        server, port = module.findserver(self.loadbalancemaster, skipservers)
-                        if server is None:
-                            raise Exception("Unable to connect client to server! All servers for module " + module.id + " are down!")
+                    for server,port in  module.findserver(self.loadbalancemaster):
                         try:
                             if (server,port) not in self.clients:
                                 self.clients[(server,port)] = module.CLIENT(server,port)
                             module.runclient( self.clients[(server,port)], data, self.lock,  **self.parameters)
+                            #will only be executed when connection succeeded:
                             connected = True
+                            break
                         except ConnectionRefusedError:
-                            skipservers.append( (server,port) )
+                            del self.clients[(server,port)]
+                    if not connected:
+                        self.q.task_done()
+                        raise Exception("Unable to connect client to server! All servers for module " + module.id + " are down!")
                 self.q.task_done()
 
     def stop(self):
@@ -419,8 +421,9 @@ class LoadBalanceMaster: #will cache thingies
 
 
     def get(self,servers, skipservers=[]):
-        """Returns the server from servers with the lowest load"""
+        """Generator return servers from servers from highest to lower (with caching)"""
         #TODO
+        raise NotImplementedError
 
 
 class LoadBalanceServer: #Reports load balance back to master
@@ -545,19 +548,18 @@ class Module:
         if not 'annotator' in self.settings:
             self.settings['annotator'] = self.id
 
-    def findserver(self, loadbalanceserver,skipservers=[]):
+    def findserver(self, loadbalanceserver):
         """Finds a suitable server for this module"""
         if self.local:
             raise Exception("Module is local")
         elif len(self.settings['servers']) == 1:
             #Easy, there is only one
-            if (self.settings['servers'][0] in skipservers):
-                return None,None #no server found
-            else:
-                return self.settings['servers'][0] #2-tuple (host, port)
+            yield self.settings['servers'][0] #2-tuple (host, port)
         else:
             #TODO: Do load balancing, find least busy server
-            return loadbalancemaster.get(self.settings['servers'],skipservers=[])
+            for host, port in loadbalancemaster.get(self.settings['servers']):
+                yield host, port
+
 
 
 
