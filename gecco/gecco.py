@@ -188,12 +188,12 @@ class Corrector:
                 inputtextfile = foliadoc
 
                 if ext == 'txt':
-                    ouputtextfile = '.'.join(inputtextfile.split('.')[:-1]) + '.folia.xml'
+                    outputtextfile = '.'.join(inputtextfile.split('.')[:-1]) + '.folia.xml'
                 else:
                     outputtextfile = inputtextfile + '.folia.xml'
 
                 tokenizer = Tokenizer(self.settings['ucto'],xmloutput=True)
-                tokenizer.process(inputtextfile, outputtextfile)
+                tokenizer.tokenize(inputtextfile, outputtextfile)
 
                 foliadoc = outputtextfile
 
@@ -321,21 +321,22 @@ class Corrector:
 
         args = parser.parse_args()
 
+        parameters = {}
         if args.command == 'run':
-            parameters = dict(( tuple(p.split('=')) for p in args.parameters))
+            if args.parameters: parameters = dict(( tuple(p.split('=')) for p in args.parameters))
             self.run(args.filename,args.modules.split(","), args.outputfile, **parameters)
         elif args.command == 'startservers':
             self.startservers(args.modules.split(","))
         elif args.command == 'startserver':
             self.startserver(args.module, args.host, args.port)
         elif args.command == 'train':
-            parameters = dict(( tuple(p.split('=')) for p in args.parameters))
+            if args.parameters: parameters = dict(( tuple(p.split('=')) for p in args.parameters))
             self.train(args.modules.split(","))
         elif args.command == 'test':
-            parameters = dict(( tuple(p.split('=')) for p in args.parameters))
+            if args.parameters: parameters = dict(( tuple(p.split('=')) for p in args.parameters))
             self.test(args.modules.split(","))
         elif args.command == 'tune':
-            parameters = dict(( tuple(p.split('=')) for p in args.parameters))
+            if args.parameters: parameters = dict(( tuple(p.split('=')) for p in args.parameters))
             self.tune(args.modules.split(","))
         elif not args.command:
             parser.print_help()
