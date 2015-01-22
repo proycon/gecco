@@ -10,6 +10,7 @@
 #
 #=======================================================================
 
+import os
 from pynlpl.formats import folia
 from gecco.gecco import Module
 
@@ -21,6 +22,11 @@ class WordErrorListModule(Module):
 
         if 'delimiter' not in self.settings:
             self.settings['delimiter'] = "\t"
+        elif self.settings['delimiter'].lower() == 'space':
+            self.settings['delimiter'] = " "
+        elif self.settings['delimiter'].lower() == 'tab':
+            self.settings['delimiter'] = "\t"
+
         if 'reversedformat' not in self.settings: #reverse format has (correct,wrong) pairs rather than (wrong,correct) pairs
             self.settings['reversedformat'] = False
 
@@ -37,7 +43,7 @@ class WordErrorListModule(Module):
             self.log("Loading model file" + modelfile)
             with open(modelfile,'r',encoding='utf-8') as f:
                 for line in f:
-                    if line:
+                    if line.strip():
                         fields = line.split(self.settings['delimiter'])
                         if  len(fields) != 2:
                             raise Exception("Syntax error in " + modelfile + ", expected two items, got " + str(len(fields)))

@@ -57,6 +57,16 @@ class ProcessorThread(Thread):
         self._stop = True
 
 
+class LoaderThread(Thread):
+    def __init__(self, q):
+        self.q = q
+        super().__init__()
+
+    def run(self):
+        while not self.q.empty():
+            module = self.q.get() #data is an instance of module.UNIT
+            module.load()
+
 
 
 class Corrector:
@@ -91,6 +101,8 @@ class Corrector:
             self.root = self.settings['root'] = os.path.abspath('.')
         else:
             self.root = os.path.abspath(self.settings['root'])
+
+        if self.root[-1] != '/': self.root += '/'
 
         if not 'ucto' in self.settings:
             if 'language' in self.settings:
@@ -206,17 +218,40 @@ class Corrector:
             foliadoc = folia.Document(file=foliadoc)
 
 
+
+
+        self.log("Loading local modules")
+
+        queue = Queue()
+        threads = []
+        for i in range(self.settings['threads']):
+            thread = LoaderThread(queue)
+            threads.append(thread)
+
+
+        self.log(str(len(threads)) + " threads ready.")
+
+        for module in self:
+            if module.local:
+                if not module_ids or module.id in module_ids:
+                    queue.put( module )
+
+        for thread in threads:
+            thread.start()
+
+        queue.join()
+
+
         self.log("Initialising modules on document") #not parellel, acts on same document anyway, should be very quick
         for module in self:
             if not module_ids or module.id in module_ids:
                 self.log("\t\Initialising module " + module.id)
                 module.init(foliadoc)
 
-        self.log("Initialising threads")
 
 
+        self.log("Initialising processor threads")
 
-        lock = Lock()
         queue = Queue() #data in queue takes the form (module, data), where data is an instance of module.UNIT (a folia document or element)
         threads = []
         for i in range(self.settings['threads']):
@@ -224,7 +259,7 @@ class Corrector:
             thread.start()
             threads.append(thread)
 
-        self.log(str(len(threads)) + " ready.")
+        self.log(str(len(threads)) + " threads ready.")
 
         if folia.Document in self.units:
             self.log("\tQueuing modules handling full documents")

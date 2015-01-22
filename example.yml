@@ -1,10 +1,11 @@
 id: example
-root: example #should ideally be an absolute path!
+root: example/ #should ideally be an absolute path!
 language: en
 ucto: /home/proycon/env/etc/ucto/tokconfig-en
 threads: 4
 modules:
     - id: errorlist
+      delimiter: space
       module: gecco.modules.errorlist.WordErrorListModule
       models:
         - sources/errorlist.txt
