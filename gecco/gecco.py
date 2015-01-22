@@ -252,7 +252,7 @@ class Corrector:
             if not module_ids or module.id in module_ids:
                 module.finish(foliadoc)
 
-        self.log("Processing all modules....")
+        self.log("Saving document....")
 
         #Store FoLiA document
         if outputfile:
