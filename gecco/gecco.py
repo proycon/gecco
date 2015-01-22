@@ -12,14 +12,15 @@
 #=======================================================================
 
 
-from collections import OrderedDict
-from threading import Thread, Lock
-from queue import Queue
 import sys
 import os
 import socket
 import socketserver
 import yaml
+import datetime
+from collections import OrderedDict
+from threading import Thread, Lock
+from queue import Queue
 from pynlpl.formats import folia
 from ucto import Tokenizer
 
@@ -66,6 +67,7 @@ class LoaderThread(Thread):
         while not self.q.empty():
             module = self.q.get() #data is an instance of module.UNIT
             module.load()
+            self.q.task_done()
 
 
 
@@ -226,6 +228,7 @@ class Corrector:
         threads = []
         for i in range(self.settings['threads']):
             thread = LoaderThread(queue)
+            thread.setDaemon(True)
             threads.append(thread)
 
 
@@ -245,7 +248,7 @@ class Corrector:
         self.log("Initialising modules on document") #not parellel, acts on same document anyway, should be very quick
         for module in self:
             if not module_ids or module.id in module_ids:
-                self.log("\t\Initialising module " + module.id)
+                self.log("\tInitialising module " + module.id)
                 module.init(foliadoc)
 
 
@@ -253,9 +256,11 @@ class Corrector:
         self.log("Initialising processor threads")
 
         queue = Queue() #data in queue takes the form (module, data), where data is an instance of module.UNIT (a folia document or element)
+        lock = Lock()
         threads = []
         for i in range(self.settings['threads']):
             thread = ProcessorThread(queue, lock, self.loadbalancemaster, **parameters)
+            thread.setDaemon(True)
             thread.start()
             threads.append(thread)
 
@@ -277,7 +282,6 @@ class Corrector:
                     for module in self:
                         if not module_ids or module.id in module_ids:
                             if module.UNIT is unit:
-                                self.log("\t\tQueuing module " + module.id)
                                 queue.put( (module, data) )
 
 
@@ -286,6 +290,11 @@ class Corrector:
 
         for thread in threads:
             thread.stop()
+            del thread
+
+        del queue
+        del lock
+        del threads
 
         self.log("Finalising modules on document") #not parellel, acts on same document anyway, should be fairly quick depending on module
         for module in self:
@@ -300,6 +309,7 @@ class Corrector:
         else:
             self.log("Saving document " + foliadoc.filename + "....")
             foliadoc.save()
+
 
     def startservers(self, module_ids=[]):
         """Starts all servers for the current host"""
@@ -520,7 +530,7 @@ class Module:
         if not 'class' in self.settings:
             self.settings['class'] = "nonworderror"
         if not 'annotator' in self.settings:
-            self.settings['annotator'] = "Gecco-" + self.__class__.__name__
+            self.settings['annotator'] = self.id
 
     def findserver(self, loadbalanceserver):
         """Finds a suitable server for this module"""
@@ -609,9 +619,12 @@ class Module:
         #Determine an ID for the next correction
         correction_id = word.generate_id(folia.Correction)
 
+        if isinstance(suggestions,str):
+            suggestions = [suggestions]
+
         #add the correction
         word.correct(
-            suggestions=suggestion,
+            suggestions=suggestions,
             id=correction_id,
             set=self.settings['set'],
             cls=self.settings['class'],

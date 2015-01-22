@@ -44,7 +44,7 @@ class WordErrorListModule(Module):
             with open(modelfile,'r',encoding='utf-8') as f:
                 for line in f:
                     if line.strip():
-                        fields = line.split(self.settings['delimiter'])
+                        fields = [ x.strip() for x in line.split(self.settings['delimiter']) ]
                         if  len(fields) != 2:
                             raise Exception("Syntax error in " + modelfile + ", expected two items, got " + str(len(fields)))
 
