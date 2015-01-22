@@ -18,6 +18,7 @@ import socket
 import socketserver
 import yaml
 import datetime
+import subprocess
 from collections import OrderedDict
 from threading import Thread, Lock
 from queue import Queue
@@ -165,6 +166,7 @@ class Corrector:
 
 
     def parseconfig(self,configfile):
+        self.configfile = configfile
         config = yaml.load(open(configfile,'r',encoding='utf-8').read())
 
         if 'modules' not in config:
@@ -328,29 +330,31 @@ class Corrector:
 
         processes = []
 
-        self.log("Starting servers...")
-        HOST = socket.getfqdn()
+        MYHOSTS = set( [socket.getfqdn() , socket.gethostname(), socket.gethostbyname(socket.gethostname()), '127.0.0.1'] )
+        self.log("Starting servers for "  + "/".join(MYHOSTS) )
+
         for module in self:
             if not module.local:
                 if not module_ids or module.id in module_ids:
-                    for h,port in module.settings['servers']:
-                        if h == HOST:
+                    for host,port in module.settings['servers']:
+                        if host in MYHOSTS:
                             #Start this server *in a separate subprocess*
-                            if 'config' in settings:
-                                cmd = "gecco " + settings['config'] + " "
+                            if self.configfile:
+                                cmd = "gecco " + self.configfile + " "
                             else:
                                 cmd = sys.argv[0] + " "
                             cmd += "startserver " + module.id + " " + host + " " + str(port)
-                            processes.append( subprocess.Popen(cmd) )
+                            processes.append( subprocess.Popen(cmd.split(' ')) )
 
-        self.log("Servers started..")
-        os.wait() #blocking
+        self.log(str(len(processes)) + " server(s) started.")
+        if processes:
+            os.wait() #blocking
         self.log("All servers ended.")
 
 
     def startserver(self, module_id, host, port):
         """Start one particular module's server. This method will be launched by server() in different processes"""
-        module = self.module[module_id]
+        module = self.modules[module_id]
         self.log("Loading module")
         module.load()
         self.log("Running server...")
