@@ -34,14 +34,15 @@ class ProcessorThread(Thread):
     def __init__(self, q, lock, loadbalancemaster, **parameters):
         self.q = q
         self.lock = lock
-        self.stop = False
+        self._stop = False
         self.loadbalancemaster = loadbalancemaster
         self.parameters = parameters
         self.clients = {} #each thread keeps a bunch of clients open to the servers of the various modules so we don't have to reconnect constantly (= faster)
+        super().__init__()
 
     def run(self):
-        while not self.stop:
-            if not q.empty():
+        while not self._stop:
+            if not self.q.empty():
                 module, data = q.get() #data is an instance of module.UNIT
                 if module.local:
                     module.run(data, self.lock, **self.parameters)
@@ -50,10 +51,10 @@ class ProcessorThread(Thread):
                     if (server,port) not in self.clients:
                         self.clients[(server,port)] = module.CLIENT(host,port)
                     module.runclient( self.clients[(server,port)], data, self.lock,  **self.parameters)
-                q.task_done()
+                self.q.task_done()
 
     def stop(self):
-        self.stop = True
+        self._stop = True
 
 
 
@@ -213,17 +214,16 @@ class Corrector:
 
 
         lock = Lock()
+        queue = Queue() #data in queue takes the form (module, data), where data is an instance of module.UNIT (a folia document or element)
         threads = []
         for i in range(self.settings['threads']):
             thread = ProcessorThread(queue, lock, self.loadbalancemaster, **parameters)
-            thread.setDaemon(True)
             thread.start()
             threads.append(thread)
 
 
-        queue = Queue() #data in queue takes the form (module, data), where data is an instance of module.UNIT (a folia document or element)
 
-        if folia.Document in units:
+        if folia.Document in self.units:
             self.log("\tQueuing modules handling " + str(type(folia.Document)))
 
             for module in self:
@@ -231,7 +231,7 @@ class Corrector:
                     if module.UNIT is folia.Document:
                         queue.put( (module, foliadoc) )
 
-        for unit in units:
+        for unit in self.units:
             if unit is not folia.Document:
                 self.log("\tQueuing modules handling " + str(type(unit)))
                 for data in foliadoc.select(unit):
