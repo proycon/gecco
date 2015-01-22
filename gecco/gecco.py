@@ -455,13 +455,13 @@ class LineByLineClient:
         if not self.connected: self.connect()
         if isinstance(msg, str): msg = msg.encode('utf-8')
         if msg[-1] != b"\n": msg += b"\n"
-        self.sock.sendall(msg)
+        self.socket.sendall(msg)
 
     def receive(self):
         buffer = b''
         cont_recv = True
         while cont_recv:
-            buffer += socket.recv(1024)
+            buffer += self.socket.recv(1024)
             if buffer[-1] == b"\n":
                 cont_recv = False
         return str(buffer,'utf-8')
@@ -474,6 +474,7 @@ class LineByLineServerHandler(socketserver.BaseRequestHandler):
     def handle(self):
         # self.request is the TCP socket connected to the client, self.server is the server
         cont_recv = True
+        buffer = b''
         while cont_recv:
             buffer += self.request.recv(1024)
             if buffer[-1] == b"\n":
@@ -585,8 +586,12 @@ class Module:
         # Start a thread with the server -- that thread will then start one more thread for each request
         server_thread = Thread(target=server.serve_forever)
         # Exit the server thread when the main thread terminates
-        server_thread.daemon = True
+        server_thread.setDaemon(True)
         server_thread.start()
+
+        server_thread.join() #block until done
+
+        server.shutdown()
 
 
     def finish(self, foliadoc):
