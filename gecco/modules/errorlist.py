@@ -10,6 +10,7 @@
 #
 #=======================================================================
 
+import sys
 import os
 from pynlpl.formats import folia
 from gecco.gecco import Module
@@ -72,7 +73,9 @@ class WordErrorListModule(Module):
     def runclient(self, client, word, lock, **parameters):
         """This method gets invoked by the Corrector when it should connect to a remote server, the client instance is passed and already available (will connect on first communication). word is a folia.Word instance"""
         wordstr = str(word)
+        print("Sent: [" + wordstr + "]",file=sys.stderr)
         response = client.communicate(wordstr)
+        print("Response: [" +  response + "]", file=sys.stderr)
         if response != wordstr: #server will echo back the same thing if it's not in the error list
             suggestions = response.split("\t")
             self.addwordsuggestions(lock, word, suggestions)
@@ -82,8 +85,11 @@ class WordErrorListModule(Module):
         if word in self.errorlist:
             suggestions = self.errorlist[word]
             if isinstance(suggestions, str):
+                print("1",file=sys.stderr)
                 return suggestions
             else:
+                print("2",file=sys.stderr)
                 return "\t".join(suggestions)
         else:
+            print("0",file=sys.stderr)
             return word   #server will echo back the same thing if it's not in the error list

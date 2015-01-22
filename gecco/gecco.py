@@ -438,33 +438,43 @@ class LineByLineClient:
     """Simple communication protocol between client and server, newline-delimited"""
 
     def __init__(self, host, port):
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.host = host
         self.port = port
         self.connected = False
 
     def connect(self):
+        print("Connecting to "  + self.host + ":" + str(self.port) ,file=sys.stderr)
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.connect( (self.host,self.port) )
         self.connected = True
 
     def communicate(self, msg):
         self.send(msg)
         answer = self.receive()
+        #print("Output: [" + msg + "], Response: [" + answer + "]",file=sys.stderr)
+        return answer
 
     def send(self, msg):
         if not self.connected: self.connect()
         if isinstance(msg, str): msg = msg.encode('utf-8')
-        if msg[-1] != b"\n": msg += b"\n"
+        if msg[-1] != 10: msg += b"\n"
         self.socket.sendall(msg)
 
     def receive(self):
+        if not self.connected: self.connect()
         buffer = b''
         cont_recv = True
         while cont_recv:
-            buffer += self.socket.recv(1024)
-            if buffer[-1] == b"\n":
+            chunk = self.socket.recv(1024)
+            if not chunk or chunk[-1] == 10: #newline
                 cont_recv = False
-        return str(buffer,'utf-8')
+            buffer += chunk
+        return str(buffer,'utf-8').strip()
+
+    def close(self):
+        if self.connected:
+            self.socket.close()
+            self.connected = False
 
 class LineByLineServerHandler(socketserver.BaseRequestHandler):
     """
@@ -472,19 +482,24 @@ class LineByLineServerHandler(socketserver.BaseRequestHandler):
     """
 
     def handle(self):
-        # self.request is the TCP socket connected to the client, self.server is the server
-        cont_recv = True
-        buffer = b''
-        while cont_recv:
-            buffer += self.request.recv(1024)
-            if buffer[-1] == b"\n":
-                cont_recv = False
-        msg = str(buffer,'utf-8')
-        response = self.server.module.server_handler(msg)
-        if isinstance(response,str):
-            response = response.encode('utf-8')
-        if response[-1] != b"\n": response += b"\n"
-        self.request.sendall(response)
+        while True: #We have to loop so connection is not closed after one request
+            # self.request is the TCP socket connected to the client, self.server is the server
+            cont_recv = True
+            buffer = b''
+            while cont_recv:
+                chunk = self.request.recv(1024)
+                if not chunk or chunk[-1] == 10: #newline
+                    cont_recv = False
+                buffer += chunk
+            if not chunk: #connection broken
+                break
+            msg = str(buffer,'utf-8').strip()
+            response = self.server.module.server_handler(msg)
+            #print("Input: [" + msg + "], Response: [" + response + "]",file=sys.stderr)
+            if isinstance(response,str):
+                response = response.encode('utf-8')
+            if response[-1] != 10: response += b"\n"
+            self.request.sendall(response)
 
 class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     pass
@@ -582,7 +597,9 @@ class Module:
 
     def runserver(self, host, port):
         """Runs the server. Invoked by the Corrector on start. """
-        server = ThreadedTCPServer((host, port), LineByLineServerHandler)
+        server = ThreadedTCPServer((host, port), self.SERVER)
+        server.allow_reuse_address = True
+        server.module = self
         # Start a thread with the server -- that thread will then start one more thread for each request
         server_thread = Thread(target=server.serve_forever)
         # Exit the server thread when the main thread terminates
