@@ -69,7 +69,7 @@ class WordErrorListModule(Module):
             suggestions = self.errorlist[wordstr]
             self.addwordsuggestions(lock, word, suggestions)
 
-    def runclient(self, word, lock, client, **parameters):
+    def runclient(self, client, word, lock, **parameters):
         """This method gets invoked by the Corrector when it should connect to a remote server, the client instance is passed and already available (will connect on first communication). word is a folia.Word instance"""
         wordstr = str(word)
         response = client.communicate(wordstr)

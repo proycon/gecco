@@ -48,10 +48,19 @@ class ProcessorThread(Thread):
                 if module.local:
                     module.run(data, self.lock, **self.parameters)
                 else:
-                    server, port = module.findserver(self.loadbalancemaster)
-                    if (server,port) not in self.clients:
-                        self.clients[(server,port)] = module.CLIENT(host,port)
-                    module.runclient( self.clients[(server,port)], data, self.lock,  **self.parameters)
+                    skipservers= []
+                    connected = False
+                    while not connected:
+                        server, port = module.findserver(self.loadbalancemaster, skipservers)
+                        if server is None:
+                            raise Exception("Unable to connect client to server! All servers for module " + module.id + " are down!")
+                        try:
+                            if (server,port) not in self.clients:
+                                self.clients[(server,port)] = module.CLIENT(server,port)
+                            module.runclient( self.clients[(server,port)], data, self.lock,  **self.parameters)
+                            connected = True
+                        except ConnectionRefusedError:
+                            skipservers.append( (server,port) )
                 self.q.task_done()
 
     def stop(self):
@@ -79,15 +88,10 @@ class Corrector:
         self.tokenizer = Tokenizer(self.settings['ucto'])
 
         #Gather servers
-        self.servers = set()
-        for module in self:
-            if not module.local:
-                for host, port in module.settings['servers']:
-                    self.servers.add( (host,port) )
+        self.servers = set( [m.settings['servers'] for m in self if not m.local ] )
 
         self.loadbalancemaster = LoadBalanceMaster(self)
 
-        self.servers = set( [m.servers for m in self if not m.local] )
         self.units = set( [m.UNIT for m in self] )
 
         self.log("Loading local modules")
@@ -313,6 +317,9 @@ class Corrector:
             self.log("Saving document " + foliadoc.filename + "....")
             foliadoc.save()
 
+        return foliadoc
+
+
 
     def startservers(self, module_ids=[]):
         """Starts all servers for the current host"""
@@ -411,7 +418,7 @@ class LoadBalanceMaster: #will cache thingies
         self.minpollinterval = self.parent.settings['minpollinterval']
 
 
-    def get(self,servers):
+    def get(self,servers, skipservers=[]):
         """Returns the server from servers with the lowest load"""
         #TODO
 
@@ -425,10 +432,12 @@ class LineByLineClient:
 
     def __init__(self, host, port):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.host = host
+        self.port = port
         self.connected = False
 
     def connect(self):
-        self.socket.connect( (host,port) )
+        self.socket.connect( (self.host,self.port) )
         self.connected = True
 
     def communicate(self, msg):
@@ -496,7 +505,8 @@ class Module:
             raise Exception("Module must have an ID!")
         self.id = self.settings['id']
 
-        self.local = 'servers' in self.settings
+        self.local = not ('servers' in self.settings and self.settings['servers'])
+
         if 'source' in self.settings:
             if isinstance(self.settings['source'],str):
                 self.sources = [ self.settings['source'] ]
@@ -535,16 +545,19 @@ class Module:
         if not 'annotator' in self.settings:
             self.settings['annotator'] = self.id
 
-    def findserver(self, loadbalanceserver):
+    def findserver(self, loadbalanceserver,skipservers=[]):
         """Finds a suitable server for this module"""
         if self.local:
             raise Exception("Module is local")
         elif len(self.settings['servers']) == 1:
             #Easy, there is only one
-            return self.settings['servers'][0] #2-tuple (host, port)
+            if (self.settings['servers'][0] in skipservers):
+                return None,None #no server found
+            else:
+                return self.settings['servers'][0] #2-tuple (host, port)
         else:
             #TODO: Do load balancing, find least busy server
-            return loadbalancemaster.get(self.settings['servers'])
+            return loadbalancemaster.get(self.settings['servers'],skipservers=[])
 
 
 
