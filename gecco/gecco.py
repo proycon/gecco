@@ -43,7 +43,7 @@ class ProcessorThread(Thread):
     def run(self):
         while not self._stop:
             if not self.q.empty():
-                module, data = q.get() #data is an instance of module.UNIT
+                module, data = self.q.get() #data is an instance of module.UNIT
                 if module.local:
                     module.run(data, self.lock, **self.parameters)
                 else:
@@ -75,7 +75,8 @@ class Corrector:
 
         self.loadbalancemaster = LoadBalanceMaster(self)
 
-        self.units = set( [m.servers for m in self if not m.local] )
+        self.servers = set( [m.servers for m in self if not m.local] )
+        self.units = set( [m.UNIT for m in self] )
 
     def verifysettings(self):
         if 'config' in self.settings:
@@ -208,9 +209,11 @@ class Corrector:
         self.log("Initialising modules on document") #not parellel, acts on same document anyway, should be very quick
         for module in self:
             if not module_ids or module.id in module_ids:
+                self.log("\t\Initialising module " + module.id)
                 module.init(foliadoc)
 
         self.log("Initialising threads")
+
 
 
         lock = Lock()
@@ -221,23 +224,25 @@ class Corrector:
             thread.start()
             threads.append(thread)
 
-
+        self.log(str(len(threads)) + " ready.")
 
         if folia.Document in self.units:
-            self.log("\tQueuing modules handling " + str(type(folia.Document)))
+            self.log("\tQueuing modules handling full documents")
 
             for module in self:
                 if not module_ids or module.id in module_ids:
                     if module.UNIT is folia.Document:
+                        self.log("\t\tQueuing module " + module.id)
                         queue.put( (module, foliadoc) )
 
         for unit in self.units:
             if unit is not folia.Document:
-                self.log("\tQueuing modules handling " + str(type(unit)))
+                self.log("\tQueuing modules handling " + str(unit.__name__))
                 for data in foliadoc.select(unit):
                     for module in self:
                         if not module_ids or module.id in module_ids:
                             if module.UNIT is unit:
+                                self.log("\t\tQueuing module " + module.id)
                                 queue.put( (module, data) )
 
 
@@ -252,12 +257,13 @@ class Corrector:
             if not module_ids or module.id in module_ids:
                 module.finish(foliadoc)
 
-        self.log("Saving document....")
 
         #Store FoLiA document
         if outputfile:
+            self.log("Saving document " + outputfile + "....")
             foliadoc.save(outputfile)
         else:
+            self.log("Saving document " + foliadoc.filename + "....")
             foliadoc.save()
 
     def startservers(self, module_ids=[]):
@@ -322,22 +328,27 @@ class Corrector:
         args = parser.parse_args()
 
         parameters = {}
+        modules = []
         if args.command == 'run':
             if args.parameters: parameters = dict(( tuple(p.split('=')) for p in args.parameters))
-            self.run(args.filename,args.modules.split(","), args.outputfile, **parameters)
+            if args.modules: modules = args.modules.split(',')
+            self.run(args.filename,modules, args.outputfile, **parameters)
         elif args.command == 'startservers':
-            self.startservers(args.modules.split(","))
+            self.startservers(modules)
         elif args.command == 'startserver':
             self.startserver(args.module, args.host, args.port)
         elif args.command == 'train':
             if args.parameters: parameters = dict(( tuple(p.split('=')) for p in args.parameters))
-            self.train(args.modules.split(","))
+            if args.modules: modules = args.modules.split(',')
+            self.train(modules)
         elif args.command == 'test':
             if args.parameters: parameters = dict(( tuple(p.split('=')) for p in args.parameters))
-            self.test(args.modules.split(","))
+            if args.modules: modules = args.modules.split(',')
+            self.test(modules)
         elif args.command == 'tune':
             if args.parameters: parameters = dict(( tuple(p.split('=')) for p in args.parameters))
-            self.tune(args.modules.split(","))
+            if args.modules: modules = args.modules.split(',')
+            self.tune(modules)
         elif not args.command:
             parser.print_help()
         else:
