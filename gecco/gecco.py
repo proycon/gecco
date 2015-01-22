@@ -656,7 +656,7 @@ class Module:
     # These methods are *NOT* available to server_handler() !
     # Locks ensure that the state of the FoLiA document can't be corrupted by partial unfinished edits
 
-    def addwordsuggestions(self, lock, word, suggestions, confidence=None  ):
+    def addwordsuggestions(self, lock, word, suggestions):
         self.log("Adding correction for " + word.id + " " + word.text())
 
         lock.acquire()
@@ -666,16 +666,23 @@ class Module:
         if isinstance(suggestions,str):
             suggestions = [suggestions]
 
+        suggestions_i = []
+        for i, suggestion in enumersuggestions:
+            if isinstance(suggestions, tuple):
+                suggestion, confidence = suggestions
+                suggestions_i.append( folia.Suggestion(self.word.doc, suggestion, confidence=confidence) )
+            else:
+                suggestions_i.append( folia.Suggestion(self.word.doc, suggestion) )
+
         #add the correction
         word.correct(
-            suggestions=suggestions,
+            suggestions=suggestions_i,
             id=correction_id,
             set=self.settings['set'],
             cls=self.settings['class'],
             annotator=self.settings['annotator'],
             annotatortype=folia.AnnotatorType.AUTO,
             datetime=datetime.datetime.now(),
-            confidence=confidence
         )
         lock.release()
 
