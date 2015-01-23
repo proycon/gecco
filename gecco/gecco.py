@@ -236,15 +236,16 @@ class Corrector:
     def reset(self,module_ids=[]):
         for module in self:
             if not module_ids or module.id in module_ids:
-                for modelfile in module.models:
-                    if isinstance(modelfile, tuple):
-                        l = modelfile
-                    else:
-                        l = [modelfile]
-                    for modelfile in l:
-                        if os.path.exists(modelfile):
-                            self.log("Deleting model " + modelfile + "...")
-                            os.unlink(modelfile)
+                for (sourcefile, modelfile) in zip(module.sources, module.models):
+                    if sourcefile:
+                        if isinstance(modelfile, tuple):
+                            l = modelfile
+                        else:
+                            l = [modelfile]
+                        for modelfile in l:
+                            if os.path.exists(modelfile):
+                                self.log("Deleting model " + modelfile + "...")
+                                os.unlink(modelfile)
                 module.reset()
 
     def run(self, foliadoc, module_ids=[], outputfile="",**parameters):
@@ -406,18 +407,18 @@ class Corrector:
         parser_tune = subparsers.add_parser('tune', help="Tune modules")
         parser_tune.add_argument('modules', help="Only train for modules with the specified IDs (comma-separated list) (if omitted, all modules are tuned)", nargs='?',default="")
         parser_tune.add_argument('-p',dest='parameters', help="Custom parameters passed to the modules, specify as -p parameter=value. This option can be issued multiple times", required=False, action="append")
-        parser_reset  = subparsers.add_parser('reset', help="Reset modules, deletes all trained models. Issue prior to train if you want to start anew.")
+        parser_reset  = subparsers.add_parser('reset', help="Reset modules, deletes all trained models that have sources. Issue prior to train if you want to start anew.")
         parser_reset.add_argument('modules', help="Only reset for modules with the specified IDs (comma-separated list) (if omitted, all modules are reset)", nargs='?',default="")
 
 
 
         args = parser.parse_args()
-        if args.local:
-            self.settings['local'] = True
 
         parameters = {}
         modules = []
         if args.command == 'run':
+            if args.local:
+                self.settings['local'] = True
             if args.parameters: parameters = dict(( tuple(p.split('=')) for p in args.parameters))
             if args.modules: modules = args.modules.split(',')
             self.run(args.filename,modules, args.outputfile, **parameters)
