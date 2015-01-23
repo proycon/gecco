@@ -96,30 +96,34 @@ class Corrector:
         self.loadbalancemaster = LoadBalanceMaster(self)
 
         self.units = set( [m.UNIT for m in self] )
+        self.loaded = False
 
-        self.log("Loading local modules")
+    def load(self):
+        if not self.loaded:
+            self.log("Loading local modules")
 
-        queue = Queue()
-        threads = []
-        for i in range(self.settings['threads']):
-            thread = LoaderThread(queue)
-            thread.setDaemon(True)
-            threads.append(thread)
+            queue = Queue()
+            threads = []
+            for i in range(self.settings['threads']):
+                thread = LoaderThread(queue)
+                thread.setDaemon(True)
+                threads.append(thread)
 
 
-        self.log(str(len(threads)) + " threads ready.")
+            self.log(str(len(threads)) + " threads ready.")
 
-        for module in self:
-            if module.local:
-                queue.put( module )
+            for module in self:
+                if module.local:
+                    queue.put( module )
 
-        for thread in threads:
-            thread.start()
-            del thread
-        del threads
+            for thread in threads:
+                thread.start()
+                del thread
+            del threads
 
-        queue.join()
-        del queue
+            queue.join()
+            del queue
+            self.loaded = True
 
 
     def verifysettings(self):
@@ -253,8 +257,7 @@ class Corrector:
             foliadoc = folia.Document(file=foliadoc)
 
 
-
-
+        self.load() #will only do something the first time executed
 
         self.log("Initialising modules on document") #not parellel, acts on same document anyway, should be very quick
         for module in self:

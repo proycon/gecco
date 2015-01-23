@@ -47,7 +47,7 @@ class TIMBLWordConfusibleModule(Module):
 
     def load(self):
         """Load the requested modules from self.models"""
-        self.classifier = TimblClassifier(module.id, self.gettimbloptions())
+        self.classifier = TimblClassifier(self.id, self.gettimbloptions())
 
         self.errorlist = {}
 
