@@ -233,6 +233,20 @@ class Corrector:
                 self.log("Tuning module " + module.id + "...")
                 module.tune(**parameters)
 
+    def reset(self,module_ids=[]):
+        for module in self:
+            if not module_ids or module.id in module_ids:
+                for modelfile in module.models:
+                    if isinstance(modelfile, tuple):
+                        l = modelfile
+                    else:
+                        l = [modelfile]
+                    for modelfile in l:
+                        if os.path.exists(modelfile):
+                            self.log("Deleting model " + modelfile + "...")
+                            os.unlink(modelfile)
+                module.reset()
+
     def run(self, foliadoc, module_ids=[], outputfile="",**parameters):
         if isinstance(foliadoc, str):
             #We got a filename instead of a FoLiA document, that's okay
@@ -384,14 +398,18 @@ class Corrector:
         parser_startserver.add_argument('host', help="Host/IP to bind to")
         parser_startserver.add_argument('port', type=int, help="Port")
         parser_train = subparsers.add_parser('train', help="Train modules")
-        parser_train.add_argument('modules', help="Only train for modules with the specified IDs (comma-separated list) (if omitted, all modules are run)", nargs='?',default="")
+        parser_train.add_argument('modules', help="Only train for modules with the specified IDs (comma-separated list) (if omitted, all modules are trained)", nargs='?',default="")
         parser_train.add_argument('-p',dest='parameters', help="Custom parameters passed to the modules, specify as -p parameter=value. This option can be issued multiple times", required=False, action="append")
         parser_test = subparsers.add_parser('test', help="Test modules")
-        parser_test.add_argument('modules', help="Only train for modules with the specified IDs (comma-separated list) (if omitted, all modules are run)", nargs='?',default="")
+        parser_test.add_argument('modules', help="Only train for modules with the specified IDs (comma-separated list) (if omitted, all modules are tested)", nargs='?',default="")
         parser_test.add_argument('-p',dest='parameters', help="Custom parameters passed to the modules, specify as -p parameter=value. This option can be issued multiple times", required=False, action="append")
         parser_tune = subparsers.add_parser('tune', help="Tune modules")
-        parser_tune.add_argument('modules', help="Only train for modules with the specified IDs (comma-separated list) (if omitted, all modules are run)", nargs='?',default="")
+        parser_tune.add_argument('modules', help="Only train for modules with the specified IDs (comma-separated list) (if omitted, all modules are tuned)", nargs='?',default="")
         parser_tune.add_argument('-p',dest='parameters', help="Custom parameters passed to the modules, specify as -p parameter=value. This option can be issued multiple times", required=False, action="append")
+        parser_reset  = subparsers.add_parser('reset', help="Reset modules, deletes all trained models. Issue prior to train if you want to start anew.")
+        parser_reset.add_argument('modules', help="Only reset for modules with the specified IDs (comma-separated list) (if omitted, all modules are reset)", nargs='?',default="")
+
+
 
         args = parser.parse_args()
         if args.local:
@@ -419,6 +437,9 @@ class Corrector:
             if args.parameters: parameters = dict(( tuple(p.split('=')) for p in args.parameters))
             if args.modules: modules = args.modules.split(',')
             self.tune(modules)
+        elif args.command == 'reset':
+            if args.modules: modules = args.modules.split(',')
+            self.reset(modules)
         elif not args.command:
             parser.print_help()
         else:
@@ -628,6 +649,7 @@ class Module:
         """This method gets invoked by the Corrector to train the model. Build modelfile out of sourcefile. Either may be a tuple if multiple files are required/requested. The function may be invoked multiple times with differences source and model files"""
         return False #Implies there is nothing to train for this module
 
+
     def test(self, **parameters):
         """This method gets invoked by the Corrector to test the model. Override it in your own model, use the input files in self.sources and for each entry create the corresponding file in self.models """
         return False #Implies there is nothing to test for this module
@@ -635,6 +657,10 @@ class Module:
     def tune(self, **parameters):
         """This method gets invoked by the Corrector to test the model. Override it in your own model, use the input files in self.sources and for each entry create the corresponding file in self.models """
         return False #Implies there is nothing to tune for this module
+
+    def reset(self):
+        """Resets a module, should delete any additional files aside from models (they are already deleted prior to calling this method)"""
+        return False #Implies there is nothing more to reset for this module
 
     ##### Callbacks invoked by the Corrector that MUST be implemented:
 
