@@ -663,7 +663,7 @@ class Module:
         """Resets a module, should delete the specified modelfile (NOT THE SOURCEFILE!)"""
         os.unlink(modelfile)
         os.unlink(modelfile.replace(".ibase",".wgt"))
-        os.unlink(modelfile.replace(".train",".train"))
+        os.unlink(modelfile.replace(".ibase",".train"))
 
     ##### Callbacks invoked by the Corrector that MUST be implemented:
 
