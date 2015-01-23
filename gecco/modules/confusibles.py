@@ -39,31 +39,33 @@ class TIMBLWordConfusibleModule(Module):
 
         if 'confusibles' not in self.settings:
             raise Exception("No confusibles specified for " + self.id + "!")
+        self.confusibles = self.settings['confusibles']
 
-        for modelfile in self.models:
+        try:
+            modelfile = self.models[0]
             if not modelfile.endswith(".ibase"):
                 raise Exception("TIMBL models must have the extension ibase, got " + modelfile + " instead")
-
+        except:
+            raise Exception("Expected one model, got 0 or more")
 
     def gettimbloptions(self):
         return "-F Tabbed " + "-a " + self.settings['algorithm'] + " +vdb -G0"
 
     def load(self):
         """Load the requested modules from self.models"""
-        self.classifier = TimblClassifier(self.id, self.gettimbloptions())
-
         self.errorlist = {}
 
         if not self.models:
             raise Exception("Specify one or more models to load!")
 
-        for modelfile in self.models:
-            if not os.path.exists(modelfile):
-                raise IOError("Missing expected model file: " + modelfile + ". Did you forget to train the system?")
-            self.log("Loading model file" + modelfile)
-            fileprefix = modelfile.replace(".ibase","") #has been verified earlier
-            classifier = TimblClassifier(fileprefix, self.gettimbloptions())
-            classifier.load()
+        self.log("Loading models...")
+        modelfile = self.models[0]
+        if not os.path.exists(modelfile):
+            raise IOError("Missing expected model file: " + modelfile + ". Did you forget to train the system?")
+        self.log("Loading model file " + modelfile + "...")
+        fileprefix = modelfile.replace(".ibase","") #has been verified earlier
+        self.classifier = TimblClassifier(fileprefix, self.gettimbloptions())
+        self.classifier.load()
 
     def train(self, sourcefile, modelfile, **parameters):
         l = self.settings['leftcontext']
@@ -96,7 +98,7 @@ class TIMBLWordConfusibleModule(Module):
 
 
     def classify(self, word):
-        features = tuple(self.getfeatures(word).split("\t"))
+        features = self.getfeatures(word)
         _,distribution,_ = self.classifier.classify(features)
         return distribution
 

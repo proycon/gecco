@@ -705,12 +705,12 @@ class Module:
             suggestions = [suggestions]
 
         suggestions_i = []
-        for i, suggestion in enumersuggestions:
+        for i, suggestion in enumerate(suggestions):
             if isinstance(suggestions, tuple):
                 suggestion, confidence = suggestions
-                suggestions_i.append( folia.Suggestion(self.word.doc, suggestion, confidence=confidence) )
+                suggestions_i.append( folia.Suggestion(word.doc, suggestion, confidence=confidence) )
             else:
-                suggestions_i.append( folia.Suggestion(self.word.doc, suggestion) )
+                suggestions_i.append( folia.Suggestion(word.doc, suggestion) )
 
         #add the correction
         word.correct(
