@@ -559,7 +559,7 @@ class Module:
             raise Exception("Module must have an ID!")
         self.id = self.settings['id']
 
-        self.local = not self.parent.settings['local'] and not ('servers' in self.settings and self.settings['servers'])
+        self.local = not self.parent.settings['local'] or not ('servers' in self.settings and self.settings['servers'])
 
         if 'source' in self.settings:
             if isinstance(self.settings['source'],str):
