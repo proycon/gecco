@@ -61,7 +61,7 @@ class TIMBLWordConfusibleModule(Module):
             if not os.path.exists(modelfile):
                 raise IOError("Missing expected model file: " + modelfile + ". Did you forget to train the system?")
             self.log("Loading model file" + modelfile)
-            fileprefix = modulefile.replace(".ibase","") #has been verified earlier
+            fileprefix = modelfile.replace(".ibase","") #has been verified earlier
             classifier = TimblClassifier(fileprefix, self.gettimbloptions())
             classifier.load()
 

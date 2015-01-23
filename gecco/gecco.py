@@ -142,6 +142,9 @@ class Corrector:
 
         if self.root[-1] != '/': self.root += '/'
 
+        if 'local' not in self.settings:
+            self.settings['local'] = False
+
         if not 'ucto' in self.settings:
             if 'language' in self.settings:
                 for dir in UCTOSEARCHDIRS:
@@ -373,6 +376,7 @@ class Corrector:
         parser_run.add_argument('filename', help="The file to correct, can be either a FoLiA XML file or a plain-text file which will be automatically tokenised and converted on-the-fly. The XML file will also be the output file. The XML file is edited in place, it will also be the output file unless -o is specified")
         parser_run.add_argument('modules', help="Only run the modules with the specified IDs (comma-separated list) (if omitted, all modules are run)", nargs='?',default="")
         parser_run.add_argument('-p',dest='parameters', help="Custom parameters passed to the modules, specify as -p parameter=value. This option can be issued multiple times", required=False, action="append")
+        parser_run.add_argument('--local', help="Run all modules locally, ignore remote servers", required=False, action='store_true')
         parser_startservers = subparsers.add_parser('startservers', help="Starts all the module servers that are configured to run on the current host. Issue once for each server used.")
         parser_startservers.add_argument('modules', help="Only start server for modules with the specified IDs (comma-separated list) (if omitted, all modules are run)", nargs='?',default="")
         parser_startserver = subparsers.add_parser('startserver', help="Start one module's server on the specified port, use 'startservers' instead")
@@ -390,6 +394,8 @@ class Corrector:
         parser_tune.add_argument('-p',dest='parameters', help="Custom parameters passed to the modules, specify as -p parameter=value. This option can be issued multiple times", required=False, action="append")
 
         args = parser.parse_args()
+        if args.local:
+            self.settings['local'] = True
 
         parameters = {}
         modules = []
@@ -531,7 +537,7 @@ class Module:
             raise Exception("Module must have an ID!")
         self.id = self.settings['id']
 
-        self.local = not ('servers' in self.settings and self.settings['servers'])
+        self.local = not self.parent.settings['local'] and not ('servers' in self.settings and self.settings['servers'])
 
         if 'source' in self.settings:
             if isinstance(self.settings['source'],str):
