@@ -13,6 +13,9 @@
 import sys
 import os
 import json
+import io
+import bz2
+import gzip
 from pynlpl.formats import folia
 from pynlpl.textprocessors import Windower
 from timbl import TimblClassifier
@@ -56,7 +59,7 @@ class TIMBLWordConfusibleModule(Module):
 
         for modelfile in self.models:
             if not os.path.exists(modelfile):
-                raise IOError("Missing expected model file:" + modelfile)
+                raise IOError("Missing expected model file: " + modelfile + ". Did you forget to train the system?")
             self.log("Loading model file" + modelfile)
             fileprefix = modulefile.replace(".ibase","") #has been verified earlier
             classifier = TimblClassifier(fileprefix, self.gettimbloptions())
@@ -70,6 +73,12 @@ class TIMBLWordConfusibleModule(Module):
         self.log("Generating training instances...")
         fileprefix = modulefile.replace(".ibase","") #has been verified earlier
         classifier = TimblClassifier(fileprefix, self.gettimbloptions())
+        if sourcefile.endswith(".bz2"):
+            iomodule = bz2
+        elif sourcefile.endswith(".gz"):
+            iomodule = gzip
+        else:
+            iomodule = io
         with open(sourcefile,'r',encoding='utf-8') as f:
             for line in f:
                 for ngram in Windower(line, n):
