@@ -79,13 +79,13 @@ class TIMBLWordConfusibleModule(Module):
             iomodule = gzip
         else:
             iomodule = io
-        with iomodule.open(sourcefile,'r',encoding='utf-8') as f:
+        with iomodule.open(sourcefile,mode='rt',encoding='utf-8') as f:
             for line in f:
                 for ngram in Windower(line, n):
                     confusible = ngram[l+1]
                     leftcontext = tuple(ngram[:l])
                     rightcontext = tuple(ngram[l+2:])
-                    if confusible in self.confusibles:
+                    if confusible in self.settings['confusibles']:
                         classifier.append( leftcontext + rightcontext , confusible )
 
         self.log("Training classifier...")
