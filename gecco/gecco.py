@@ -236,17 +236,17 @@ class Corrector:
     def reset(self,module_ids=[]):
         for module in self:
             if not module_ids or module.id in module_ids:
-                for (sourcefile, modelfile) in zip(module.sources, module.models):
-                    if sourcefile:
-                        if isinstance(modelfile, tuple):
-                            l = modelfile
-                        else:
-                            l = [modelfile]
-                        for modelfile in l:
-                            if os.path.exists(modelfile):
-                                self.log("Deleting model " + modelfile + "...")
-                                os.unlink(modelfile)
-                module.reset()
+                if module.sources and module.models:
+                    for sourcefile, modelfile in zip(module.sources, module.models):
+                        if sourcefile:
+                            if isinstance(modelfile, tuple):
+                                l = modelfile
+                            else:
+                                l = [modelfile]
+                            for modelfile in l:
+                                if os.path.exists(modelfile):
+                                    self.log("Deleting model " + modelfile + "...")
+                                    module.reset(modelfile, sourcefile)
 
     def run(self, foliadoc, module_ids=[], outputfile="",**parameters):
         if isinstance(foliadoc, str):
@@ -659,9 +659,11 @@ class Module:
         """This method gets invoked by the Corrector to test the model. Override it in your own model, use the input files in self.sources and for each entry create the corresponding file in self.models """
         return False #Implies there is nothing to tune for this module
 
-    def reset(self):
-        """Resets a module, should delete any additional files aside from models (they are already deleted prior to calling this method)"""
-        return False #Implies there is nothing more to reset for this module
+    def reset(self, modelfile, sourcefile):
+        """Resets a module, should delete the specified modelfile (NOT THE SOURCEFILE!)"""
+        os.unlink(modelfile)
+        os.unlink(modelfile.replace(".ibase",".wgt"))
+        os.unlink(modelfile.replace(".train",".train"))
 
     ##### Callbacks invoked by the Corrector that MUST be implemented:
 
