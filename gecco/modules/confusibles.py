@@ -66,12 +66,12 @@ class TIMBLWordConfusibleModule(Module):
             classifier.load()
 
     def train(self, sourcefile, modelfile, **parameters):
-        l = self.setting['leftcontext']
-        r = self.setting['rightcontext']
+        l = self.settings['leftcontext']
+        r = self.settings['rightcontext']
         n = l + 1 + r
 
         self.log("Generating training instances...")
-        fileprefix = modulefile.replace(".ibase","") #has been verified earlier
+        fileprefix = modelfile.replace(".ibase","") #has been verified earlier
         classifier = TimblClassifier(fileprefix, self.gettimbloptions())
         if sourcefile.endswith(".bz2"):
             iomodule = bz2
@@ -79,7 +79,7 @@ class TIMBLWordConfusibleModule(Module):
             iomodule = gzip
         else:
             iomodule = io
-        with open(sourcefile,'r',encoding='utf-8') as f:
+        with iomodule.open(sourcefile,'r',encoding='utf-8') as f:
             for line in f:
                 for ngram in Windower(line, n):
                     confusible = ngram[l+1]

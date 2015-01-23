@@ -17,7 +17,7 @@ modules:
       confusibles: [then,than]
       algorithm: IB1
       sources:
-        - sources/minicorpus.txt.bz2
+        - sources/europarl250k.txt.bz2
       models:
         - models/conf_thenthan.ibase
        
