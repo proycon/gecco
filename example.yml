@@ -8,7 +8,17 @@ modules:
       delimiter: space
       module: gecco.modules.errorlist.WordErrorListModule
       models:
-        - sources/errorlist.txt
+        - models/errorlist.txt
       servers:
          - host: 127.0.0.1
            port: 12345
+    - id: conf_thenthan
+      module: gecco.modules.confusibles.TIMBLWordConfusibleModule
+      confusibles: [then,than]
+      algorithm: IB1
+      sources:
+        - sources/minicorpus.txt.bz2
+      models:
+        - models/conf_thenthan.ibase
+       
+
