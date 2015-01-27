@@ -366,6 +366,8 @@ class Corrector:
                                 cmd = sys.argv[0] + " "
                             cmd += "startserver " + module.id + " " + host + " " + str(port)
                             processes.append( subprocess.Popen(cmd.split(' ')) )
+            else:
+                print("Module " + module.id + " is local",file=sys.stderr)
 
         self.log(str(len(processes)) + " server(s) started.")
         if processes:
@@ -559,7 +561,7 @@ class Module:
             raise Exception("Module must have an ID!")
         self.id = self.settings['id']
 
-        self.local = not self.parent.settings['local'] or not ('servers' in self.settings and self.settings['servers'])
+        self.local = self.parent.settings['local'] or not ('servers' in self.settings and self.settings['servers'])
 
         if 'source' in self.settings:
             if isinstance(self.settings['source'],str):

@@ -123,7 +123,7 @@ class TIMBLWordConfusibleModule(Module):
         """This method gets invoked by the Corrector when it should connect to a remote server, the client instance is passed and already available (will connect on first communication). word is a folia.Word instance"""
         wordstr = str(word)
         if wordstr in self.confusibles:
-            best, distribution = json.loads(client.communicate(json.dumps(self.getfeatures())))
+            best, distribution = json.loads(client.communicate(json.dumps(self.getfeatures(word))))
             if best != word:
                 self.addwordsuggestions(lock, word, list(distribution.items()))
 
