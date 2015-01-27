@@ -99,8 +99,8 @@ class TIMBLWordConfusibleModule(Module):
 
     def classify(self, word):
         features = self.getfeatures(word)
-        _,distribution,_ = self.classifier.classify(features)
-        return distribution
+        best, distribution,_ = self.classifier.classify(features)
+        return best, distribution
 
 
     def getfeatures(self, word):
@@ -115,19 +115,21 @@ class TIMBLWordConfusibleModule(Module):
         wordstr = str(word)
         if wordstr in self.confusibles:
             #the word is one of our confusibles
-            distribution = self.classify(word)
-            self.addwordsuggestions(lock, word, list(distribution.items()))
+            best, distribution = self.classify(word)
+            if best != word:
+                self.addwordsuggestions(lock, word, list(distribution.items()))
 
     def runclient(self, client, word, lock, **parameters):
         """This method gets invoked by the Corrector when it should connect to a remote server, the client instance is passed and already available (will connect on first communication). word is a folia.Word instance"""
         wordstr = str(word)
         if wordstr in self.confusibles:
-            distribution = json.loads(client.communicate(json.dumps(self.getfeatures())))
-            self.addwordsuggestions(lock, word, list(distribution.items()))
+            best, distribution = json.loads(client.communicate(json.dumps(self.getfeatures())))
+            if best != word:
+                self.addwordsuggestions(lock, word, list(distribution.items()))
 
     def server_handler(self, features):
         """This method gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
         features = tuple(json.loads(features))
-        _,distribution,_ = self.classifier.classify(features)
-        return json.dumps(distribution)
+        best,distribution,_ = self.classifier.classify(features)
+        return json.dumps([best,distribution])
 
