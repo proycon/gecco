@@ -706,8 +706,8 @@ class Module:
 
         suggestions_i = []
         for i, suggestion in enumerate(suggestions):
-            if isinstance(suggestions, tuple):
-                suggestion, confidence = suggestions
+            if isinstance(suggestion, tuple):
+                suggestion, confidence = suggestion
                 suggestions_i.append( folia.Suggestion(word.doc, suggestion, confidence=confidence) )
             else:
                 suggestions_i.append( folia.Suggestion(word.doc, suggestion) )

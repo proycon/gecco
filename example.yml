@@ -14,6 +14,7 @@ modules:
            port: 12345
     - id: conf_thenthan
       module: gecco.modules.confusibles.TIMBLWordConfusibleModule
+      class: confusion
       confusibles: [then,than]
       leftcontext: 3
       rightcontext: 3
