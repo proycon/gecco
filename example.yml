@@ -15,6 +15,8 @@ modules:
     - id: conf_thenthan
       module: gecco.modules.confusibles.TIMBLWordConfusibleModule
       confusibles: [then,than]
+      leftcontext: 3
+      rightcontext: 3
       algorithm: IB1
       sources:
         - sources/europarl250k.txt.bz2

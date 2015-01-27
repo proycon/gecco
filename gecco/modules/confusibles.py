@@ -84,9 +84,9 @@ class TIMBLWordConfusibleModule(Module):
         with iomodule.open(sourcefile,mode='rt',encoding='utf-8') as f:
             for line in f:
                 for ngram in Windower(line, n):
-                    confusible = ngram[l+1]
+                    confusible = ngram[l]
                     leftcontext = tuple(ngram[:l])
-                    rightcontext = tuple(ngram[l+2:])
+                    rightcontext = tuple(ngram[l+1:])
                     if confusible in self.settings['confusibles']:
                         classifier.append( leftcontext + rightcontext , confusible )
 
