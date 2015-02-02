@@ -16,6 +16,7 @@ import json
 from pynlpl.formats import folia
 from pynlpl.statistics import levenshtein
 from gecco.gecco import Module
+import aspell
 
 class LexiconModule(Module):
     UNIT = folia.Word
@@ -139,3 +140,39 @@ class LexiconModule(Module):
     def server_handler(self, word):
         """This methods gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
         return json.dumps(self.findclosest(word))
+
+
+class AspellModule(gecco.Module):
+    UNIT = folia.Word
+
+
+    def verifysettings(self):
+        super().verifysettings()
+
+        if 'language' not in self.settings:
+            raise Exception("Mandatory argument to aspell module missing: language")
+
+    def load(self):
+        self.speller = aspell.Speller('lang',self.settings['language'])
+        self.encoding = s.ConfigKeys()['encoding'][2]
+
+    def run(self, word, lock, **parameters):
+        """This method gets invoked by the Corrector when it runs locally. word is a folia.Word instance"""
+        wordenc = str(word).encode(self.encoding)
+        suggestions = [ str(w, self.encoding) for w in self.speller.suggest(wordenc) ]
+        if suggestions:
+            self.addwordsuggestions(lock, word, suggestions )
+
+    def runclient(self, client, word, lock, **parameters):
+        """This method gets invoked by the Corrector when it should connect to a remote server, the client instance is passed and already available (will connect on first communication). word is a folia.Word instance"""
+        suggestions= json.loads(client.communicate(str(word)))
+        if suggestions:
+            self.addwordsuggestions(lock, word, suggestions )
+
+    def server_handler(self, word):
+        """This methods gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
+        wordenc = word.encode(self.encoding)
+        suggestions = [ str(w, self.encoding) for w in self.speller.suggest(wordenc) ]
+        return json.dumps(suggestions)
+
+
