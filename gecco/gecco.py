@@ -43,7 +43,6 @@ class ProcessorThread(Thread):
         super().__init__()
 
     def run(self):
-        self.done = set()
         while not self._stop:
             if not self.q.empty():
                 module, data = self.q.get() #data is an instance of module.UNIT
@@ -305,6 +304,8 @@ class Corrector:
                 module.init(foliadoc)
 
 
+
+        self.done = set()
 
         self.log("Initialising processor threads")
 
