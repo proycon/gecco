@@ -34,8 +34,6 @@ class LexiconModule(Module):
 
         if not self.settings['maxdistance']:
             self.settings['maxdistance'] = 2
-        if not self.settings['medld']:
-            self.settings['medld'] = 1
         if not self.settings['maxlength']:
             self.settings['maxlength'] = 15 #longer words will be ignored
         if not self.settings['minlength']:
