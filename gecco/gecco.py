@@ -18,6 +18,7 @@ import socket
 import socketserver
 import yaml
 import datetime
+import time
 import subprocess
 from collections import OrderedDict
 from threading import Thread, Lock
@@ -31,7 +32,6 @@ UCTOSEARCHDIRS = ('/usr/local/etc/ucto','/etc/ucto/','.')
 
 VERSION = 0.1
 
-
 class ProcessorThread(Thread):
     def __init__(self, q, lock, loadbalancemaster, **parameters):
         self.q = q
@@ -43,9 +43,11 @@ class ProcessorThread(Thread):
         super().__init__()
 
     def run(self):
+        self.done = set()
         while not self._stop:
             if not self.q.empty():
                 module, data = self.q.get() #data is an instance of module.UNIT
+                module.prepare(status) #will block until all dependencies are done
                 if module.local:
                     module.run(data, self.lock, **self.parameters)
                 else:
@@ -65,6 +67,7 @@ class ProcessorThread(Thread):
                         self.q.task_done()
                         raise Exception("Unable to connect client to server! All servers for module " + module.id + " are down!")
                 self.q.task_done()
+                self.done.add(module.id)
 
     def stop(self):
         self._stop = True
@@ -204,8 +207,26 @@ class Corrector:
         return self.modules[id]
 
     def __iter__(self):
-        for module in self.modules.values():
-            yield module
+        #iterate in proper dependency order:
+        done = set()
+
+        modules = self.modules.values()
+        while modules:
+            postpone = []
+            for module in self.modules.values():
+                if module.settings['depends']:
+                    for dep in module.settings['depends']:
+                        if dep not in done:
+                            postpone.append(module)
+                            break
+                if module not in postpone:
+                    done.add(module.id)
+                    yield module
+
+            if modules == postpone:
+                raise Exception("There are unsolvable (circular?) dependencies in your module definitions")
+            else:
+                modules = postpone
 
     def append(self, module):
         assert isinstance(module, Module)
@@ -601,6 +622,9 @@ class Module:
         if not 'annotator' in self.settings:
             self.settings['annotator'] = self.id
 
+        if not 'depends' in self.settings:
+            self.settings['depends'] = []
+
     def findserver(self, loadbalanceserver):
         """Finds a suitable server for this module"""
         if self.local:
@@ -615,6 +639,17 @@ class Module:
 
 
 
+    def prepare(self):
+        """Executed prior to running the module, waits until all dependencies have completed"""
+        waiting = True
+        while waiting:
+            waiting = False
+            for dep in self.settings['depends']:
+                if dep not in self.parent.done:
+                    waiting = True
+                    break
+            if waiting:
+                time.sleep(0.05)
 
     ####################### CALLBACKS ###########################
 
@@ -622,7 +657,7 @@ class Module:
     ##### Optional callbacks invoked by the Corrector (defaults may suffice)
 
     def init(self, foliadoc):
-        """Initialises the module on the document. This method should set all the necessary declarations if they are not already present. It will be called sequentially."""
+        """Initialises the module on the document. This method should set all the necessary declarations if they are not already present. It will be called sequentially and only once on the entire document."""
         if 'set' in self.settings and self.settings['set']:
             if not foliadoc.declared(folia.Correction, self.settings['set']):
                 foliadoc.declare(folia.Correction, self.settings['set'])
