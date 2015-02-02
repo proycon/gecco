@@ -41,7 +41,7 @@ class WordErrorListModule(Module):
         for modelfile in self.models:
             if not os.path.exists(modelfile):
                 raise IOError("Missing expected model file:" + modelfile)
-            self.log("Loading model file" + modelfile)
+            self.log("Loading model file " + modelfile)
             with open(modelfile,'r',encoding='utf-8') as f:
                 for line in f:
                     if line.strip():
