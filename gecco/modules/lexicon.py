@@ -13,6 +13,7 @@
 import sys
 import os
 import json
+from collections import OrderedDict
 from pynlpl.formats import folia
 from pynlpl.statistics import levenshtein
 from gecco.gecco import Module
@@ -55,7 +56,7 @@ class LexiconModule(Module):
     def load(self):
         """Load the requested modules from self.models"""
         self.lexicon = {}
-        self._cache = collections.OrderedDict()
+        self._cache = OrderedDict()
 
         if not self.models:
             raise Exception("Specify one or more models to load!")
