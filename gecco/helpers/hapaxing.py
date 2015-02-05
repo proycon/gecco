@@ -21,9 +21,15 @@ def gethapaxer(settings):
         settings['hapaxmodel'] = ""
     if 'hapaxthreshold' not in self.settings:
         settings['hapaxthreshold'] = 2
+    if 'hapaxminlength' not in self.settings:
+        settings['hapaxminlength'] = 0
+    if 'hapaxmaxlength' not in self.settings:
+        settings['hapaxmaxlength'] = 0
+    if 'hapaxplaceholder' not in self.settings:
+        settings['hapaxplaceholder'] = "<hapax>"
 
     if settings['hapaxmodel']:
-        hapaxer = Hapaxer(settings['hapaxsource'], settings['hapaxmodel'], settings['hapaxthreshold'])
+        hapaxer = Hapaxer(settings['hapaxsource'], settings['hapaxmodel'], settings['hapaxthreshold'], settings['hapaxminlength'], settings['hapaxmaxlength'], settings['hapaxplaceholder'] )
 
     return hapaxer
 
