@@ -15,17 +15,17 @@ import colibricore
 
 def gethapaxer(settings):
     hapaxer = None
-    if 'hapaxsource' not in self.settings:
+    if 'hapaxsource' not in settings:
         settings['hapaxsource'] = ""
-    if 'hapaxmodel' not in self.settings:
+    if 'hapaxmodel' not in settings:
         settings['hapaxmodel'] = ""
-    if 'hapaxthreshold' not in self.settings:
+    if 'hapaxthreshold' not in settings:
         settings['hapaxthreshold'] = 2
-    if 'hapaxminlength' not in self.settings:
+    if 'hapaxminlength' not in settings:
         settings['hapaxminlength'] = 0
-    if 'hapaxmaxlength' not in self.settings:
+    if 'hapaxmaxlength' not in settings:
         settings['hapaxmaxlength'] = 0
-    if 'hapaxplaceholder' not in self.settings:
+    if 'hapaxplaceholder' not in settings:
         settings['hapaxplaceholder'] = "<hapax>"
 
     if settings['hapaxmodel']:
