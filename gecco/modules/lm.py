@@ -43,11 +43,6 @@ class TIMBLLMModule(Module):
         else:
             self.threshold = 0.9
 
-        if 'hapaxthreshold' not in self.settings:
-            self.hapaxthreshold = self.settings['threshold']
-        else:
-            self.hapaxthreshold = 0.9
-
         #self.cache = getcache(self.settings, 1000)
 
         try:
