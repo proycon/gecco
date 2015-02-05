@@ -16,6 +16,7 @@ import json
 import io
 import bz2
 import gzip
+from collections import OrderedDict
 from pynlpl.formats import folia
 from pynlpl.textprocessors import Windower
 from timbl import TimblClassifier
@@ -41,6 +42,13 @@ class TIMBLLMModule(Module):
             self.threshold = self.settings['threshold']
         else:
             self.threshold = 0.9
+
+        if 'hapaxthreshold' not in self.settings:
+            self.hapaxthreshold = self.settings['threshold']
+        else:
+            self.hapaxthreshold = 0.9
+
+        #self.cache = getcache(self.settings, 1000)
 
         try:
             modelfile = self.models[0]

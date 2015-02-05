@@ -17,6 +17,7 @@ from collections import OrderedDict
 from pynlpl.formats import folia
 from pynlpl.statistics import levenshtein
 from gecco.gecco import Module
+from gecco.helpers.caching import getcache
 import colibricore
 import aspell
 
@@ -48,8 +49,7 @@ class LexiconModule(Module):
         if 'maxnrclosest' not in self.settings:
             self.settings['maxnrclosest'] = 5
 
-        if 'cachesize' not in self.settings:
-            self.settings['cachesize'] = 1000
+        self.cache = getcache(self.settings, 1000) #2nd arg is default cache size
 
         if 'suffixes' not in self.settings:
             self.settings['suffixes'] = []
@@ -100,7 +100,6 @@ class LexiconModule(Module):
     def load(self):
         """Load the requested modules from self.models"""
         self.lexicon = {}
-        self._cache = OrderedDict()
 
         if not self.models:
             raise Exception("Specify one or more models to load!")
@@ -133,10 +132,15 @@ class LexiconModule(Module):
             yield key, freq
 
     def findclosest(self, word):
+        #first try the cache
+        if self.cache:
+            try:
+                return self.cache[word]
+            except KeyError:
+                pass
+
         l = len(word)
-        if self._cache and word in self._cache:
-            return self._cache[word]
-        elif l < self.settings['minlength'] or l > self.settings['maxlength']:
+        if l < self.settings['minlength'] or l > self.settings['maxlength']:
             #word too long or too short, ignore
             return False
         elif word in self:
@@ -164,15 +168,10 @@ class LexiconModule(Module):
                     self.results.append( (key, ld) )
 
             results.sort(key=lambda x: x[1])[:self.settings['maxnrclosest']]
-            if self.settings['cachesize'] > 0:
-                self.cache(word,results)
+            self.cache.append(word, results)
             return results
 
 
-    def cache(self, word, results):
-        if len(self._cache) == self.settings['cachesize']:
-            self._cache.popitem(False)
-        self._cache[word] = results
 
     def run(self, word, lock, **parameters):
         """This method gets invoked by the Corrector when it runs locally. word is a folia.Word instance"""
@@ -198,8 +197,6 @@ class ColibriLexiconModule(LexiconModule):
 
     def load(self):
         """Load the requested modules from self.models"""
-        self._cache = OrderedDict()
-
         if len(self.models) != 1:
             raise Exception("Specify one and only one model to load!")
 
