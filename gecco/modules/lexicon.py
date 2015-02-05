@@ -17,6 +17,7 @@ from collections import OrderedDict
 from pynlpl.formats import folia
 from pynlpl.statistics import levenshtein
 from gecco.gecco import Module
+import colibricore
 import aspell
 
 class LexiconModule(Module):
@@ -31,6 +32,8 @@ class LexiconModule(Module):
             self.settings['delimiter'] = " "
         elif self.settings['delimiter'].lower() == 'tab':
             self.settings['delimiter'] = "\t"
+        elif self.settings['delimiter'].lower() == 'comma':
+            self.settings['delimiter'] = ","
         if 'reversedformat' not in self.settings: #reverse format has (word,freq) pairs rather than (freq,word) pairs
             self.settings['reversedformat'] = False
 
@@ -58,8 +61,41 @@ class LexiconModule(Module):
 
 
     def train(self, sourcefile, modelfile, **parameters):
-        self.log("Generating lexicon")
+        self.log("Preparing to generate lexicon")
+        classfile = modelfile  +  ".cls"
+        corpusfile = modelfile +  ".dat"
 
+        if not os.path.exists(classfile):
+            self.log("Building class file")
+            classencoder = colibricore.ClassEncoder()
+            classencoder.build(sourcefile)
+            classencoder.save(classfile)
+        else:
+            classencoder = colibricore.ClassEncoder(classfile)
+
+
+        if not os.path.exists(corpusfile):
+            self.log("Encoding corpus")
+            classencoder.encodefile( sourcefile, corpusfile)
+
+        self.log("Generating frequency list")
+        options = colibricore.PatternModelOptions(mintokens=self.settings['freqthreshold'],minlength=self.settings['minlength'],maxlength=self.settings['maxlength'])
+        model = colibricore.UnindexedPatternModel()
+        model.train(corpusfile, options)
+
+        self.savemodel(model, modelfile) #in separate function so it can be overloaded
+
+
+    def savemodel(self, model, modelfile):
+        self.log("Saving model")
+        classfile = modelfile  +  ".cls"
+        classdecoder = colibri.ClassDecoder(classfile)
+        with open(modelfile,'w',encoding='utf-8') as f:
+            for pattern, occurrencecount in model.items():
+                if self.settings['reversedformat']:
+                    f.write(pattern.tostring(classdecoder) + self.settings['delimiter'] + str(occurrencecount) + "\n")
+                else:
+                    f.write(str(occurrencecount) + self.settings['delimiter'] + pattern.tostring(classdecoder) + "\n")
 
     def load(self):
         """Load the requested modules from self.models"""
@@ -89,6 +125,12 @@ class LexiconModule(Module):
                         if freq > self.settings['minfreqthreshold']:
                             self.lexicon[word] = freq
 
+    def __exists__(self, word):
+        return word in self.lexicon
+
+    def __iter__(self):
+        for key, freq in self.lexicon.items():
+            yield key, freq
 
     def findclosest(self, word):
         l = len(word)
@@ -97,7 +139,7 @@ class LexiconModule(Module):
         elif l < self.settings['minlength'] or l > self.settings['maxlength']:
             #word too long or too short, ignore
             return False
-        elif word in self.lexicon:
+        elif word in self:
             #word is in lexicon, no need to find suggestions
             return False
         else:
@@ -106,17 +148,17 @@ class LexiconModule(Module):
             #but first try to strip known suffixes and prefixes and try again
             for suffix in self.settings['suffixes']:
                 if word.endswith(suffix):
-                    if word[:-len(suffix)] in self.lexicon:
+                    if word[:-len(suffix)] in self:
                         return False
             for prefix in self.settings['prefixes']:
-                if word.endswith(prefix):
-                    if word[len(prefix):] in self.lexicon:
+                if word.beginswith(prefix):
+                    if word[len(prefix):] in self:
                         return False
 
             #ok, not found, let's find closest matches by levenshtein distance
 
             results = []
-            for key, freq in self.lexicon:
+            for key, freq in self:
                 ld = levenshtein(word, key, self.settings['maxdistance'])
                 if ld <= self.settings['maxdistance']:
                     self.results.append( (key, ld) )
@@ -149,6 +191,40 @@ class LexiconModule(Module):
     def server_handler(self, word):
         """This methods gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
         return json.dumps(self.findclosest(word))
+
+
+
+class ColibriLexiconModule(LexiconModule):
+
+    def load(self):
+        """Load the requested modules from self.models"""
+        self._cache = OrderedDict()
+
+        if len(self.models) != 1:
+            raise Exception("Specify one and only one model to load!")
+
+        modelfile = self.models[0]
+        if not os.path.exists(modelfile):
+            raise IOError("Missing expected model file:" + modelfile)
+        self.log("Loading colibri model file " + modelfile)
+        self.classencoder = colibricore.ClassEncoder(modelfile + '.cls')
+        self.classdecoder = colibricore.ClassDecoder(modelfile + '.cls')
+        self.lexicon = colibricore.UnindexedPatternModel(modelfile)
+
+    def __exists__(self, word):
+        pattern = self.classencoder.buildpattern(word)
+        if pattern.unknown():
+            return False
+        else:
+            return pattern in self.lexicon
+
+    def __iter__(self):
+        for pattern, freq in self.lexicon.items():
+            yield (pattern.tostring(self.classdecoder), freq)
+
+    def savemodel(self, model, modelfile): #will be called by train()
+        self.log("Saving model")
+        model.save(modelfile)
 
 
 class AspellModule(gecco.Module):
