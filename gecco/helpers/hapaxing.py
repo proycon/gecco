@@ -39,12 +39,10 @@ class Hapaxer:
 
     def train(self):
         if self.sourcefile and not os.path.exists(self.modelfile):
-            self.log("Preparing to generate hapaxer")
             classfile = self.modelfile  +  ".cls"
             corpusfile = self.modelfile +  ".dat"
 
             if not os.path.exists(classfile):
-                self.log("Building class file")
                 classencoder = colibricore.ClassEncoder(self.minlength,self.maxlength)
                 classencoder.build(self.sourcefile)
                 classencoder.save(classfile)
@@ -53,10 +51,8 @@ class Hapaxer:
 
 
             if not os.path.exists(corpusfile):
-                self.log("Encoding corpus")
                 classencoder.encodefile( sourcefile, corpusfile)
 
-            self.log("Generating frequency list")
             options = colibricore.PatternModelOptions(mintokens=self.threshold,minlength=1,maxlength=1)
             model = colibricore.UnindexedPatternModel()
             model.train(corpusfile, options)
@@ -65,7 +61,6 @@ class Hapaxer:
     def load(self):
         if not os.path.exists(self.modelfile):
             raise IOError("Missing expected model file for hapaxer:" + self.modelfile)
-        self.log("Loading colibri model file " + self.modelfile)
         self.classencoder = colibricore.ClassEncoder(self.modelfile + '.cls')
         self.classdecoder = colibricore.ClassDecoder(self.modelfile + '.cls')
         self.lexicon = colibricore.UnindexedPatternModel(self.modelfile)

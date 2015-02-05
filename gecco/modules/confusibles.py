@@ -56,6 +56,10 @@ class TIMBLWordConfusibleModule(Module):
 
     def load(self):
         """Load the requested modules from self.models"""
+        if self.hapaxer:
+            self.log("Loading hapaxer...")
+            self.hapaxer.load()
+
         self.errorlist = {}
 
         if not self.models:
@@ -71,6 +75,10 @@ class TIMBLWordConfusibleModule(Module):
         self.classifier.load()
 
     def train(self, sourcefile, modelfile, **parameters):
+        if self.hapaxer:
+             self.log("Training hapaxer...")
+             self.hapaxer.train()
+
         l = self.settings['leftcontext']
         r = self.settings['rightcontext']
         n = l + 1 + r
