@@ -12,6 +12,21 @@
 
 import colibricore
 
+
+def gethapaxer(settings):
+    hapaxer = None
+    if 'hapaxsource' not in self.settings:
+        settings['hapaxsource'] = ""
+    if 'hapaxmodel' not in self.settings:
+        settings['hapaxmodel'] = ""
+    if 'hapaxthreshold' not in self.settings:
+        settings['hapaxthreshold'] = 2
+
+    if settings['hapaxmodel']:
+        hapaxer = Hapaxer(settings['hapaxsource'], settings['hapaxmodel'], settings['hapaxthreshold'])
+
+    return hapaxer
+
 class Hapaxer:
     def __init__(self, sourcefile, modelfile, threshold, minlength=0,maxlength=0, placeholder="<hapax>"):
         self.sourcefile = sourcefile
@@ -75,4 +90,6 @@ class Hapaxer:
 
         return self.lexicon[pattern] < self.threshold
 
+    def __call__(self, tokens):
+        return tuple( self[x] for x in tokens )
 

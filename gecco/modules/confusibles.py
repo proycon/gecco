@@ -20,7 +20,7 @@ from pynlpl.formats import folia
 from pynlpl.textprocessors import Windower
 from timbl import TimblClassifier
 from gecco.gecco import Module
-from gecco.helpers.hapaxing import Hapaxer
+from gecco.helpers.hapaxing import gethapaxer
 
 
 class TIMBLWordConfusibleModule(Module):
@@ -38,16 +38,7 @@ class TIMBLWordConfusibleModule(Module):
         if 'rightcontext' not in self.settings:
             self.settings['rightcontext'] = 3
 
-        self.hapaxer = None
-        if 'hapaxsource' not in self.settings:
-            self.settings['hapaxsource'] = ""
-        if 'hapaxmodel' not in self.settings:
-            self.settings['hapaxmodel'] = ""
-        if 'hapaxthreshold' not in self.settings:
-            self.settings['hapaxthreshold'] = 2
-
-        if self.settings['hapaxmodel']:
-            self.hapaxer = Hapaxer(self.settings['hapaxsource'], self.settings['hapaxmodel'], self.settings['hapaxthreshold'])
+        self.hapaxer = gethapaxer(self.settings)
 
         if 'confusibles' not in self.settings:
             raise Exception("No confusibles specified for " + self.id + "!")
@@ -97,9 +88,11 @@ class TIMBLWordConfusibleModule(Module):
             for line in f:
                 for ngram in Windower(line, n):
                     confusible = ngram[l]
-                    leftcontext = tuple(ngram[:l])
-                    rightcontext = tuple(ngram[l+1:])
                     if confusible in self.settings['confusibles']:
+                        if self.hapaxer:
+                            ngram = self.hapaxer(ngram)
+                        leftcontext = tuple(ngram[:l])
+                        rightcontext = tuple(ngram[l+1:])
                         classifier.append( leftcontext + rightcontext , confusible )
 
         self.log("Training classifier...")
@@ -111,6 +104,7 @@ class TIMBLWordConfusibleModule(Module):
 
     def classify(self, word):
         features = self.getfeatures(word)
+        if self.hapaxer: features = self.hapaxer(features)
         best, distribution,_ = self.classifier.classify(features)
         return best, distribution
 
