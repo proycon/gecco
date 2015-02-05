@@ -34,24 +34,32 @@ class LexiconModule(Module):
         if 'reversedformat' not in self.settings: #reverse format has (word,freq) pairs rather than (freq,word) pairs
             self.settings['reversedformat'] = False
 
-        if not self.settings['maxdistance']:
+        if 'maxdistance' not in self.settings:
             self.settings['maxdistance'] = 2
-        if not self.settings['maxlength']:
+        if 'maxlength' not in self.settings:
             self.settings['maxlength'] = 15 #longer words will be ignored
-        if not self.settings['minlength']:
+        if 'minlength' not in self.settings:
             self.settings['minlength'] = 5 #shorter word will be ignored
-        if not self.settings['minfreqthreshold']:
+        if 'minfreqthreshold' not in self.settings:
             self.settings['minfreqthreshold'] = 10000
-        if not self.settings['maxnrclosest']:
+        if 'maxnrclosest' not in self.settings:
             self.settings['maxnrclosest'] = 5
 
-        if not self.settings['cachesize']:
+        if 'cachesize' not in self.settings:
             self.settings['cachesize'] = 1000
 
-        if not self.settings['suffixes']:
+        if 'suffixes' not in self.settings:
             self.settings['suffixes'] = []
-        if not self.settings['prefixes']:
+        if 'prefixes' not in self.settings:
             self.settings['prefixes'] = []
+
+        if 'freqthreshold' not in self.settings:
+            self.settings['freqthreshold'] = 20
+
+
+    def train(self, sourcefile, modelfile, **parameters):
+        self.log("Generating lexicon")
+
 
     def load(self):
         """Load the requested modules from self.models"""
