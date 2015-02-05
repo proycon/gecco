@@ -20,6 +20,7 @@ from pynlpl.formats import folia
 from pynlpl.textprocessors import Windower
 from timbl import TimblClassifier
 from gecco.gecco import Module
+from gecco.helpers.hapaxing import Hapaxer
 
 
 class TIMBLWordConfusibleModule(Module):
@@ -36,6 +37,17 @@ class TIMBLWordConfusibleModule(Module):
 
         if 'rightcontext' not in self.settings:
             self.settings['rightcontext'] = 3
+
+        self.hapaxer = None
+        if 'hapaxsource' not in self.settings:
+            self.settings['hapaxsource'] = ""
+        if 'hapaxmodel' not in self.settings:
+            self.settings['hapaxmodel'] = ""
+        if 'hapaxthreshold' not in self.settings:
+            self.settings['hapaxthreshold'] = 2
+
+        if self.settings['hapaxmodel']:
+            self.hapaxer = Hapaxer(self.settings['hapaxsource'], self.settings['hapaxmodel'], self.settings['hapaxthreshold'])
 
         if 'confusibles' not in self.settings:
             raise Exception("No confusibles specified for " + self.id + "!")

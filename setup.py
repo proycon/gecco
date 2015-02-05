@@ -45,5 +45,5 @@ setup(
         ]
     },
     package_data = {'gecco':[] },
-    install_requires=['lxml >= 2.2','pynlpl >= 0.6.19','pyyaml','python-ucto >= 0.1.1','python3-timbl','aspell-python-py3']
+    install_requires=['lxml >= 2.2','pynlpl >= 0.6.19','pyyaml','colibricore >= 0.5.7', 'python-ucto >= 0.1.1','python3-timbl','aspell-python-py3']
 )

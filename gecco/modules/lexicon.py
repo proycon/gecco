@@ -67,11 +67,11 @@ class LexiconModule(Module):
 
         if not os.path.exists(classfile):
             self.log("Building class file")
-            classencoder = colibricore.ClassEncoder()
+            classencoder = colibricore.ClassEncoder(self.settings['minlength'], self.settings['maxlength']) #character length constraints
             classencoder.build(sourcefile)
             classencoder.save(classfile)
         else:
-            classencoder = colibricore.ClassEncoder(classfile)
+            classencoder = colibricore.ClassEncoder(classfile, self.settings['minlength'], self.settings['maxlength'])
 
 
         if not os.path.exists(corpusfile):
@@ -79,7 +79,7 @@ class LexiconModule(Module):
             classencoder.encodefile( sourcefile, corpusfile)
 
         self.log("Generating frequency list")
-        options = colibricore.PatternModelOptions(mintokens=self.settings['freqthreshold'],minlength=self.settings['minlength'],maxlength=self.settings['maxlength'])
+        options = colibricore.PatternModelOptions(mintokens=self.settings['freqthreshold'],minlength=1,maxlength=1) #unigrams only
         model = colibricore.UnindexedPatternModel()
         model.train(corpusfile, options)
 
