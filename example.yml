@@ -26,5 +26,13 @@ modules:
       servers:
         - host: 127.0.0.1
           port: 12346
+    - id: lexicon
+      module: gecco.modules.lexicon.ColibriLexiconModule
+      class: worderror
+      sources:
+        - sources/europarl250k.txt.bz2
+      models:
+        - models/lexicon.colibri.patternmodel
+ 
        
 

@@ -20,6 +20,23 @@ from collections import OrderedDict
 from pynlpl.formats import folia
 from pynlpl.textprocessors import Windower
 from gecco.gecco import Module
+from gecco.modules.lexicon import LexiconModule
 
-#TODO: run-on and split module
+
+class RunOnModule:
+    UNIT = folia.Word
+
+    def verifysettings(self):
+        super().verifysettings()
+
+        #We use a lexiconmodule as a submodule
+        self.lexiconmodule = None
+        for submod in self.submodules:
+            if isinstance(submod, LexiconModule):
+                self.lexiconmodule = submod
+
+        if not self.lexiconmodule:
+            raise Exception("RunOnModule requires a submodule of type LexiconModule, none found")
+
+
 

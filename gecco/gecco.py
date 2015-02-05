@@ -46,25 +46,26 @@ class ProcessorThread(Thread):
         while not self._stop:
             if not self.q.empty():
                 module, data = self.q.get() #data is an instance of module.UNIT
-                module.prepare(status) #will block until all dependencies are done
-                if module.local:
-                    module.run(data, self.lock, **self.parameters)
-                else:
-                    skipservers= []
-                    connected = False
-                    for server,port in  module.findserver(self.loadbalancemaster):
-                        try:
-                            if (server,port) not in self.clients:
-                                self.clients[(server,port)] = module.CLIENT(server,port)
-                            module.runclient( self.clients[(server,port)], data, self.lock,  **self.parameters)
-                            #will only be executed when connection succeeded:
-                            connected = True
-                            break
-                        except ConnectionRefusedError:
-                            del self.clients[(server,port)]
-                    if not connected:
-                        self.q.task_done()
-                        raise Exception("Unable to connect client to server! All servers for module " + module.id + " are down!")
+                if not module.submodule: #modules marked a submodule won't be called by the main process, but are invoked by other modules instead
+                    module.prepare(status) #will block until all dependencies are done
+                    if module.local:
+                        module.run(data, self.lock, **self.parameters)
+                    else:
+                        skipservers= []
+                        connected = False
+                        for server,port in  module.findserver(self.loadbalancemaster):
+                            try:
+                                if (server,port) not in self.clients:
+                                    self.clients[(server,port)] = module.CLIENT(server,port)
+                                module.runclient( self.clients[(server,port)], data, self.lock,  **self.parameters)
+                                #will only be executed when connection succeeded:
+                                connected = True
+                                break
+                            except ConnectionRefusedError:
+                                del self.clients[(server,port)]
+                        if not connected:
+                            self.q.task_done()
+                            raise Exception("Unable to connect client to server! All servers for module " + module.id + " are down!")
                 self.q.task_done()
                 self.done.add(module.id)
 
@@ -568,6 +569,7 @@ class Module:
     def __init__(self, parent,**settings):
         self.parent = parent
         self.settings = settings
+        self.submodclients = {} #each module keeps a bunch of clients open to the servers of the various isubmodules so we don't have to reconnect constantly (= faster)
         self.verifysettings()
 
     def getfilename(self, filename):
@@ -626,6 +628,31 @@ class Module:
         if not 'depends' in self.settings:
             self.settings['depends'] = []
 
+        if not 'submodules' in self.settings:
+            self.submodules = {}
+        else:
+            try:
+                self.submodules = { self.parent[x].id :  self.parent[x] for x in self.settings['submodules'] }
+            except KeyError:
+                raise Exception("One or more submodules are not defined")
+
+            for m in self.submodules.values():
+                if m.local:
+                    raise Exception("Module " + m.id + " is used as a submodule, but no servers are defined, submodules can not be local only")
+                if m.UNIT != self.UNIT:
+                    raise Exception("Module " + m.id + " is used as a submodule of " + self.id  + ", but they do not take the same unit")
+
+
+        if not 'submodule' in self.settings:
+            self.submodule = False
+        else:
+            self.submodule = bool(self.settings['submodule'])
+
+            if self.submodule and self.local:
+                raise Exception("Module " + self.id + " is a submodule, but no servers are defined, submodules can not be local only")
+
+
+
     def findserver(self, loadbalanceserver):
         """Finds a suitable server for this module"""
         if self.local:
@@ -638,7 +665,13 @@ class Module:
             for host, port in loadbalancemaster.get(self.settings['servers']):
                 yield host, port
 
-
+    def getsubmoduleclient(self, submodule):
+        submodule.prepare(status) #will block until all submod dependencies are done
+        for server,port in submodule.findserver(self.parent.loadbalancemaster):
+            if (server,port) not in self.submodclients:
+                self.submodclients[(server,port)] = submodule.CLIENT(server,port)
+            return self.submodclients[(server,port)]
+        raise Exception("Could not find server for submodule " + submodule.id)
 
     def prepare(self):
         """Executed prior to running the module, waits until all dependencies have completed"""
