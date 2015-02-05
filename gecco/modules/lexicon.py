@@ -183,13 +183,23 @@ class LexiconModule(Module):
     def runclient(self, client, word, lock, **parameters):
         """This method gets invoked by the Corrector when it should connect to a remote server, the client instance is passed and already available (will connect on first communication). word is a folia.Word instance"""
         wordstr = str(word)
-        results = json.loads(client.communicate(wordstr))
+        results = json.loads(client.communicate('!' + wordstr)) #! is the command to return closest suggestions, ? merely return a boolean whether the word is in lexicon or not
         if results:
             self.addwordsuggestions(lock, word, [ result for result,distance in results ] )
 
-    def server_handler(self, word):
+    def server_handler(self, input):
         """This methods gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
-        return json.dumps(self.findclosest(word))
+        if input:
+            command = input[0]
+            word = input[1:]
+            if command == '!': #find closest suggestions
+                return json.dumps(self.findclosest(word))
+            elif command == '?':
+                try:
+                    return str(self[word])
+                except KeyError:
+                    return "0"
+        return "INVALID INPUT"
 
 
 
