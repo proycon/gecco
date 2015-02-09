@@ -828,18 +828,21 @@ class Module:
         )
         lock.release()
 
-    def mergecorrection(self, lock, newword, originalwords, **kwargs):
+    def mergecorrection(self, lock, newword, originalwords):
         lock.acquire()
         sentence = originalwords[0].sentence()
         if not sentence:
             raise Exception("Expected sentence for " + str(repr(originalwords[0])) + ", got " + str(repr(sentence)))
         newword = folia.Word(self.doc, generate_id_in=sentence, text=newword)
-        kwargs['suggest'] = True
-        kwargs['datetime'] = datetime.datetime.now()
         sentence.mergewords(
             newword,
             *originalwords,
-            **kwargs
+            set=self.settings['set'],
+            cls=self.settings['class'],
+            annotator=self.settings['annotator'],
+            annotatortype='auto',
+            datetime=datetime.datetime.now(),
+            suggest=True
         )
         lock.release()
 
