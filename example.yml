@@ -14,7 +14,6 @@ modules:
            port: 12345
     - id: conf_thenthan
       module: gecco.modules.confusibles.TIMBLWordConfusibleModule
-      class: confusion
       confusibles: [then,than]
       leftcontext: 3
       rightcontext: 3
@@ -26,13 +25,44 @@ modules:
       servers:
         - host: 127.0.0.1
           port: 12346
+    - id: lm
+      module: gecco.modules.lm.TIMBLLMModule
+      threshold: 0.9
+      sources:
+        - sources/europarl250k.txt.bz2
+      models:
+        - models/lm.ibase
+      servers:
+        - host: 127.0.0.1
+          port: 12344
     - id: lexicon
       module: gecco.modules.lexicon.ColibriLexiconModule
-      class: worderror
+      freqthreshold: 20
       sources:
         - sources/europarl250k.txt.bz2
       models:
         - models/lexicon.colibri.patternmodel
- 
-       
+      servers:
+        - host: 127.0.0.1
+          port: 12347
+    - id: runon
+      module: gecco.modules.spacing.RunOnModule
+      freqthreshold: 10
+      sources:
+        - sources/europarl250k.txt.bz2
+      models:
+        - models/spacing.colibri.patternmodel
+      servers:
+        - host: 127.0.0.1
+          port: 12348
+    - id: splits
+      module: gecco.modules.spacing.SplitModule
+      freqthreshold: 10
+      sources:
+        - sources/europarl250k.txt.bz2
+      models:
+        - models/spacing.colibri.patternmodel
+      servers:
+        - host: 127.0.0.1
+          port: 12349
 
