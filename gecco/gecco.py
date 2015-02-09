@@ -814,15 +814,17 @@ class Module:
         )
         lock.release()
 
-    def splitcorrection(self, lock, word, newwords,**kwargs):
+    def splitcorrection(self, lock, word, suggestions):
+        #suggestions is a list of  ([word], confidence) tuples
         lock.acquire()
         sentence = word.sentence()
-        newwords = [ folia.Word(self.doc, generate_id_in=sentence, text=w) for w in newwords ]
-        kwargs['suggest'] = True
-        kwargs['datetime'] = datetime.datetime.now()
-        word.split(
-            *newwords,
-            **kwargs
+        suggestions = [ folia.Suggestion(self.doc, *[ folia.Word(self.doc, generate_id_in=sentence, text=w) for w in suggestion ], confidence=confidence ) for suggestion, confidence  in suggestions ]
+        word.correct(suggestions=suggestions,current=[word],
+            set=self.settings['set'],
+            cls=self.settings['class'],
+            annotator=self.settings['annotator'],
+            annotatortype='auto',
+            datetime=datetime.datetime.now()
         )
         lock.release()
 

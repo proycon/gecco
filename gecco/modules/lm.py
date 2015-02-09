@@ -27,6 +27,9 @@ class TIMBLLMModule(Module):
     UNIT = folia.Word
 
     def verifysettings(self):
+        if 'class' not in self.settings:
+            self.settings['class'] = 'contexterror'
+
         super().verifysettings()
 
         if 'algorithm' not in self.settings:
@@ -42,6 +45,7 @@ class TIMBLLMModule(Module):
             self.threshold = self.settings['threshold']
         else:
             self.threshold = 0.9
+
 
         #self.cache = getcache(self.settings, 1000)
 

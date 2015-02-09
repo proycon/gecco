@@ -21,6 +21,7 @@ from pynlpl.formats import folia
 from pynlpl.textprocessors import Windower
 from gecco.gecco import Module
 from gecco.modules.lexicon import LexiconModule
+import colibicore
 
 
 def splits(s):
@@ -31,40 +32,92 @@ class RunOnModule:
     UNIT = folia.Word
 
     def verifysettings(self):
+        if 'class' not in self.settings:
+            self.settings['class'] = 'runonerror'
+
         super().verifysettings()
 
-        #We use a lexiconmodule as a submodule
-        self.lexiconmodule = None
-        for submod in self.submodules:
-            if isinstance(submod, LexiconModule):
-                self.lexiconmodule = submod
-
-        if not self.lexiconmodule:
-            raise Exception("RunOnModule requires a submodule of type LexiconModule, none found")
+        if 'freqthreshold' not in self.settings:
+            self.settings['freqthreshold'] = 10
 
 
+    def train(self, sourcefile, modelfile, **parameters):
+        self.log("Preparing to generate bigram model")
+        classfile = modelfile  +  ".cls"
+        corpusfile = modelfile +  ".dat"
 
+        if not os.path.exists(classfile):
+            self.log("Building class file")
+            classencoder = colibricore.ClassEncoder() #character length constraints
+            classencoder.build(sourcefile)
+            classencoder.save(classfile)
+        else:
+            classencoder = colibricore.ClassEncoder(classfile)
+
+
+        if not os.path.exists(corpusfile):
+            self.log("Encoding corpus")
+            classencoder.encodefile( sourcefile, corpusfile)
+
+        self.log("Generating bigram frequency list")
+        options = colibricore.PatternModelOptions(mintokens=self.settings['freqthreshold'],minlength=1,maxlength=2) #unigrams and bigrams
+        model = colibricore.UnindexedPatternModel()
+        model.train(corpusfile, options)
+
+        self.log("Saving model")
+        model.save(modelfile)
+
+    def load(self):
+        """Load the requested modules from self.models"""
+        if len(self.models) != 1:
+            raise Exception("Specify one and only one model to load!")
+
+        modelfile = self.models[0]
+        if not os.path.exists(modelfile):
+            raise IOError("Missing expected model file:" + modelfile)
+        self.log("Loading colibri model file " + modelfile)
+        self.classencoder = colibricore.ClassEncoder(modelfile + '.cls')
+        self.classdecoder = colibricore.ClassDecoder(modelfile + '.cls')
+        self.patternmodel = colibricore.UnindexedPatternModel(modelfile)
+
+
+    def splitsuggestions(self, word):
+        pattern_joined = self.classencoder.build(pattern)
+        if pattern_joined.unknown():
+            freq_joined = 0
+        else:
+            freq_joined = self.patternmodel[pattern_joined]
+
+        suggestions = []
+        maxfreq = 0
+        for parts in splits(s):
+            pattern = self.classencoder.build(" ".join(parts))
+            if pattern.unknown():
+                freq = 0
+            else:
+                freq = self.patternmodel[pattern]
+            if freq > freq_joined:
+                if freq > maxfreq:
+                    maxfreq = freq
+                suggestions.append( (parts, freq) )
+
+        return [ (parts, freq / maxfreq) for parts, freq in suggestions ] #normalise confidence score (highest option = 1)
 
     def run(self, word, lock, **parameters):
         """This method gets invoked by the Corrector when it runs locally. word is a folia.Word instance"""
-        submodclient = self.getsubmoduleclient(self.lexiconmodule)
-
         wordstr = str(word)
-        for parts in splits(wordstr):
-            for part in parts:
-                #communicate with lexicon submodule,'?' is the command to checker whether the word exists, returns the frequency
-                exists = int(client.communicate('?' + wordstr), submodclient, lock ) #? is the command to the lexicon server
-                if exists:
+        suggestions = self.splitsuggestions(wordstr)
+        if suggestions:
+            self.splitcorrection(lock, word, suggestions)
 
 
+    def runclient(self, client, word, lock, **parameters):
+        """This method gets invoked by the Corrector when it should connect to a remote server, the client instance is passed and already available (will connect on first communication). word is a folia.Word instance"""
+        wordstr = str(word)
+        suggestions = json.loads(client.communicate(wordstr)) #! is the command to return closest suggestions, ? merely return a boolean whether the word is in lexicon or not
+        if suggestions:
+            self.addwordsuggestions(lock, word, suggestions )
 
-
-
-
-
-
-        best, distribution = self.classify(word)
-        if best != word:
-            distribution = [ x for x in distribution.items() if x[1] >= self.threshold ]
-            if distribution:
-                self.addwordsuggestions(lock, word, distribution)
+    def server_handler(self, word):
+        """This methods gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
+        return json.dumps(self.splitsuggestions(word))

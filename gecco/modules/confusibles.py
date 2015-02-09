@@ -27,6 +27,9 @@ class TIMBLWordConfusibleModule(Module):
     UNIT = folia.Word
 
     def verifysettings(self):
+        if 'class' not in self.settings:
+            self.settings['class'] = 'confusible'
+
         super().verifysettings()
 
         if 'algorithm' not in self.settings:
@@ -43,6 +46,7 @@ class TIMBLWordConfusibleModule(Module):
         if 'confusibles' not in self.settings:
             raise Exception("No confusibles specified for " + self.id + "!")
         self.confusibles = self.settings['confusibles']
+
 
         try:
             modelfile = self.models[0]

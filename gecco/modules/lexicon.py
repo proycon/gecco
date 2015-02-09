@@ -25,6 +25,9 @@ class LexiconModule(Module):
     UNIT = folia.Word
 
     def verifysettings(self):
+        if 'class' not in self.settings:
+            self.settings['class'] = 'nonworderror'
+
         super().verifysettings()
 
         if 'delimiter' not in self.settings:
