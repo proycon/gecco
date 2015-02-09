@@ -114,9 +114,9 @@ class RunOnModule:
     def runclient(self, client, word, lock, **parameters):
         """This method gets invoked by the Corrector when it should connect to a remote server, the client instance is passed and already available (will connect on first communication). word is a folia.Word instance"""
         wordstr = str(word)
-        suggestions = json.loads(client.communicate(wordstr)) #! is the command to return closest suggestions, ? merely return a boolean whether the word is in lexicon or not
+        suggestions = json.loads(client.communicate(wordstr))
         if suggestions:
-            self.addwordsuggestions(lock, word, suggestions )
+            self.splitcorrection(lock, word, suggestions )
 
     def server_handler(self, word):
         """This methods gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
