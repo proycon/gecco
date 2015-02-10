@@ -33,7 +33,7 @@ class TIMBLLMModule(Module):
         super().verifysettings()
 
         if 'algorithm' not in self.settings:
-            self.settings['algorithm'] = "IG"
+            self.settings['algorithm'] = 1
 
         if 'leftcontext' not in self.settings:
             self.settings['leftcontext'] = 3
@@ -57,7 +57,7 @@ class TIMBLLMModule(Module):
             raise Exception("Expected one model, got 0 or more")
 
     def gettimbloptions(self):
-        return "-F Tabbed " + "-a " + self.settings['algorithm'] + " +vdb -G0"
+        return "-F Tabbed " + "-a " + str(self.settings['algorithm']) + " +vdb -G0"
 
     def load(self):
         """Load the requested modules from self.models"""

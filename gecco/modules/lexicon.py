@@ -70,7 +70,7 @@ class LexiconModule(Module):
 
         if not os.path.exists(classfile):
             self.log("Building class file")
-            classencoder = colibricore.ClassEncoder(self.settings['minlength'], self.settings['maxlength']) #character length constraints
+            classencoder = colibricore.ClassEncoder("", self.settings['minlength'], self.settings['maxlength']) #character length constraints
             classencoder.build(sourcefile)
             classencoder.save(classfile)
         else:
