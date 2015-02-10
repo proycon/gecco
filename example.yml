@@ -45,6 +45,13 @@ modules:
       servers:
         - host: 127.0.0.1
           port: 12347
+    - id: aspell
+      module: gecco.modules.lexicon.AspellModule
+      freqthreshold: 20
+      language: en
+      servers:
+        - host: 127.0.0.1
+          port: 12343
     - id: runon
       module: gecco.modules.spacing.RunOnModule
       freqthreshold: 10

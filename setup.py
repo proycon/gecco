@@ -26,7 +26,7 @@ setup(
     license = "GPL",
     keywords = "spelling corrector spell check nlp computational_linguistics rest",
     url = "http://proycon.github.com/clam",
-    packages=['gecco','gecco.modules'],
+    packages=['gecco','gecco.modules','gecco.helpers'],
     long_description=read('README.md'),
     classifiers=[
         "Development Status :: 3 - Alpha",
