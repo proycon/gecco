@@ -66,7 +66,7 @@ class RunOnModule(Module):
         model.train(corpusfile, options)
 
         self.log("Saving model")
-        model.save(modelfile)
+        model.write(modelfile)
 
     def load(self):
         """Load the requested modules from self.models"""
@@ -162,7 +162,7 @@ class SplitModule(Module):
         model.train(corpusfile, options)
 
         self.log("Saving model")
-        model.save(modelfile)
+        model.write(modelfile)
 
     def load(self):
         """Load the requested modules from self.models"""

@@ -57,7 +57,7 @@ class TIMBLLMModule(Module):
             raise Exception("Expected one model, got 0 or more")
 
     def gettimbloptions(self):
-        return "-F Tabbed " + "-a " + str(self.settings['algorithm']) + " +vdb -G0"
+        return "-F Tabbed " + "-a " + str(self.settings['algorithm']) + " +D +vdb -G0"
 
     def load(self):
         """Load the requested modules from self.models"""

@@ -234,7 +234,7 @@ class ColibriLexiconModule(LexiconModule):
 
     def savemodel(self, model, modelfile): #will be called by train()
         self.log("Saving model")
-        model.save(modelfile)
+        model.write(modelfile)
 
 
 class AspellModule(Module):
