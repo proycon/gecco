@@ -168,7 +168,7 @@ class LexiconModule(Module):
             for key, freq in self:
                 ld = levenshtein(word, key, self.settings['maxdistance'])
                 if ld <= self.settings['maxdistance']:
-                    self.results.append( (key, ld) )
+                    results.append( (key, ld) )
 
             results.sort(key=lambda x: x[1])
             results = results[:self.settings['maxnrclosest']]

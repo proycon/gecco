@@ -87,7 +87,10 @@ class RunOnModule(Module):
         if pattern_joined.unknown():
             freq_joined = 0
         else:
-            freq_joined = self.patternmodel[pattern_joined]
+            try:
+                freq_joined = self.patternmodel[pattern_joined]
+            except KeyError:
+                freq_joined = 0
 
         suggestions = []
         maxfreq = 0
@@ -96,7 +99,10 @@ class RunOnModule(Module):
             if pattern.unknown():
                 freq = 0
             else:
-                freq = self.patternmodel[pattern]
+                try:
+                    freq = self.patternmodel[pattern]
+                except KeyError:
+                    freq = 0
             if freq > freq_joined:
                 if freq > maxfreq:
                     maxfreq = freq
@@ -185,14 +191,20 @@ class SplitModule(Module):
             if pattern_joined.unknown():
                 freq_joined = 0
             else:
-                freq_joined = self.patternmodel[pattern_joined]
+                try:
+                    freq_joined = self.patternmodel[pattern_joined]
+                except KeyError:
+                    freq_joined = 0
 
             maxfreq = 0
             pattern = self.classencoder.buildpattern(word + " " + nextword)
             if pattern.unknown():
                 freq = 0
             else:
-                freq = self.patternmodel[pattern]
+                try:
+                    freq = self.patternmodel[pattern]
+                except KeyError:
+                    freq = 0
             if freq_joined > freq:
                 return word+nextword
 
