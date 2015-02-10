@@ -249,7 +249,7 @@ class AspellModule(Module):
 
     def load(self):
         self.speller = aspell.Speller('lang',self.settings['language'])
-        self.encoding = s.ConfigKeys()['encoding'][2]
+        self.encoding = self.speller.ConfigKeys()['encoding'][2]
 
     def run(self, word, lock, **parameters):
         """This method gets invoked by the Corrector when it runs locally. word is a folia.Word instance"""
