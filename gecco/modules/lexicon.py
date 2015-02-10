@@ -257,7 +257,7 @@ class AspellModule(Module):
     def run(self, word, lock, **parameters):
         """This method gets invoked by the Corrector when it runs locally. word is a folia.Word instance"""
         wordenc = str(word).encode(self.encoding)
-        suggestions = [ str(w, self.encoding) for w in self.speller.suggest(wordenc) ]
+        suggestions = [ w for w in self.speller.suggest(wordenc) ]
         if suggestions:
             self.addwordsuggestions(lock, word, suggestions )
 
@@ -270,7 +270,7 @@ class AspellModule(Module):
     def server_handler(self, word):
         """This methods gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
         wordenc = word.encode(self.encoding)
-        suggestions = [ str(w, self.encoding) for w in self.speller.suggest(wordenc) ]
+        suggestions = [ w for w in self.speller.suggest(wordenc) ]
         return json.dumps(suggestions)
 
 
