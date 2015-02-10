@@ -32,6 +32,6 @@ class FIFOCache(OrderedDict):
         if self.size > 0:
             if len(self) == self.size:
                 self.popitem(False)
-            self[word] = value
+            self[key] = value
 
 

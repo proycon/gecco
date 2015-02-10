@@ -83,7 +83,7 @@ class RunOnModule(Module):
 
 
     def splitsuggestions(self, word):
-        pattern_joined = self.classencoder.build(word)
+        pattern_joined = self.classencoder.buildpattern(word)
         if pattern_joined.unknown():
             freq_joined = 0
         else:
@@ -91,8 +91,8 @@ class RunOnModule(Module):
 
         suggestions = []
         maxfreq = 0
-        for parts in splits(s):
-            pattern = self.classencoder.build(" ".join(parts))
+        for parts in splits(word):
+            pattern = self.classencoder.buildpattern(" ".join(parts))
             if pattern.unknown():
                 freq = 0
             else:
@@ -181,14 +181,14 @@ class SplitModule(Module):
     def getmergesuggestion(self, word, nextword):
         suggestions = []
         if nextword:
-            pattern_joined = self.classencoder.build(word+nextword)
+            pattern_joined = self.classencoder.buildpattern(word+nextword)
             if pattern_joined.unknown():
                 freq_joined = 0
             else:
                 freq_joined = self.patternmodel[pattern_joined]
 
             maxfreq = 0
-            pattern = self.classencoder.build(word + " " + nextword)
+            pattern = self.classencoder.buildpattern(word + " " + nextword)
             if pattern.unknown():
                 freq = 0
             else:

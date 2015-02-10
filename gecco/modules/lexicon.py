@@ -170,7 +170,8 @@ class LexiconModule(Module):
                 if ld <= self.settings['maxdistance']:
                     self.results.append( (key, ld) )
 
-            results.sort(key=lambda x: x[1])[:self.settings['maxnrclosest']]
+            results.sort(key=lambda x: x[1])
+            results = results[:self.settings['maxnrclosest']]
             self.cache.append(word, results)
             return results
 
