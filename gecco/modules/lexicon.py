@@ -248,8 +248,11 @@ class AspellModule(Module):
             raise Exception("Mandatory argument to aspell module missing: language")
 
     def load(self):
+        self.log("Loading aspell dictionary")
         self.speller = aspell.Speller('lang',self.settings['language'])
-        self.encoding = self.speller.ConfigKeys()['encoding'][2]
+        self.encoding = self.speller.ConfigKeys()['encoding'][1]
+        self.log( "Dictionary encoding: " + self.encoding)
+
 
     def run(self, word, lock, **parameters):
         """This method gets invoked by the Corrector when it runs locally. word is a folia.Word instance"""

@@ -33,7 +33,8 @@ UCTOSEARCHDIRS = ('/usr/local/etc/ucto','/etc/ucto/','.')
 VERSION = 0.1
 
 class ProcessorThread(Thread):
-    def __init__(self, q, lock, loadbalancemaster, **parameters):
+    def __init__(self, parent, q, lock, loadbalancemaster, **parameters):
+        self.parent = parent
         self.q = q
         self.lock = lock
         self._stop = False
@@ -67,7 +68,7 @@ class ProcessorThread(Thread):
                             self.q.task_done()
                             raise Exception("Unable to connect client to server! All servers for module " + module.id + " are down!")
                 self.q.task_done()
-                self.done.add(module.id)
+                self.parent.done.add(module.id)
 
     def stop(self):
         self._stop = True
@@ -318,7 +319,7 @@ class Corrector:
         lock = Lock()
         threads = []
         for i in range(self.settings['threads']):
-            thread = ProcessorThread(queue, lock, self.loadbalancemaster, **parameters)
+            thread = ProcessorThread(self, queue, lock, self.loadbalancemaster, **parameters)
             thread.setDaemon(True)
             thread.start()
             threads.append(thread)
