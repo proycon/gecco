@@ -18,11 +18,13 @@ from pynlpl.formats import folia
 from pynlpl.statistics import levenshtein
 from gecco.gecco import Module
 from gecco.helpers.caching import getcache
+from gecco.helpers.filters import hasalpha
 import colibricore
 import aspell
 
 class LexiconModule(Module):
     UNIT = folia.Word
+    UNITFILTER = hasalpha
 
     def verifysettings(self):
         if 'class' not in self.settings:
@@ -176,18 +178,15 @@ class LexiconModule(Module):
             return results
 
 
-
     def run(self, word, lock, **parameters):
         """This method gets invoked by the Corrector when it runs locally. word is a folia.Word instance"""
-        wordstr = str(word)
-        results = self.findclosest(wordstr)
+        results = self.findclosest(str(word))
         if results:
             self.addwordsuggestions(lock, word, [ result for result,distance in results ] )
 
     def runclient(self, client, word, lock, **parameters):
         """This method gets invoked by the Corrector when it should connect to a remote server, the client instance is passed and already available (will connect on first communication). word is a folia.Word instance"""
-        wordstr = str(word)
-        results = json.loads(client.communicate('!' + wordstr)) #! is the command to return closest suggestions, ? merely return a boolean whether the word is in lexicon or not
+        results = json.loads(client.communicate('!' + str(word))) #! is the command to return closest suggestions, ? merely return a boolean whether the word is in lexicon or not
         if results:
             self.addwordsuggestions(lock, word, [ result for result,distance in results ] )
 
@@ -240,7 +239,7 @@ class ColibriLexiconModule(LexiconModule):
 
 class AspellModule(Module):
     UNIT = folia.Word
-
+    UNITFILTER = hasalpha
 
     def verifysettings(self):
         super().verifysettings()
@@ -259,7 +258,7 @@ class AspellModule(Module):
         """This method gets invoked by the Corrector when it runs locally. word is a folia.Word instance"""
         wordenc = str(word).encode(self.encoding)
         suggestions = [ w for w in self.speller.suggest(wordenc) ]
-        if suggestions:
+        if str(word) not in suggestions:
             self.addwordsuggestions(lock, word, suggestions )
 
     def runclient(self, client, word, lock, **parameters):
@@ -272,6 +271,9 @@ class AspellModule(Module):
         """This methods gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
         wordenc = word.encode(self.encoding)
         suggestions = [ w for w in self.speller.suggest(wordenc) ]
-        return json.dumps(suggestions)
+        if word not in suggestions:
+            return json.dumps(suggestions)
+        else:
+            return "[]"
 
 

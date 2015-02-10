@@ -47,26 +47,27 @@ class ProcessorThread(Thread):
         while not self._stop:
             if not self.q.empty():
                 module, data = self.q.get() #data is an instance of module.UNIT
-                if not module.submodule: #modules marked a submodule won't be called by the main process, but are invoked by other modules instead
-                    module.prepare() #will block until all dependencies are done
-                    if module.local:
-                        module.run(data, self.lock, **self.parameters)
-                    else:
-                        skipservers= []
-                        connected = False
-                        for server,port in  module.findserver(self.loadbalancemaster):
-                            try:
-                                if (server,port) not in self.clients:
-                                    self.clients[(server,port)] = module.CLIENT(server,port)
-                                module.runclient( self.clients[(server,port)], data, self.lock,  **self.parameters)
-                                #will only be executed when connection succeeded:
-                                connected = True
-                                break
-                            except ConnectionRefusedError:
-                                del self.clients[(server,port)]
-                        if not connected:
-                            self.q.task_done()
-                            raise Exception("Unable to connect client to server! All servers for module " + module.id + " are down!")
+                if not module.UNITFILTER or module.UNITFILTER(data):
+                    if not module.submodule: #modules marked a submodule won't be called by the main process, but are invoked by other modules instead
+                        module.prepare() #will block until all dependencies are done
+                        if module.local:
+                            module.run(data, self.lock, **self.parameters)
+                        else:
+                            skipservers= []
+                            connected = False
+                            for server,port in  module.findserver(self.loadbalancemaster):
+                                try:
+                                    if (server,port) not in self.clients:
+                                        self.clients[(server,port)] = module.CLIENT(server,port)
+                                    module.runclient( self.clients[(server,port)], data, self.lock,  **self.parameters)
+                                    #will only be executed when connection succeeded:
+                                    connected = True
+                                    break
+                                except ConnectionRefusedError:
+                                    del self.clients[(server,port)]
+                            if not connected:
+                                self.q.task_done()
+                                raise Exception("Unable to connect client to server! All servers for module " + module.id + " are down!")
                 self.q.task_done()
                 self.parent.done.add(module.id)
 
@@ -568,6 +569,7 @@ class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
 class Module:
 
     UNIT = folia.Document #Specifies on type of input tbe module gets. An entire FoLiA document is the default, any smaller structure element can be assigned, such as folia.Sentence or folia.Word . More fine-grained levels usually increase efficiency.
+    UNITFILTER = None #Can be a function that takes a unit and return True if it has to be processed
     CLIENT = LineByLineClient
     SERVER = LineByLineServerHandler
 
@@ -787,6 +789,8 @@ class Module:
                 suggestions_i.append( folia.Suggestion(word.doc, suggestion, confidence=confidence) )
             else:
                 suggestions_i.append( folia.Suggestion(word.doc, suggestion) )
+
+        self.log("\tsuggestions: " + ", ".join([str(x) for x in suggestions_i]))
 
         #add the correction
         word.correct(
