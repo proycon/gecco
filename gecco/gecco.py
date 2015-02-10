@@ -47,7 +47,7 @@ class ProcessorThread(Thread):
             if not self.q.empty():
                 module, data = self.q.get() #data is an instance of module.UNIT
                 if not module.submodule: #modules marked a submodule won't be called by the main process, but are invoked by other modules instead
-                    module.prepare(status) #will block until all dependencies are done
+                    module.prepare() #will block until all dependencies are done
                     if module.local:
                         module.run(data, self.lock, **self.parameters)
                     else:
@@ -118,6 +118,7 @@ class Corrector:
             for module in self:
                 if module.local:
                     queue.put( module )
+                    self.log("Queuing " + module.id + " for loading")
 
             for thread in threads:
                 thread.start()
@@ -145,8 +146,7 @@ class Corrector:
 
         if self.root[-1] != '/': self.root += '/'
 
-        if 'local' not in self.settings:
-            self.settings['local'] = False
+
 
         if not 'ucto' in self.settings:
             if 'language' in self.settings:
@@ -195,7 +195,11 @@ class Corrector:
             ModuleClass = locals()[moduleclass]
             if 'servers' in modulespec:
                 modulespec['servers'] =  tuple( ( (x['host'],x['port']) for x in modulespec['servers']) )
-            module = ModuleClass(self, **modulespec)
+            try:
+                module = ModuleClass(self, **modulespec)
+            except TypeError:
+                raise Exception("Error instantiating " + ModuleClass.__name__)
+
             self.append(module)
 
 
@@ -442,8 +446,8 @@ class Corrector:
         parameters = {}
         modules = []
         if args.command == 'run':
-            if args.local:
-                self.settings['local'] = True
+            for modid, module in self.modules.items():
+                module.local = True
             if args.parameters: parameters = dict(( tuple(p.split('=')) for p in args.parameters))
             if args.modules: modules = args.modules.split(',')
             self.run(args.filename,modules, args.outputfile, **parameters)
@@ -585,7 +589,6 @@ class Module:
             raise Exception("Module must have an ID!")
         self.id = self.settings['id']
 
-        self.local = self.parent.settings['local'] or not ('servers' in self.settings and self.settings['servers'])
 
         if 'source' in self.settings:
             if isinstance(self.settings['source'],str):
@@ -651,6 +654,7 @@ class Module:
             if self.submodule and self.local:
                 raise Exception("Module " + self.id + " is a submodule, but no servers are defined, submodules can not be local only")
 
+        self.local = not ('servers' in self.settings and self.settings['servers']) #will be overriden later if --local is set
 
 
     def findserver(self, loadbalanceserver):

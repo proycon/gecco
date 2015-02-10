@@ -237,7 +237,7 @@ class ColibriLexiconModule(LexiconModule):
         model.save(modelfile)
 
 
-class AspellModule(gecco.Module):
+class AspellModule(Module):
     UNIT = folia.Word
 
 

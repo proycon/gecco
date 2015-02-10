@@ -21,14 +21,14 @@ from pynlpl.formats import folia
 from pynlpl.textprocessors import Windower
 from gecco.gecco import Module
 from gecco.modules.lexicon import LexiconModule
-import colibicore
+import colibricore
 
 
 def splits(s):
     for i in range(1,len(s) -2):
         yield (s[:i], s[i:])
 
-class RunOnModule:
+class RunOnModule(Module):
     """Detects words that have been joined together but should be split"""
     UNIT = folia.Word
 
@@ -124,7 +124,7 @@ class RunOnModule:
         return json.dumps(self.splitsuggestions(word))
 
 
-class SplitModule:
+class SplitModule(Module):
     """Detects words that have been split but should be merged together as one"""
     UNIT = folia.Word
 
