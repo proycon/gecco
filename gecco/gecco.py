@@ -106,6 +106,7 @@ class Corrector:
     def load(self):
         if not self.loaded:
             self.log("Loading local modules")
+            begintime =time.time()
 
             queue = Queue()
             threads = []
@@ -130,6 +131,8 @@ class Corrector:
             queue.join()
             del queue
             self.loaded = True
+            duration = time.time() - begintime
+            self.log("Modules loaded (" + str(duration) + "s)")
 
 
     def verifysettings(self):
@@ -304,6 +307,7 @@ class Corrector:
 
         self.load() #will only do something the first time executed
 
+        begintime = time.time()
         self.log("Initialising modules on document") #not parellel, acts on same document anyway, should be very quick
         for module in self:
             if not module_ids or module.id in module_ids:
@@ -345,6 +349,8 @@ class Corrector:
                             if module.UNIT is unit:
                                 queue.put( (module, data) )
 
+        duration = time.time() - begintime
+        self.log("Processing done (" + str(duration) + "s)")
 
         self.log("Processing all modules....")
         begintime = time.time()

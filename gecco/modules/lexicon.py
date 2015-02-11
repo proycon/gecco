@@ -253,7 +253,6 @@ class AspellModule(Module):
         self.encoding = self.speller.ConfigKeys()['encoding'][1]
         self.log( "Dictionary encoding: " + self.encoding)
 
-
     def run(self, word, lock, **parameters):
         """This method gets invoked by the Corrector when it runs locally. word is a folia.Word instance"""
         wordenc = str(word).encode(self.encoding)
