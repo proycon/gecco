@@ -19,13 +19,16 @@ Features:
         - Timbl-based (IGTree)
         - alternative: Colibri-Core based
     - Language Model Module
-        - WOPR based
+        - Timbl-based (inspired on WOPR)
         - alternative: SRILM-based, Colibri-Core based
     - Aspell Module
     - Lexicon Module
+        - Colibri-core
     - Errorlist Module
     - Split Module
+        - Colibri-core
     - Runon Module
+        - Colibri-core
     - Garbage Module
     - Punctuation Module (new)
     - Language Detection
@@ -45,24 +48,25 @@ Features:
      - Automatic input conversion from plain text using ucto
    
 Dependencies:
- - Python 3:
+ - Generic:
+  - python 3
   - pynlpl (for FoLiA)
-  - python-timbl
-  - python-ucto
-  - CLAM (port to Python 3 still in progress)
+  - python-ucto & ucto
  - Module-specific:
   - Timbl
-  - WOPR
   - Aspell
   - colibri-core (py3)
- - ucto
+  - aspell-python-py3
+  - python-timbl
+ - Webservice:
+  - CLAM (port to Python 3 still in progress)
 
 Workload:
  - Build framework
  - Abstract Module
    - Client/server functionality
  - Load balancing
- - Reimplement all modules within new framework, in Python. Using python-timbl
+ - Reimplement all modules within new framework, in Python
  - CLAM integration
  - Generic client (separate from main command line tool)
 
@@ -72,7 +76,7 @@ Workload:
 ----------------
 
 A Gecco system consists of a configuration, either in the form of a simple Python
-script or an external. YAML configuration file.
+script or an external YAML configuration file.
 
 	corrector = Corrector(id="fowlt", root="/path/to/fowlt/")
 	corrector.append( IGTreeConfusibleModule("thenthan", source="train.txt",test_crossvalidate=True,test=0.1,tune=0.1,model="confusibles.model", confusible=('then','than')))
