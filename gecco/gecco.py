@@ -347,7 +347,10 @@ class Corrector:
 
 
         self.log("Processing all modules....")
+        begintime = time.time()
         queue.join()
+        duration = time.time() - begintime
+        self.log("Processing done (" + str(duration) + "s)")
 
         for thread in threads:
             thread.stop()
@@ -422,6 +425,7 @@ class Corrector:
         parser_run.add_argument('filename', help="The file to correct, can be either a FoLiA XML file or a plain-text file which will be automatically tokenised and converted on-the-fly. The XML file will also be the output file. The XML file is edited in place, it will also be the output file unless -o is specified")
         parser_run.add_argument('modules', help="Only run the modules with the specified IDs (comma-separated list) (if omitted, all modules are run)", nargs='?',default="")
         parser_run.add_argument('-p',dest='parameters', help="Custom parameters passed to the modules, specify as -p parameter=value. This option can be issued multiple times", required=False, action="append")
+        parser_run.add_argument('-s',dest='settings', help="Setting overrides, specify as -s setting=value. This option can be issues multiple times.", required=False, action="append")
         parser_run.add_argument('--local', help="Run all modules locally, ignore remote servers", required=False, action='store_true')
         parser_startservers = subparsers.add_parser('startservers', help="Starts all the module servers that are configured to run on the current host. Issue once for each server used.")
         parser_startservers.add_argument('modules', help="Only start server for modules with the specified IDs (comma-separated list) (if omitted, all modules are run)", nargs='?',default="")
@@ -444,6 +448,13 @@ class Corrector:
 
 
         args = parser.parse_args()
+
+        if args.settings:
+            for key, value in ( tuple(p.split('=')) for p in args.settings):
+                if value.isnumeric():
+                    self.settings[key] = int(value)
+                else:
+                    self.settings[key] = value
 
         parameters = {}
         modules = []

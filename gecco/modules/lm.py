@@ -134,7 +134,7 @@ class TIMBLLMModule(Module):
         """This method gets invoked by the Corrector when it runs locally. word is a folia.Word instance"""
         wordstr = str(word)
         best, distribution = self.classify(word)
-        if best != word:
+        if best != wordstr:
             distribution = [ x for x in distribution.items() if x[1] >= self.threshold ]
             if distribution:
                 self.addwordsuggestions(lock, word, distribution)
@@ -143,7 +143,7 @@ class TIMBLLMModule(Module):
         """This method gets invoked by the Corrector when it should connect to a remote server, the client instance is passed and already available (will connect on first communication). word is a folia.Word instance"""
         wordstr = str(word)
         best, distribution = json.loads(client.communicate(json.dumps(self.getfeatures(word))))
-        if best != word and distribution: #distribution filtering is done server-side
+        if best != wordstr and distribution: #distribution filtering is done server-side
             self.addwordsuggestions(lock, word,distribution)
 
     def server_handler(self, features):
