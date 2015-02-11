@@ -21,6 +21,7 @@ from pynlpl.formats import folia
 from pynlpl.textprocessors import Windower
 from timbl import TimblClassifier
 from gecco.gecco import Module
+from pynlpl.statistics import levenshtein
 
 
 class TIMBLLMModule(Module):
@@ -45,6 +46,9 @@ class TIMBLLMModule(Module):
             self.threshold = self.settings['threshold']
         else:
             self.threshold = 0.9
+
+        if 'maxdistance' not in self.settings:
+            self.settings['maxdistance'] = 2
 
 
         #self.cache = getcache(self.settings, 1000)
@@ -107,7 +111,16 @@ class TIMBLLMModule(Module):
     def classify(self, word):
         features = self.getfeatures(word)
         best, distribution,_ = self.classifier.classify(features)
-        return best, distribution
+
+        if self.settings['maxdistance']:
+            #filter suggestions that are too distant
+            dist = {}
+            for key, freq in distribution.items():
+                if levenshtein(word,key) <= self.settings['maxdistance']:
+                    dist[key] = freq
+            return best, dist
+        else:
+            return best, distribution
 
 
     def getfeatures(self, word):
