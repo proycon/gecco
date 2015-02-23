@@ -25,7 +25,7 @@ setup(
     description = ("Generic Environment for Context-Aware Correction of Orthography"),
     license = "GPL",
     keywords = "spelling corrector spell check nlp computational_linguistics rest",
-    url = "http://proycon.github.com/clam",
+    url = "https://github.com/proycon/gecco",
     packages=['gecco','gecco.modules','gecco.helpers'],
     long_description=read('README.md'),
     classifiers=[
