@@ -40,6 +40,7 @@ class ProcessorThread(Thread):
         self._stop = False
         self.loadbalancemaster = loadbalancemaster
         self.parameters = parameters
+        self.debug  = 'debug' in parameters and parameters['debug']
         self.clients = {} #each thread keeps a bunch of clients open to the servers of the various modules so we don't have to reconnect constantly (= faster)
         super().__init__()
 
@@ -51,14 +52,25 @@ class ProcessorThread(Thread):
                     if not module.submodule: #modules marked a submodule won't be called by the main process, but are invoked by other modules instead
                         module.prepare() #will block until all dependencies are done
                         if module.local:
+                            if self.debug:
+                                begintime = time.time()
+                                module.log(" (Running " + module.id + " on '" + str(data) + "' [local])")
                             module.run(data, self.lock, **self.parameters)
+                            if self.debug:
+                                duration = round(time.time() - begintime,4)
+                                module.log(" (...took " + str(duration) + "s)")
                         else:
                             skipservers= []
                             connected = False
+                            if self.debug:
+                                begintime = time.time()
+                                module.log(" (Running " + module.id + " on '" + str(data) + "' [remote]")
                             for server,port in  module.findserver(self.loadbalancemaster):
                                 try:
                                     if (server,port) not in self.clients:
                                         self.clients[(server,port)] = module.CLIENT(server,port)
+                                    if debug:
+                                        module.log(" (server=" + server + ", port=" + str(port) + ")")
                                     module.runclient( self.clients[(server,port)], data, self.lock,  **self.parameters)
                                     #will only be executed when connection succeeded:
                                     connected = True
@@ -68,6 +80,9 @@ class ProcessorThread(Thread):
                             if not connected:
                                 self.q.task_done()
                                 raise Exception("Unable to connect client to server! All servers for module " + module.id + " are down!")
+                            if self.debug:
+                                duration = round(time.time() - begintime,4)
+                                module.log(" (...took " + str(duration) + "s)")
                 self.q.task_done()
                 self.parent.done.add(module.id)
 
@@ -453,6 +468,7 @@ class Corrector:
 
 
 
+
         args = parser.parse_args()
 
         if args.settings:
@@ -809,7 +825,10 @@ class Module:
         self.log(" FQL: " + q)
         q = fql.Query(q)
         lock.acquire()
+        #begintime = time.time()
         q(element.doc)
+        #duration = time.time() - begintime
+        #self.log(" (Query took " + str(duration) + "s)")
         lock.release()
 
 
@@ -860,9 +879,11 @@ class Module:
 def main():
     try:
         configfile = sys.argv[1]
+        if configfile in ("-h","--help"):
+            raise
         sys.argv = [sys.argv[0]] + sys.argv[2:]
     except:
-        print("Syntax: gecco [configfile.yml]" ,file=sys.stderr)
+        print("Syntax: gecco [configfile.yml] (First specify a config file, for help then add -h)" ,file=sys.stderr)
         sys.exit(2)
     corrector = Corrector(config=configfile)
     corrector.main()
