@@ -182,13 +182,13 @@ class LexiconModule(Module):
         """This method gets invoked by the Corrector when it runs locally. word is a folia.Word instance"""
         results = self.findclosest(str(word))
         if results:
-            self.addwordsuggestions(lock, word, [ result for result,distance in results ] )
+            self.addsuggestions(lock, word, [ result for result,distance in results ] )
 
     def runclient(self, client, word, lock, **parameters):
         """This method gets invoked by the Corrector when it should connect to a remote server, the client instance is passed and already available (will connect on first communication). word is a folia.Word instance"""
         results = json.loads(client.communicate('!' + str(word))) #! is the command to return closest suggestions, ? merely return a boolean whether the word is in lexicon or not
         if results:
-            self.addwordsuggestions(lock, word, [ result for result,distance in results ] )
+            self.addsuggestions(lock, word, [ result for result,distance in results ] )
 
     def server_handler(self, input):
         """This methods gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
@@ -258,13 +258,13 @@ class AspellModule(Module):
         wordenc = str(word).encode(self.encoding)
         suggestions = [ w for w in self.speller.suggest(wordenc) ]
         if str(word) not in suggestions:
-            self.addwordsuggestions(lock, word, suggestions )
+            self.addsuggestions(lock, word, suggestions )
 
     def runclient(self, client, word, lock, **parameters):
         """This method gets invoked by the Corrector when it should connect to a remote server, the client instance is passed and already available (will connect on first communication). word is a folia.Word instance"""
         suggestions= json.loads(client.communicate(str(word)))
         if suggestions:
-            self.addwordsuggestions(lock, word, suggestions )
+            self.addsuggestions(lock, word, suggestions )
 
     def server_handler(self, word):
         """This methods gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""

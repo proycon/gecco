@@ -122,7 +122,7 @@ class TIMBLWordConfusibleModule(Module):
 
 
     def getfeatures(self, word):
-        """Get features at testing time"""
+        """Get features at testing time, crosses sentence boundaries"""
         leftcontext = tuple([ str(w) for w in word.leftcontext(self.settings['leftcontext'],"<begin>") ])
         rightcontext = tuple([ str(w) for w in word.rightcontext(self.settings['rightcontext'],"<end>") ])
         return leftcontext + rightcontext
@@ -135,7 +135,7 @@ class TIMBLWordConfusibleModule(Module):
             #the word is one of our confusibles
             best, distribution = self.classify(word)
             if best != word:
-                self.addwordsuggestions(lock, word, list(distribution.items()))
+                self.addsuggestions(lock, word, list(distribution.items()))
 
     def runclient(self, client, word, lock, **parameters):
         """This method gets invoked by the Corrector when it should connect to a remote server, the client instance is passed and already available (will connect on first communication). word is a folia.Word instance"""

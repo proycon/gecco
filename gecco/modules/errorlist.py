@@ -68,7 +68,7 @@ class WordErrorListModule(Module):
         wordstr = str(word)
         if wordstr in self.errorlist:
             suggestions = self.errorlist[wordstr]
-            self.addwordsuggestions(lock, word, suggestions)
+            self.addsuggestions(lock, word, suggestions)
 
     def runclient(self, client, word, lock, **parameters):
         """This method gets invoked by the Corrector when it should connect to a remote server, the client instance is passed and already available (will connect on first communication). word is a folia.Word instance"""
@@ -76,7 +76,7 @@ class WordErrorListModule(Module):
         response = client.communicate(wordstr)
         if response != wordstr: #server will echo back the same thing if it's not in the error list
             suggestions = response.split("\t")
-            self.addwordsuggestions(lock, word, suggestions)
+            self.addsuggestions(lock, word, suggestions)
 
     def server_handler(self, word):
         """This methods gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""

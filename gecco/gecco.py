@@ -789,87 +789,66 @@ class Module:
     # These methods are *NOT* available to server_handler() !
     # Locks ensure that the state of the FoLiA document can't be corrupted by partial unfinished edits
 
-    def addwordsuggestions(self, lock, word, suggestions):
-        self.log("Adding correction for " + word.id + " " + word.text())
-
-        lock.acquire()
-        #Determine an ID for the next correction
-        correction_id = word.generate_id(folia.Correction)
+    def addsuggestions(self, lock, element, suggestions):
+        self.log("Adding correction for " + element.id + " " + element.text())
 
         if isinstance(suggestions,str):
             suggestions = [suggestions]
 
-        suggestions_i = []
-        for i, suggestion in enumerate(suggestions):
+        q = "EDIT ID \"" + element.id + "\" (AS CORRECTION OF " + self.settings['set'] + " WITH class \"" + self.settings['class'] + "\" annotator \"" + self.settings['annotator'] + "\" annotatortype \"auto\" datetime now"
+        for suggestion in suggestions:
             if isinstance(suggestion, tuple):
                 suggestion, confidence = suggestion
-                suggestions_i.append( folia.Suggestion(word.doc, suggestion, confidence=confidence) )
             else:
-                suggestions_i.append( folia.Suggestion(word.doc, suggestion) )
+                confidence = None
+            q += " SUGGESTION text \"" + suggestion + "\""
+            if confidence is not None:
+                q += " WITH confidence " + str(confidence)
 
-        self.log("\tsuggestions: " + ", ".join([str(x) for x in suggestions_i]))
-
-        #add the correction
-        word.correct(
-            suggestions=suggestions_i,
-            id=correction_id,
-            set=self.settings['set'],
-            cls=self.settings['class'],
-            annotator=self.settings['annotator'],
-            annotatortype=folia.AnnotatorType.AUTO,
-            datetime=datetime.datetime.now(),
-        )
+        q += ") RETURN nothing"
+        q = fql.query(q)
+        lock.acquire()
+        q(self.doc)
         lock.release()
 
 
+    def adderrordetection(self, lock, element):
+        self.log("Adding correction for " + element.id + " " + element.text())
 
-    def adderrordetection(self, lock, word):
-        self.log("Adding correction for " + word.id + " " + word.text())
-
-        lock.acquire()
         #add the correction
-        word.append(
-            folia.ErrorDetection(
-                self.doc,
-                set=self.settings['set'],
-                cls=self.settings['class'],
-                annotator=self.settings['annotator'],
-                annotatortype='auto',
-                datetime=datetime.datetime.now()
-            )
-        )
+        q =fql.Query("ADD errordetection OF " + self.settings['set'] + " WITH class \"" + self.settings['class'] + "\" annotator \"" + self.settings['annotator'] + "\" annotatortype \"auto\" datetime now FOR ID \"" + element.id + "\" RETURN nothing")
+        lock.acquire()
+        q(element.doc)
         lock.release()
 
     def splitcorrection(self, lock, word, suggestions):
         #suggestions is a list of  ([word], confidence) tuples
         lock.acquire()
-        sentence = word.sentence()
-        suggestions = [ folia.Suggestion(self.doc, *[ folia.Word(self.doc, generate_id_in=sentence, text=w) for w in suggestion ], confidence=confidence ) for suggestion, confidence  in suggestions ]
-        word.correct(suggestions=suggestions,current=[word],
-            set=self.settings['set'],
-            cls=self.settings['class'],
-            annotator=self.settings['annotator'],
-            annotatortype='auto',
-            datetime=datetime.datetime.now()
-        )
+        q = "SUBSTITUTE (AS CORRECTION OF " + self.settings['set'] + " WITH class \"" + self.settings['class'] + "\" annotator \"" + self.settings['annotator'] + "\" annotatortype \"auto\" datetime now"
+        for suggestion, confidence in suggestions:
+            q += " SUGGESTION"
+            for newword in suggestion:
+                q += " (SUBSTITUTE w WITH text \"" + newword + "\")"
+            q += " WITH confidence " + str(confidence)
+        q = " FOR SPAN ID \"" + word.id + "\""
+        q += " RETURN nothing"
+        q(self.doc)
         lock.release()
 
     def mergecorrection(self, lock, newword, originalwords):
+        q = "SUBSTITUTE (AS CORRECTION OF " + self.settings['set'] + " WITH class \"" + self.settings['class'] + "\" annotator \"" + self.settings['annotator'] + "\" annotatortype \"auto\" datetime now"
+        for suggestion, confidence in suggestions:
+            q += " SUGGESTION"
+            q += " (SUBSTITUTE w WITH text \"" + newword + "\")"
+            q += " WITH confidence " + str(confidence)
+        q = " FOR SPAN"
+        for i, ow in enumerate(originalwords):
+            if i > 0: q += " &"
+            q += " ID \"" + ow.id + "\""
+        q += " RETURN nothing"
+        q = fql.Query(q)
         lock.acquire()
-        sentence = originalwords[0].sentence()
-        if not sentence:
-            raise Exception("Expected sentence for " + str(repr(originalwords[0])) + ", got " + str(repr(sentence)))
-        newword = folia.Word(self.doc, generate_id_in=sentence, text=newword)
-        sentence.mergewords(
-            newword,
-            *originalwords,
-            set=self.settings['set'],
-            cls=self.settings['class'],
-            annotator=self.settings['annotator'],
-            annotatortype='auto',
-            datetime=datetime.datetime.now(),
-            suggest=True
-        )
+        q(self.doc)
         lock.release()
 
 
