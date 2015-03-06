@@ -137,14 +137,14 @@ class TIMBLLMModule(Module):
         if best != wordstr:
             distribution = [ x for x in distribution.items() if x[1] >= self.threshold ]
             if distribution:
-                self.addwordsuggestions(lock, word, distribution)
+                self.addsuggestions(lock, word, distribution)
 
     def runclient(self, client, word, lock, **parameters):
         """This method gets invoked by the Corrector when it should connect to a remote server, the client instance is passed and already available (will connect on first communication). word is a folia.Word instance"""
         wordstr = str(word)
         best, distribution = json.loads(client.communicate(json.dumps(self.getfeatures(word))))
         if best != wordstr and distribution: #distribution filtering is done server-side
-            self.addwordsuggestions(lock, word,distribution)
+            self.addsuggestions(lock, word,distribution)
 
     def server_handler(self, features):
         """This method gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""

@@ -23,7 +23,7 @@ import subprocess
 from collections import OrderedDict
 from threading import Thread, Lock
 from queue import Queue
-from pynlpl.formats import folia
+from pynlpl.formats import folia, fql
 from ucto import Tokenizer
 
 import argparse
@@ -795,7 +795,7 @@ class Module:
         if isinstance(suggestions,str):
             suggestions = [suggestions]
 
-        q = "EDIT ID \"" + element.id + "\" (AS CORRECTION OF " + self.settings['set'] + " WITH class \"" + self.settings['class'] + "\" annotator \"" + self.settings['annotator'] + "\" annotatortype \"auto\" datetime now"
+        q = "EDIT t (AS CORRECTION OF " + self.settings['set'] + " WITH class \"" + self.settings['class'] + "\" annotator \"" + self.settings['annotator'] + "\" annotatortype \"auto\" datetime now"
         for suggestion in suggestions:
             if isinstance(suggestion, tuple):
                 suggestion, confidence = suggestion
@@ -805,10 +805,11 @@ class Module:
             if confidence is not None:
                 q += " WITH confidence " + str(confidence)
 
-        q += ") RETURN nothing"
-        q = fql.query(q)
+        q += ") FOR ID \"" + element.id + "\" RETURN nothing"
+        self.log(" FQL: " + q)
+        q = fql.Query(q)
         lock.acquire()
-        q(self.doc)
+        q(element.doc)
         lock.release()
 
 
@@ -823,16 +824,19 @@ class Module:
 
     def splitcorrection(self, lock, word, suggestions):
         #suggestions is a list of  ([word], confidence) tuples
-        lock.acquire()
         q = "SUBSTITUTE (AS CORRECTION OF " + self.settings['set'] + " WITH class \"" + self.settings['class'] + "\" annotator \"" + self.settings['annotator'] + "\" annotatortype \"auto\" datetime now"
         for suggestion, confidence in suggestions:
-            q += " SUGGESTION"
-            for newword in suggestion:
-                q += " (SUBSTITUTE w WITH text \"" + newword + "\")"
-            q += " WITH confidence " + str(confidence)
+            q += " SUGGESTION ("
+            for i, newword in enumerate(suggestion):
+                if i > 0: q += " "
+                q += "SUBSTITUTE w WITH text \"" + newword + "\""
+            q += ") WITH confidence " + str(confidence)
         q = ") FOR SPAN ID \"" + word.id + "\""
         q += " RETURN nothing"
-        q(self.doc)
+        self.log(" FQL: " + q)
+        q = fql.Query(q)
+        lock.acquire()
+        q(word.doc)
         lock.release()
 
     def mergecorrection(self, lock, newword, originalwords):
@@ -846,9 +850,10 @@ class Module:
             if i > 0: q += " &"
             q += " ID \"" + ow.id + "\""
         q += " RETURN nothing"
+        self.log(" FQL: " + q)
         q = fql.Query(q)
         lock.acquire()
-        q(self.doc)
+        q(word.doc)
         lock.release()
 
 
