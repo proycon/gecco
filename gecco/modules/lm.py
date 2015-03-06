@@ -16,6 +16,7 @@ import json
 import io
 import bz2
 import gzip
+import time
 from collections import OrderedDict
 from pynlpl.formats import folia
 from pynlpl.textprocessors import Windower
@@ -108,16 +109,26 @@ class TIMBLLMModule(Module):
         classifier.save()
 
 
-    def classify(self, word):
+    def classify(self, word,debug=False):
         features = self.getfeatures(word)
+        if debug:
+            begintime = time.time()
         best, distribution,_ = self.classifier.classify(features)
+        if debug:
+            duration = round(time.time() - begintime,4)
+            self.log(" (Classification took  " + str(duration) + "s, unfiltered distribution size=" + str(len(distribution)) + ")")
 
         if self.settings['maxdistance']:
             #filter suggestions that are too distant
+            if debug:
+                begintime = time.time()
             dist = {}
             for key, freq in distribution.items():
-                if levenshtein(word,key) <= self.settings['maxdistance']:
+                if freq >= self.threshold and levenshtein(word,key) <= self.settings['maxdistance']:
                     dist[key] = freq
+            if debug:
+                duration = round(time.time() - begintime,4)
+                self.log(" (Levenshtein filtering took  " + str(duration) + "s, final distribution size=" + str(len(dist)) + ")")
             return best, dist
         else:
             return best, distribution
@@ -133,7 +144,7 @@ class TIMBLLMModule(Module):
     def run(self, word, lock, **parameters):
         """This method gets invoked by the Corrector when it runs locally. word is a folia.Word instance"""
         wordstr = str(word)
-        best, distribution = self.classify(word)
+        best, distribution = self.classify(word, 'debug' in parameters and parameters['debug'])
         if best != wordstr:
             distribution = [ x for x in distribution.items() if x[1] >= self.threshold ]
             if distribution:
