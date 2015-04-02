@@ -471,12 +471,15 @@ class Corrector:
 
         args = parser.parse_args()
 
-        if args.settings:
-            for key, value in ( tuple(p.split('=')) for p in args.settings):
-                if value.isnumeric():
-                    self.settings[key] = int(value)
-                else:
-                    self.settings[key] = value
+        try:
+            if  args.settings:
+                for key, value in ( tuple(p.split('=')) for p in args.settings):
+                    if value.isnumeric():
+                        self.settings[key] = int(value)
+                    else:
+                        self.settings[key] = value
+        except AttributeError:
+            pass
 
         parameters = {}
         modules = []
