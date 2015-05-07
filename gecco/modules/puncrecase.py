@@ -23,7 +23,7 @@ from gecco.gecco import Module
 from gecco.helpers.hapaxing import gethapaxer
 
 
-class TIMBLWordConfusibleModule(Module):
+class TIMBLPuncRecaseModule(Module):
     UNIT = folia.Word
 
     def verifysettings(self):
@@ -42,10 +42,6 @@ class TIMBLWordConfusibleModule(Module):
             self.settings['rightcontext'] = 3
 
         self.hapaxer = gethapaxer(self.settings)
-
-        if 'confusibles' not in self.settings:
-            raise Exception("No confusibles specified for " + self.id + "!")
-        self.confusibles = self.settings['confusibles']
 
 
         try:
@@ -76,6 +72,23 @@ class TIMBLWordConfusibleModule(Module):
         self.classifier = TimblClassifier(fileprefix, self.gettimbloptions())
         self.classifier.load()
 
+
+    def addtraininstance(self,classifier, buffer,l,r):
+        """Helper function"""
+        focusword, cased, punc = buffer[l+1]
+        cls = punc
+        if cased:
+            cls += 'C'
+        if not cls:
+            cls = '-'
+        if self.hapaxer:
+            features = [w for w,_,_ in buffer]
+            features = [w.lower() for w in  self.hapaxer(features[:l]) + (features[l+1],) + self.hapaxer(features[l+2:])]
+        else:
+            features = [w.lower() for w,_,_ in buffer]
+        classifier.append( tuple(features) , cls )
+        return buffer[1:]
+
     def train(self, sourcefile, modelfile, **parameters):
         if self.hapaxer:
              self.log("Training hapaxer...")
@@ -94,16 +107,23 @@ class TIMBLWordConfusibleModule(Module):
             iomodule = gzip
         else:
             iomodule = io
+
+        buffer = [("<begin>",False,'')] * l
         with iomodule.open(sourcefile,mode='rt',encoding='utf-8') as f:
             for line in f:
-                for ngram in Windower(line, n):
-                    confusible = ngram[l]
-                    if confusible in self.settings['confusibles']:
-                        if self.hapaxer:
-                            ngram = self.hapaxer(ngram)
-                        leftcontext = tuple(ngram[:l])
-                        rightcontext = tuple(ngram[l+1:])
-                        classifier.append( leftcontext + rightcontext , confusible )
+                words = line.split(' ')
+                for i, word in enumerate(words):
+                    if i == 0 or word[i-1].isalnum():
+                        punc = ''
+                    else:
+                        punc = word[i-1]
+                    buffer.append( (word, word == word[0].upper() + word[1:].lower(), punc ) )
+                    if len(buffer) == l + r + 1:
+                        buffer = self.addtraininstance(classifier, buffer,l,r)
+                for i in range(0,r):
+                    buffer.append( ("<end>",False,'') )
+                    if len(buffer) == l + r + 1:
+                        buffer = self.addtraininstance(classifier, buffer,l,r)
 
         self.log("Training classifier...")
         classifier.train()
@@ -121,27 +141,51 @@ class TIMBLWordConfusibleModule(Module):
 
     def getfeatures(self, word):
         """Get features at testing time, crosses sentence boundaries"""
-        leftcontext = tuple([ str(w) for w in word.leftcontext(self.settings['leftcontext'],"<begin>") ])
-        rightcontext = tuple([ str(w) for w in word.rightcontext(self.settings['rightcontext'],"<end>") ])
-        return leftcontext + rightcontext
+        l = self.settings['leftcontext']
+        r = self.settings['rightcontext']
 
+        leftcontext = []
+        currentword = word
+        while len(leftcontext) < l:
+            prevword = currentword.prev(folia.Word,None)
+            if prevword:
+                w = prevword.text.lower()
+                if w.isalnum():
+                    leftcontext.insert(0, w )
+            else:
+                leftcontext.insert(0, "<begin>")
+
+        rightcontext = []
+        currentword = word
+        while len(rightcontext) < r:
+            nextword = currentword.next(folia.Word,None)
+            if nextword:
+                w = nextword.text.lower()
+                if w.isalnum():
+                    rightcontext.append(w )
+            else:
+                rightcontext.append("<end>")
+
+        return leftcontext + [word.text().lower()] + rightcontext
+
+    def processresult(self, word, lock, cls, distribution):
+        #TODO: process result
+        #self.addsuggestions(lock, word, list(distribution.items()))
+        raise NotImplementedError
 
     def run(self, word, lock, **parameters):
         """This method gets invoked by the Corrector when it runs locally. word is a folia.Word instance"""
         wordstr = str(word)
-        if wordstr in self.confusibles:
-            #the word is one of our confusibles
-            best, distribution = self.classify(word)
-            if best != word:
-                self.addsuggestions(lock, word, list(distribution.items()))
+        if wordstr.isalnum():
+            cls, distribution = self.classify(word)
+            processresult(word,lock,cls,distribution)
 
     def runclient(self, client, word, lock, **parameters):
         """This method gets invoked by the Corrector when it should connect to a remote server, the client instance is passed and already available (will connect on first communication). word is a folia.Word instance"""
         wordstr = str(word)
-        if wordstr in self.confusibles:
-            best, distribution = json.loads(client.communicate(json.dumps(self.getfeatures(word))))
-            if best != word:
-                self.addwordsuggestions(lock, word, list(distribution.items()))
+        if wordstr.isalnum():
+            cls, distribution = json.loads(client.communicate(json.dumps(self.getfeatures(word))))
+            processresult(word,lock,cls,distribution)
 
     def server_handler(self, features):
         """This method gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""

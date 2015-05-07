@@ -34,6 +34,8 @@ def gethapaxer(settings):
     return hapaxer
 
 class Hapaxer:
+    """The Hapaxer checks words against a lexicon and replaces low-frequency words with a dummy placeholder"""
+
     def __init__(self, sourcefile, modelfile, threshold, minlength=0,maxlength=0, placeholder="<hapax>"):
         self.sourcefile = sourcefile
         self.modelfile = modelfile
