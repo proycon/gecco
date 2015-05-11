@@ -39,7 +39,10 @@ class TIMBLPuncRecaseModule(Module):
             self.settings['leftcontext'] = 3
 
         if 'rightcontext' not in self.settings:
-            self.settings['rightcontext'] = 3
+            self.settings['rightcontext'] = 2
+
+        if 'deletionthreshold' not in self.settings:
+            self.settings['deletionthreshold'] = 0.95
 
         self.hapaxer = gethapaxer(self.settings)
 
@@ -169,7 +172,25 @@ class TIMBLPuncRecaseModule(Module):
         return leftcontext + [word.text().lower()] + rightcontext
 
     def processresult(self, word, lock, cls, distribution):
-        #TODO: process result
+        recase = False
+
+        if cls[-1] == 'C':
+            cls = cls[:-1]
+            recase = True
+
+        if cls == '-':
+            distribution[cls] = self.settings['deletionthreshold']
+
+        else:
+
+        if recase:
+            #recase word
+            t = word.text()
+            if recase:
+                t = t[0].upper() + t[1:]
+            self.addsuggestions(lock, word, [t], cls='capitalizationerror')
+
+
         #self.addsuggestions(lock, word, list(distribution.items()))
         raise NotImplementedError
 
