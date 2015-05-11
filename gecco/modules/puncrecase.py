@@ -44,6 +44,9 @@ class TIMBLPuncRecaseModule(Module):
         if 'deletionthreshold' not in self.settings:
             self.settings['deletionthreshold'] = 0.95
 
+        if 'insertionthreshold' not in self.settings:
+            self.settings['insertionthreshold'] = 0.5
+
         self.hapaxer = gethapaxer(self.settings)
 
 
@@ -179,9 +182,13 @@ class TIMBLPuncRecaseModule(Module):
             recase = True
 
         if cls == '-':
-            distribution[cls] = self.settings['deletionthreshold']
-
-        else:
+            prevword = folia.previous(folia.Word,None)
+            if prevword and distribution[cls] >= self.settings['deletionthreshold'] and all( not c.isalnum() for x in  prevword.text() ):
+                self.suggestdeletion(lock, prevword, cls='redundantpunctuation')
+        elif cls:
+            #insertion of punctuation
+            if distribution[cls] >= self.settings['insertionthreshold']:
+                self.suggestinsertion(lock, word, cls)
 
         if recase:
             #recase word
@@ -190,9 +197,6 @@ class TIMBLPuncRecaseModule(Module):
                 t = t[0].upper() + t[1:]
             self.addsuggestions(lock, word, [t], cls='capitalizationerror')
 
-
-        #self.addsuggestions(lock, word, list(distribution.items()))
-        raise NotImplementedError
 
     def run(self, word, lock, **parameters):
         """This method gets invoked by the Corrector when it runs locally. word is a folia.Word instance"""

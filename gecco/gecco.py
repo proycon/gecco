@@ -878,6 +878,36 @@ class Module:
         q(word.doc)
         lock.release()
 
+    def suggestdeletion(self, lock, word,merge=False):
+        #MAYBE TODO: Convert to FQL
+        lock.acquire()
+        parent = word.parent
+        index = parent.getindex(word,False)
+        if index != -1:
+            self.log(" Suggesting deletion of " + str(word.id))
+            sugkwargs = {}
+            if merge:
+                sugkwargs['merge'] = word.ancestor(folia.StructureElement).id
+            parent.data[index] = folia.Correction(word.doc, folia.Suggestion(word.doc, **sugkwargs), folia.Current(word.doc, word), set=self.settings['set'],cls=self.settings['class'], annotator=self.settings['annotator'],annotatortype=folia.AnnotatorType.AUTO, datetime=datetime.datetime.now())
+        else:
+            self.log(" ERROR: Unable to suggest deletion of " + str(word.id) + ", item index not found")
+        lock.release()
+
+    def suggestinsertion(self,lock,pivotword, text,split=False):
+        #MAYBE TODO: Convert to FQL
+        lock.acquire()
+        index = pivotword.parent.getindex(pivotword)
+        if index != -1:
+            self.log(" Suggesting insertion before " + str(pivotword.id))
+            sugkwargs = {}
+            if merge:
+                sugkwargs['split'] = pivotword.ancestor(folia.StructureElement).id
+            doc = pivotword.doc
+            word.parent.insert(index,folia.Correction(doc, folia.Suggestion(doc, folia.Word(doc,text,generate_id_in=word.parent)), folia.Current(doc), set=self.settings['set'],cls=self.settings['class'], annotator=self.settings['annotator'],annotatortype=folia.AnnotatorType.AUTO, datetime=datetime.datetime.now(), generate_id_in=word.parent))
+        else:
+            self.log(" ERROR: Unable to suggest insertion before " + str(pivotword.id) + ", item index not found")
+        lock.release()
+
 
 def main():
     try:
