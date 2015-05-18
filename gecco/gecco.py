@@ -24,7 +24,7 @@ from collections import OrderedDict
 from threading import Thread, Lock
 from queue import Queue
 from pynlpl.formats import folia, fql
-from ucto import Tokenizer
+from ucto import Tokenizer #pylint: disable=import-error
 
 import argparse
 
@@ -69,7 +69,7 @@ class ProcessorThread(Thread):
                                 try:
                                     if (server,port) not in self.clients:
                                         self.clients[(server,port)] = module.CLIENT(server,port)
-                                    if debug:
+                                    if self.debug:
                                         module.log(" (server=" + server + ", port=" + str(port) + ")")
                                     module.runclient( self.clients[(server,port)], data, self.lock,  **self.parameters)
                                     #will only be executed when connection succeeded:
@@ -690,10 +690,10 @@ class Module:
         else:
             self.submodule = bool(self.settings['submodule'])
 
-            if self.submodule and self.local:
-                raise Exception("Module " + self.id + " is a submodule, but no servers are defined, submodules can not be local only")
-
         self.local = not ('servers' in self.settings and self.settings['servers']) #will be overriden later if --local is set
+
+        if self.submodule and self.local:
+            raise Exception("Module " + self.id + " is a submodule, but no servers are defined, submodules can not be local only")
 
 
     def findserver(self, loadbalanceserver):
@@ -705,11 +705,11 @@ class Module:
             yield self.settings['servers'][0] #2-tuple (host, port)
         else:
             #TODO: Do load balancing, find least busy server
-            for host, port in loadbalancemaster.get(self.settings['servers']):
+            for host, port in self.loadbalancemaster.get(self.settings['servers']):
                 yield host, port
 
     def getsubmoduleclient(self, submodule):
-        submodule.prepare(status) #will block until all submod dependencies are done
+        submodule.prepare() #will block until all submod dependencies are done
         for server,port in submodule.findserver(self.parent.loadbalancemaster):
             if (server,port) not in self.submodclients:
                 self.submodclients[(server,port)] = submodule.CLIENT(server,port)
@@ -863,10 +863,9 @@ class Module:
 
     def mergecorrection(self, lock, newword, originalwords):
         q = "SUBSTITUTE (AS CORRECTION OF " + self.settings['set'] + " WITH class \"" + self.settings['class'] + "\" annotator \"" + self.settings['annotator'] + "\" annotatortype \"auto\" datetime now"
-        for suggestion, confidence in suggestions:
-            q += " SUGGESTION"
-            q += " (SUBSTITUTE w WITH text \"" + newword + "\")"
-            q += " WITH confidence " + str(confidence)
+        q += " SUGGESTION"
+        q += " (SUBSTITUTE w WITH text \"" + newword + "\")"
+        #q += " WITH confidence " + str(confidence)
         q = ") FOR SPAN"
         for i, ow in enumerate(originalwords):
             if i > 0: q += " &"
@@ -875,7 +874,7 @@ class Module:
         self.log(" FQL: " + q)
         q = fql.Query(q)
         lock.acquire()
-        q(word.doc)
+        q(originalwords[0].doc)
         lock.release()
 
     def suggestdeletion(self, lock, word,merge=False):
@@ -900,10 +899,10 @@ class Module:
         if index != -1:
             self.log(" Suggesting insertion before " + str(pivotword.id))
             sugkwargs = {}
-            if merge:
+            if split:
                 sugkwargs['split'] = pivotword.ancestor(folia.StructureElement).id
             doc = pivotword.doc
-            word.parent.insert(index,folia.Correction(doc, folia.Suggestion(doc, folia.Word(doc,text,generate_id_in=word.parent)), folia.Current(doc), set=self.settings['set'],cls=self.settings['class'], annotator=self.settings['annotator'],annotatortype=folia.AnnotatorType.AUTO, datetime=datetime.datetime.now(), generate_id_in=word.parent))
+            pivotword.parent.insert(index,folia.Correction(doc, folia.Suggestion(doc, folia.Word(doc,text,generate_id_in=pivotword.parent)), folia.Current(doc), set=self.settings['set'],cls=self.settings['class'], annotator=self.settings['annotator'],annotatortype=folia.AnnotatorType.AUTO, datetime=datetime.datetime.now(), generate_id_in=pivotword.parent))
         else:
             self.log(" ERROR: Unable to suggest insertion before " + str(pivotword.id) + ", item index not found")
         lock.release()

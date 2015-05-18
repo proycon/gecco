@@ -21,7 +21,7 @@ from pynlpl.formats import folia
 from pynlpl.textprocessors import Windower
 from gecco.gecco import Module
 from gecco.modules.lexicon import LexiconModule
-import colibricore
+import colibricore #pylint: disable=import-error
 
 
 def splits(s):
