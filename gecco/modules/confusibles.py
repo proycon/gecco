@@ -326,12 +326,12 @@ class TIMBLSuffixConfusibleModule(Module):
 
     def getsuffix(self, confusible):
         suffix = None
-        for suffix in self.settings['suffixes']: #suffixes are sorted from long to short
+        for suffix in self.suffixes: #suffixes are sorted from long to short
             if confusible.endswith(suffix):
                 break
         if suffix is None:
             raise ValueError("No suffix found!")
-        return suffix, confusible[:-len(suffix)] + self.settings['suffixes'][0]  #suffix, normalized
+        return suffix, confusible[:-len(suffix)] + self.suffixes[0]  #suffix, normalized
 
 
 
