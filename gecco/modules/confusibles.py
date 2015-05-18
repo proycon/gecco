@@ -78,8 +78,8 @@ class TIMBLWordConfusibleModule(Module):
 
     def train(self, sourcefile, modelfile, **parameters):
         if self.hapaxer:
-             self.log("Training hapaxer...")
-             self.hapaxer.train()
+            self.log("Training hapaxer...")
+            self.hapaxer.train()
 
         l = self.settings['leftcontext']
         r = self.settings['rightcontext']
@@ -208,8 +208,8 @@ class TIMBLSuffixConfusibleModule(Module):
 
     def train(self, sourcefile, modelfile, **parameters):
         if self.hapaxer:
-             self.log("Training hapaxer...")
-             self.hapaxer.train()
+            self.log("Training hapaxer...")
+            self.hapaxer.train()
 
         l = self.settings['leftcontext']
         r = self.settings['rightcontext']
@@ -265,7 +265,7 @@ class TIMBLSuffixConfusibleModule(Module):
     def getfeatures(self, word):
         """Get features at testing time, crosses sentence boundaries"""
         leftcontext = tuple([ str(w) for w in word.leftcontext(self.settings['leftcontext'],"<begin>") ])
-        suffix, normalized = self.getsuffix(word)
+        _, normalized = self.getsuffix(word)
         rightcontext = tuple([ str(w) for w in word.rightcontext(self.settings['rightcontext'],"<end>") ])
         return leftcontext + tuple(normalized,) + rightcontext
 
