@@ -125,7 +125,7 @@ class Corrector:
 
             queue = Queue()
             threads = []
-            for i in range(self.settings['threads']):
+            for _ in range(self.settings['threads']):
                 thread = LoaderThread(queue)
                 thread.setDaemon(True)
                 threads.append(thread)
@@ -256,7 +256,7 @@ class Corrector:
         assert isinstance(module, Module)
         self.modules[module.id] = module
 
-    def train(self,module_ids=[], **parameters):
+    def train(self,module_ids=[], **parameters): #pylint: disable=dangerous-default-value
         for module in self:
             if not module_ids or module.id in module_ids:
                 for sourcefile, modelfile in zip(module.sources, module.models):
@@ -266,19 +266,19 @@ class Corrector:
                             raise Exception("[" + module.id + "] Source file not found: " + sourcefile)
                         module.train(sourcefile, modelfile, **parameters)
 
-    def test(self,module_ids=[], **parameters):
+    def test(self,module_ids=[], **parameters): #pylint: disable=dangerous-default-value
         for module in self:
             if not module_ids or module.id in module_ids:
                 self.log("Testing module " + module.id + "...")
                 module.test(**parameters)
 
-    def tune(self,module_ids=[], **parameters):
+    def tune(self,module_ids=[], **parameters): #pylint: disable=dangerous-default-value
         for module in self:
             if not module_ids or module.id in module_ids:
                 self.log("Tuning module " + module.id + "...")
                 module.tune(**parameters)
 
-    def reset(self,module_ids=[]):
+    def reset(self,module_ids=[]): #pylint: disable=dangerous-default-value
         for module in self:
             if not module_ids or module.id in module_ids:
                 if module.sources and module.models:
@@ -293,7 +293,7 @@ class Corrector:
                                     self.log("Deleting model " + modelfile + "...")
                                     module.reset(modelfile, sourcefile)
 
-    def run(self, foliadoc, module_ids=[], outputfile="",**parameters):
+    def run(self, foliadoc, module_ids=[], outputfile="",**parameters): #pylint: disable=dangerous-default-value
         if isinstance(foliadoc, str):
             #We got a filename instead of a FoLiA document, that's okay
             ext = foliadoc.split('.')[-1].lower()
@@ -338,7 +338,7 @@ class Corrector:
         queue = Queue() #data in queue takes the form (module, data), where data is an instance of module.UNIT (a folia document or element)
         lock = Lock()
         threads = []
-        for i in range(self.settings['threads']):
+        for _ in range(self.settings['threads']):
             thread = ProcessorThread(self, queue, lock, self.loadbalancemaster, **parameters)
             thread.setDaemon(True)
             thread.start()
@@ -399,7 +399,7 @@ class Corrector:
 
 
 
-    def startservers(self, module_ids=[]):
+    def startservers(self, module_ids=[]): #pylint: disable=dangerous-default-value
         """Starts all servers for the current host"""
 
         processes = []
