@@ -484,7 +484,7 @@ class Corrector:
         parameters = {}
         modules = []
         if args.command == 'run':
-            for modid, module in self.modules.items():
+            for  module in self.modules.values():
                 module.local = True
             if args.parameters: parameters = dict(( tuple(p.split('=')) for p in args.parameters))
             if args.modules: modules = args.modules.split(',')

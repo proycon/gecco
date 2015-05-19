@@ -17,7 +17,7 @@ import bz2
 import gzip
 from pynlpl.formats import folia
 from pynlpl.textprocessors import Windower
-from timbl import TimblClassifier
+from timbl import TimblClassifier #pylint: disable=import-error
 import colibricore #pylint: disable=import-error
 from gecco.gecco import Module
 from gecco.helpers.hapaxing import gethapaxer
