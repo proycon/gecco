@@ -1,0 +1,47 @@
+language: python
+python:
+    - 3.2
+    - 3.3
+    - 3.4
+before_install:
+    - sudo apt-get update
+    - sudo apt-get install pkg-config autoconf-archive autotools-dev libicu-dev libxml2-dev libbz2-dev zlib1g-dev 
+    - git clone https://github.com/proycon/ticcutils
+    - cd ticcutils
+    - bash bootstrap.sh
+    - ./configure
+    - make
+    - sudo make install
+    - cd ..
+    - git clone https://github.com/proycon/libfolia
+    - cd libfolia
+    - bash bootstrap.sh
+    - ./configure
+    - make
+    - sudo make install
+    - cd ..
+    - git clone https://github.com/proycon/ucto
+    - cd ucto
+    - bash bootstrap.sh
+    - ./configure
+    - make
+    - sudo make install
+    - cd ..
+    - git clone https://github.com/proycon/timbl
+    - cd timbl
+    - bash bootstrap.sh
+    - ./configure
+    - make
+    - sudo make install
+    - cd ..
+    - git clone https://github.com/proycon/ucto
+    - cd ucto
+    - bash bootstrap.sh
+    - ./configure
+    - make
+    - sudo make install
+    - pip install python-timbl python-ucto colibri-core
+install: 
+    - python setup.py install
+script: 
+    - LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib ./test.sh >&2
