@@ -40,6 +40,7 @@ before_install:
     - ./configure
     - make
     - sudo make install
+    - cd ..
     - pip install python-timbl python-ucto colibri-core
 install: 
     - python setup.py install
