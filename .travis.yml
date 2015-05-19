@@ -34,13 +34,6 @@ before_install:
     - make
     - sudo make install
     - cd ..
-    - git clone https://github.com/proycon/ucto
-    - cd ucto
-    - bash bootstrap.sh
-    - ./configure
-    - make
-    - sudo make install
-    - cd ..
     - pip install python-timbl python-ucto colibri-core
 install: 
     - python setup.py install
