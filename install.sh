@@ -33,7 +33,8 @@ cd src
 echo "Installing ticcutils">&2
 git clone https://github.com/proycon/ticcutils
 cd ticcutils
-bash bootstrap.sh || error "ticcutils bootstrap failed"
+echo $PWD >&2
+. bootstrap.sh || error "ticcutils bootstrap failed"
 ./configure --prefix=$VIRTUAL_ENV || error "ticcutils configure failed"
 make || error "ticcutils make failed"
 make install || error "ticcutils make install failed"
@@ -42,7 +43,7 @@ cd ..
 echo "Installing libfolia">&2
 git clone https://github.com/proycon/libfolia
 cd libfolia
-bash bootstrap.sh || error "libfolia bootstrap failed"
+. bootstrap.sh || error "libfolia bootstrap failed"
 ./configure --prefix=$VIRTUAL_ENV || error "libfolia configure failed"
 make || error "libfolia make failed"
 make install || error "libfolia make install failed"
@@ -51,7 +52,7 @@ cd ..
 echo "Installing ucto">&2
 git clone https://github.com/proycon/ucto
 cd ucto
-bash bootstrap.sh || error "ucto bootstrap failed"
+. bootstrap.sh || error "ucto bootstrap failed"
 ./configure --prefix=$VIRTUAL_ENV || error "ucto configure failed"
 make || error "ucto make failed"
 make install || error "ucto make install failed"
@@ -60,7 +61,7 @@ cd ..
 echo "Installing timbl">&2
 git clone https://github.com/proycon/timbl
 cd timbl
-bash bootstrap.sh || error "timbl bootstrap failed"
+. bootstrap.sh || error "timbl bootstrap failed"
 ./configure --prefix=$VIRTUAL_ENV || error "timbl configure failed"
 make || error "timbl make failed"
 make install || error "timbl make install failed"
