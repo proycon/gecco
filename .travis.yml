@@ -5,7 +5,7 @@ python:
     - 3.4
 before_install:
     - sudo apt-get update
-    - sudo apt-get install pkg-config autoconf-archive autotools-dev libicu-dev libxml2-dev libbz2-dev zlib1g-dev 
+    - sudo apt-get install pkg-config autoconf-archive autotools-dev libicu-dev libxml2-dev libbz2-dev zlib1g-dev libtar-dev libboost-dev
     - git clone https://github.com/proycon/ticcutils
     - cd ticcutils
     - bash bootstrap.sh
