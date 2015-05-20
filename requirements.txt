@@ -1,3 +1,4 @@
+Cython>=0.20
 lxml>=2.2
 pynlpl>=0.7.6
 pyyaml
