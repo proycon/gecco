@@ -1,6 +1,7 @@
 lxml>=2.2
-pynlpl>=0.6.19
+pynlpl>=0.7.6
 pyyaml
 python-ucto>=0.1.1
+colibri-core
 python3-timbl
 aspell-python-py3
