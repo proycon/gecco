@@ -19,6 +19,7 @@ virtualenv env
 echo "Activating virtualenv">&2
 . env/bin/activate
 
+echo "Virtual Environment is $VIRTUAL_ENV">&2
 export LD_LIBRARY_PATH=$VIRTUAL_ENV/lib:$LD_LIBRARY_PATH
 
 if [ -d src ]; then
