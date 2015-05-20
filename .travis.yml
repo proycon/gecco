@@ -34,7 +34,7 @@ before_install:
     - make
     - sudo make install
     - cd ..
-    - pip install python-timbl python-ucto colibri-core
+    - pip install python3-timbl python-ucto colibri-core
 install: 
     - python setup.py install
 script: 
