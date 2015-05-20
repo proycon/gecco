@@ -13,8 +13,10 @@ PKGS="pkg-config git-core make gcc g++ autoconf-archive autotools-dev libicu-dev
 sudo apt-get update
 sudo apt-get install $PKGS 
 
+
+
 echo "Creating virtualenv">&2
-virtualenv env
+virtualenv --no-site-packages --python=python3 env
 
 echo "Activating virtualenv">&2
 . env/bin/activate
