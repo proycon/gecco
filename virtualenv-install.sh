@@ -70,6 +70,7 @@ cd ..
 cd ..
 
 echo "Installing Python dependencies">&2
+pip install Cython #first we do cython, otherwise python-ucto will fail
 pip install -r requirements.txt || error "Unable to install all python dependencies"
 
 echo "Installing Gecco">&2
