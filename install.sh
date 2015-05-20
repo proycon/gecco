@@ -1,5 +1,10 @@
 #!/bin/bash
 
+error () {
+    echo "An error occured during installation!" >&2
+    echo $1 >&2
+    exit 2
+}
 
 echo "Updating global dependencies">&2
 echo "  The following packages are required: $PKGS">&2
@@ -16,49 +21,52 @@ echo "Activating virtualenv">&2
 
 export LD_LIBRARY_PATH=$VIRTUAL_ENV/lib:$LD_LIBRARY_PATH
 
+if [ -d src ]; then
+    rm -Rf src
+fi
 mkdir src
 cd src
 
 echo "Installing ticcutils">&2
 git clone https://github.com/proycon/ticcutils
 cd ticcutils
-bash bootstrap.sh
-./configure --prefix=$VIRTUAL_ENV
-make
-make install
+bash bootstrap.sh || error "ticcutils bootstrap failed"
+./configure --prefix=$VIRTUAL_ENV || error "ticcutils configure failed"
+make || error "ticcutils make failed"
+make install || error "ticcutils make install failed"
 cd ..
 
 echo "Installing libfolia">&2
 git clone https://github.com/proycon/libfolia
 cd libfolia
-bash bootstrap.sh
-./configure --prefix=$VIRTUAL_ENV
-make
-make install
+bash bootstrap.sh || error "libfolia bootstrap failed"
+./configure --prefix=$VIRTUAL_ENV || error "libfolia configure failed"
+make || error "libfolia make failed"
+make install || error "libfolia make install failed"
 cd ..
 
 echo "Installing ucto">&2
 git clone https://github.com/proycon/ucto
 cd ucto
-bash bootstrap.sh
-./configure --prefix=$VIRTUAL_ENV
-make
-make install
+bash bootstrap.sh || error "ucto bootstrap failed"
+./configure --prefix=$VIRTUAL_ENV || error "ucto configure failed"
+make || error "ucto make failed"
+make install || error "ucto make install failed"
 cd ..
 
 echo "Installing timbl">&2
 git clone https://github.com/proycon/timbl
 cd timbl
-bash bootstrap.sh
-./configure --prefix=$VIRTUAL_ENV
-make
-make install
+bash bootstrap.sh || error "timbl bootstrap failed"
+./configure --prefix=$VIRTUAL_ENV || error "timbl configure failed"
+make || error "timbl make failed"
+make install || error "timbl make install failed"
 cd ..
 
 cd ..
 
 echo "Installing Python dependencies">&2
-pip install -r requirements.txt
+pip install -r requirements.txt || error "Unable to install all python dependencies"
 
 echo "Installing Gecco">&2
-python setup.py install
+python setup.py install || error "Unable to install gecco"
