@@ -170,9 +170,6 @@ class TIMBLSuffixConfusibleModule(Module):
 
         self.hapaxer = gethapaxer(self.settings)
 
-        if 'confusibles' not in self.settings:
-            raise Exception("No confusibles specified for " + self.id + "!")
-        self.confusibles = self.settings['confusibles']
 
         if 'suffixes' not in self.settings:
             raise Exception("No suffixes specified for " + self.id + "!")

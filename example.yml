@@ -1,7 +1,6 @@
 id: example
 root: example/ #should ideally be an absolute path!
 language: en
-ucto: /home/proycon/env/etc/ucto/tokconfig-en
 threads: 1
 modules:
     - id: errorlist
@@ -72,4 +71,34 @@ modules:
       servers:
         - host: 127.0.0.1
           port: 12349
+    - id: puncrecase
+      module: gecco.modules.puncrecase.TIMBLPuncRecaseModule
+      deletionthreshold: 0.95
+      insertionthreshold: 0.5
+      sources:
+        - sources/europarl250k.txt.bz2
+      models:
+        - models/puncrecase.ibase
+      servers:
+        - host: 127.0.0.1
+          port: 12350
+    - id: conf_ddt
+      module: gecco.modules.confusibles.TIMBLSuffixConfusibleModule
+      suffixes: [d,dt]
+      leftcontext: 3
+      rightcontext: 3
+      freqthreshold: 20
+      maxlength: 25
+      minlength: 5
+      algorithm: IB1
+      sources:
+        - sources/europarl250k.txt.bz2
+        - sources/europarl250k.txt.bz2
+      models:
+        - models/conf_ddt.ibase
+        - models/conf_ddt.lst
+      servers:
+        - host: 127.0.0.1
+          port: 12346
+        
 
