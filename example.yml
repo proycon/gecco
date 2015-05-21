@@ -95,8 +95,8 @@ modules:
         - sources/europarl250k.txt.bz2
         - sources/europarl250k.txt.bz2
       models:
-        - models/conf_ddt.ibase
         - models/conf_ddt.lst
+        - models/conf_ddt.ibase
       servers:
         - host: 127.0.0.1
           port: 12346

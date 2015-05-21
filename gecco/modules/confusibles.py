@@ -265,11 +265,11 @@ class TIMBLSuffixConfusibleModule(Module):
                             if othersuffix != suffix:
                                 otherpattern_s = pattern_s[:-len(suffix)] + othersuffix
                                 try:
-                                    pattern_s = classencoder.buildpattern(otherpattern_s,False,False)
+                                    otherpattern = classencoder.buildpattern(otherpattern_s,False,False)
                                 except KeyError:
                                     if found: found = []
                                     break
-                                if not pattern_s in model:
+                                if not otherpattern in model:
                                     if found: found = []
                                     break
                                 found.append(otherpattern_s)
