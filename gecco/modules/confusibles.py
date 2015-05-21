@@ -24,6 +24,19 @@ from gecco.helpers.hapaxing import gethapaxer
 
 
 class TIMBLWordConfusibleModule(Module):
+    """The Word Confusible module is capable of disambiguating two or more words that are often confused, by looking at their context. 
+    The module is implemented using memory-based classifiers in Timbl.
+    
+    Settings:
+    * ``confusibles``  - List of words (strings) that form a single set of confusibles.
+    * ``leftcontext``  - Left context size (in words) for the feature vector
+    * ``rightcontext`` - Right context size (in words) for the feature vector
+    * ``algorithm``    - The Timbl algorithm to use (see -a parameter in timbl) (default: IGTree)
+    * ``class``        - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: confusible)
+
+    Sources and models: 
+    * a plain-text corpus (tokenized)  [``.txt``]     ->    a classifier instance base model [``.ibase``]
+    """
     UNIT = folia.Word
 
     def verifysettings(self):
@@ -151,6 +164,23 @@ class TIMBLWordConfusibleModule(Module):
 
 
 class TIMBLSuffixConfusibleModule(Module):
+    """The Suffix Confusible module is capable of disambiguating suffixes on words. The suffixes are passes to the ``suffixes`` settings (a list of string). All words using these suffixes above a certain threshold (``freqthtreshold``) will be found at training time and disambiguated using context. The module is implemented using Timbl.
+    
+    Settings:
+    * ``suffixes``     - List of suffixes (strings) that form a single set of confusibles.
+    * ``freqthreshold``- Only consider words with a suffix that occur at least this many times
+    * ``minlength``    - Only consider words with a suffix that are at least this long (in characters)
+    * ``maxlength``    - Only consider words with a suffix that are at most this long (in characters)
+    * ``leftcontext``  - Left context size (in words) for the feature vector
+    * ``rightcontext`` - Right context size (in words) for the feature vector
+    * ``algorithm``    - The Timbl algorithm to use (see -a parameter in timbl) (default: IGTree)
+    * ``class``        - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: confusible)
+
+    Sources and models: 
+    * a plain-text corpus (tokenized)  [``.txt``]     ->    a list of confusibles [``.lst``]
+    * a plain-text corpus (tokenized)  [``.txt``]     ->    a classifier instance base model [``.ibase``]
+
+    """
     UNIT = folia.Word
 
     def verifysettings(self):

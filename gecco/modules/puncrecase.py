@@ -24,11 +24,24 @@ from gecco.helpers.hapaxing import gethapaxer
 
 
 class TIMBLPuncRecaseModule(Module):
+    """This is a memory-based classification module, implemented using Timbl, that predicts where punctuation needs to be inserted, deleted, and whether a word needs to be written with an initial capital. 
+
+    Settings:
+    * ``leftcontext``  - Left context size (in words) for the feature vector
+    * ``rightcontext`` - Right context size (in words) for the feature vector
+    * ``algorithm``    - The Timbl algorithm to use (see -a parameter in timbl) (default: IGTree)
+    * ``deletionthreshold`` - If no punctuation insertion is predicted and this confidence threshold is reached, then a deletion will be predicted (should be a high number), default: 0.95
+    * ``insertionthreshold`` - Necessary confidence threshold to predict an insertion of punctuation (default: 0.5)
+
+    Sources and models: 
+    * a plain-text corpus (tokenized)  [``.txt``]     ->    a classifier instance base model [``.ibase``]
+    """
+
     UNIT = folia.Word
 
     def verifysettings(self):
         if 'class' not in self.settings:
-            self.settings['class'] = 'confusible'
+            self.settings['class'] = 'missingpunctuation' #will be overriden later again
 
         super().verifysettings()
 
