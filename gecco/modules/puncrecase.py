@@ -18,7 +18,7 @@ import bz2
 import gzip
 from pynlpl.formats import folia
 from pynlpl.textprocessors import Windower
-from timbl import TimblClassifier
+from timbl import TimblClassifier #pylint: disable=import-error
 from gecco.gecco import Module
 from gecco.helpers.hapaxing import gethapaxer
 
@@ -97,12 +97,11 @@ class TIMBLPuncRecaseModule(Module):
 
     def train(self, sourcefile, modelfile, **parameters):
         if self.hapaxer:
-             self.log("Training hapaxer...")
-             self.hapaxer.train()
+            self.log("Training hapaxer...")
+            self.hapaxer.train()
 
         l = self.settings['leftcontext']
         r = self.settings['rightcontext']
-        n = l + 1 + r
 
         self.log("Generating training instances...")
         fileprefix = modelfile.replace(".ibase","") #has been verified earlier
@@ -119,10 +118,10 @@ class TIMBLPuncRecaseModule(Module):
             for line in f:
                 words = [ x for x in line.split(' ') if x ]
                 for i, word in enumerate(words):
-                    if i == 0 or word[i-1].isalnum():
+                    if i == 0 or words[i-1].isalnum():
                         punc = ''
                     else:
-                        punc = word[i-1]
+                        punc = words[i-1]
                     buffer.append( (word, word == word[0].upper() + word[1:].lower(), punc ) )
                     if len(buffer) == l + r + 1:
                         buffer = self.addtraininstance(classifier, buffer,l,r)
@@ -183,7 +182,7 @@ class TIMBLPuncRecaseModule(Module):
 
         if cls == '-':
             prevword = folia.previous(folia.Word,None)
-            if prevword and distribution[cls] >= self.settings['deletionthreshold'] and all( not c.isalnum() for x in  prevword.text() ):
+            if prevword and distribution[cls] >= self.settings['deletionthreshold'] and all( not c.isalnum() for c in  prevword.text() ):
                 self.suggestdeletion(lock, prevword, cls='redundantpunctuation')
         elif cls:
             #insertion of punctuation
@@ -203,14 +202,14 @@ class TIMBLPuncRecaseModule(Module):
         wordstr = str(word)
         if wordstr.isalnum():
             cls, distribution = self.classify(word)
-            processresult(word,lock,cls,distribution)
+            self.processresult(word,lock,cls,distribution)
 
     def runclient(self, client, word, lock, **parameters):
         """This method gets invoked by the Corrector when it should connect to a remote server, the client instance is passed and already available (will connect on first communication). word is a folia.Word instance"""
         wordstr = str(word)
         if wordstr.isalnum():
             cls, distribution = json.loads(client.communicate(json.dumps(self.getfeatures(word))))
-            processresult(word,lock,cls,distribution)
+            self.processresult(word,lock,cls,distribution)
 
     def server_handler(self, features):
         """This method gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""

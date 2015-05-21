@@ -811,13 +811,18 @@ class Module:
     # These methods are *NOT* available to server_handler() !
     # Locks ensure that the state of the FoLiA document can't be corrupted by partial unfinished edits
 
-    def addsuggestions(self, lock, element, suggestions):
+    def addsuggestions(self, lock, element, suggestions, **kwargs):
         self.log("Adding correction for " + element.id + " " + element.text())
+
+        if 'cls' in kwargs:
+            cls = kwargs['cls']
+        else:
+            cls = self.settings['class']
 
         if isinstance(suggestions,str):
             suggestions = [suggestions]
 
-        q = "EDIT t (AS CORRECTION OF " + self.settings['set'] + " WITH class \"" + self.settings['class'] + "\" annotator \"" + self.settings['annotator'] + "\" annotatortype \"auto\" datetime now"
+        q = "EDIT t (AS CORRECTION OF " + self.settings['set'] + " WITH class \"" + cls + "\" annotator \"" + self.settings['annotator'] + "\" annotatortype \"auto\" datetime now"
         for suggestion in suggestions:
             if isinstance(suggestion, tuple):
                 suggestion, confidence = suggestion
@@ -880,17 +885,21 @@ class Module:
         q(originalwords[0].doc)
         lock.release()
 
-    def suggestdeletion(self, lock, word,merge=False):
+    def suggestdeletion(self, lock, word,merge=False, **kwargs):
         #MAYBE TODO: Convert to FQL
         lock.acquire()
         parent = word.parent
         index = parent.getindex(word,False)
+        if 'cls' in kwargs:
+            cls = kwargs['cls']
+        else:
+            cls = self.settings['class']
         if index != -1:
             self.log(" Suggesting deletion of " + str(word.id))
             sugkwargs = {}
             if merge:
                 sugkwargs['merge'] = word.ancestor(folia.StructureElement).id
-            parent.data[index] = folia.Correction(word.doc, folia.Suggestion(word.doc, **sugkwargs), folia.Current(word.doc, word), set=self.settings['set'],cls=self.settings['class'], annotator=self.settings['annotator'],annotatortype=folia.AnnotatorType.AUTO, datetime=datetime.datetime.now())
+            parent.data[index] = folia.Correction(word.doc, folia.Suggestion(word.doc, **sugkwargs), folia.Current(word.doc, word), set=self.settings['set'],cls=cls, annotator=self.settings['annotator'],annotatortype=folia.AnnotatorType.AUTO, datetime=datetime.datetime.now())
         else:
             self.log(" ERROR: Unable to suggest deletion of " + str(word.id) + ", item index not found")
         lock.release()
