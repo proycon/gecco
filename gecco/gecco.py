@@ -28,7 +28,9 @@ from ucto import Tokenizer #pylint: disable=import-error
 
 import argparse
 
-UCTOSEARCHDIRS = ('/usr/local/etc/ucto','/etc/ucto/','.')
+UCTOSEARCHDIRS = ('/usr/local/etc/ucto','/etc/ucto/',os.environ['VIRTUAL_ENV'] + '/etc/ucto/','.')
+if 'VIRTUAL_ENV' in os.environ:
+    UCTOSEARCHDIRS = (os.environ['VIRTUAL_ENV'] + '/etc/ucto/',) + UCTOSEARCHDIRS
 
 VERSION = 0.1
 
