@@ -777,9 +777,10 @@ class Module:
 
     def reset(self, modelfile, sourcefile):
         """Resets a module, should delete the specified modelfile (NOT THE SOURCEFILE!)"""
-        os.unlink(modelfile)
-        os.unlink(modelfile.replace(".ibase",".wgt"))
-        os.unlink(modelfile.replace(".ibase",".train"))
+        filenames = (modelfile, modelfile.replace(".ibase",".wgt"), modelfile.replace(".ibase",".train"))
+        for filename in filenames:
+            if os.path.exists(filename):
+                os.unlink(filename)
 
     ##### Callbacks invoked by the Corrector that MUST be implemented:
 
