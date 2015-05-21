@@ -82,9 +82,9 @@ modules:
       servers:
         - host: 127.0.0.1
           port: 12350
-    - id: conf_ddt
+    - id: conf_participle
       module: gecco.modules.confusibles.TIMBLSuffixConfusibleModule
-      suffixes: [d,dt]
+      suffixes: [ed,ing]
       leftcontext: 3
       rightcontext: 3
       freqthreshold: 20
@@ -95,8 +95,8 @@ modules:
         - sources/europarl250k.txt.bz2
         - sources/europarl250k.txt.bz2
       models:
-        - models/conf_ddt.lst
-        - models/conf_ddt.ibase
+        - models/conf_participle.lst
+        - models/conf_participle.ibase
       servers:
         - host: 127.0.0.1
           port: 12346
