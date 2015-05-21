@@ -116,7 +116,7 @@ class TIMBLPuncRecaseModule(Module):
         buffer = [("<begin>",False,'')] * l
         with iomodule.open(sourcefile,mode='rt',encoding='utf-8') as f:
             for line in f:
-                words = [ x for x in line.split(' ') if x ]
+                words = [ x.strip() for x in line.split(' ') if x ]
                 for i, word in enumerate(words):
                     if i == 0 or words[i-1].isalnum():
                         punc = ''
