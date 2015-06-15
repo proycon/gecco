@@ -125,8 +125,6 @@ Subcommands:
 
  * `reset [$id]` -- delete models for all modules or specified module
  * `train [$id]` -- train all modules or specified module
- * `test [$id]` -- test all modules or specified module
- * `tune [$id]` -- tune all modules or specified module
 
  * `start [$id]` -- Start module servers (all or specified) that match the
     current host, this will have to be run for each host 
