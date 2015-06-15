@@ -26,6 +26,8 @@ from queue import Queue
 from pynlpl.formats import folia, fql
 from ucto import Tokenizer #pylint: disable=import-error
 
+import gecco.helpers.evaluation
+
 import argparse
 
 UCTOSEARCHDIRS = ('/usr/local/etc/ucto','/etc/ucto/',os.environ['VIRTUAL_ENV'] + '/etc/ucto/','.')
@@ -268,6 +270,37 @@ class Corrector:
                             raise Exception("[" + module.id + "] Source file not found: " + sourcefile)
                         module.train(sourcefile, modelfile, **parameters)
 
+    def evaluate(self, args):
+        for  module in self.modules.values():
+            module.local = True
+        if args.parameters: parameters = dict(( tuple(p.split('=')) for p in args.parameters))
+        if args.modules: modules = args.modules.split(',')
+
+        outputfiles = []
+        if os.path.isdir(args.outputfilename):
+            outputdir = args.outputfilename
+        else:
+            outputdir = None
+            outputfiles = [args.outputfilename]
+
+        inputfiles = []
+        if os.path.isdir(args.inputfilename):
+            for root, _, files in os.walk(args.inputfilename):
+                for name in files:
+                    inputfiles.append(os.path.join(root,name))
+                    if outputdir:
+                        outputfiles.append(os.path.join(outputdir,name))
+
+        elif os.path.isfile(args.inputfilename):
+            inputfiles = [args.inputfilename]
+        else:
+            raise Exception("Input file not found", args.inputfilename)
+
+        for inputfilename, outputfilename in zip(inputfiles, outputfiles):
+            self.run(inputfilename,modules,outputfilename, **parameters)
+
+        gecco.helpers.evaluation.evaluate(args.outputfilename, args.referencefilename)
+
     def test(self,module_ids=[], **parameters): #pylint: disable=dangerous-default-value
         for module in self:
             if not module_ids or module.id in module_ids:
@@ -505,6 +538,8 @@ class Corrector:
             if args.parameters: parameters = dict(( tuple(p.split('=')) for p in args.parameters))
             if args.modules: modules = args.modules.split(',')
             self.train(modules)
+        elif args.command == 'evaluate':
+            self.evaluate(args)
         elif args.command == 'test':
             if args.parameters: parameters = dict(( tuple(p.split('=')) for p in args.parameters))
             if args.modules: modules = args.modules.split(',')
