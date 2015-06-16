@@ -283,6 +283,13 @@ class Corrector:
             outputdir = None
             outputfiles = [args.outputfilename]
 
+        if os.path.isdir(args.referencefilename):
+            refdir = args.referencefilename
+        elif os.path.isfile(args.referencefilename):
+            refdir = None
+        else:
+            raise Exception("Reference file not found", args.referencefilename)
+
         inputfiles = []
         if os.path.isdir(args.inputfilename):
             for root, _, files in os.walk(args.inputfilename):
@@ -296,10 +303,18 @@ class Corrector:
         else:
             raise Exception("Input file not found", args.inputfilename)
 
+
+
+        evaldata = gecco.helpers.evaluation.Evaldata()
         for inputfilename, outputfilename in zip(inputfiles, outputfiles):
             self.run(inputfilename,modules,outputfilename, **parameters)
+            if refdir:
+                referencefilename = os.path.join(refdir, os.path.basename(outputfilename))
+            else:
+                referencefilename = args.referencefilename
+            gecco.helpers.evaluation.processfile(outputfilename, referencefilename, evaldata)
 
-        gecco.helpers.evaluation.evaluate(args.outputfilename, args.referencefilename)
+        evaldata.output()
 
     def test(self,module_ids=[], **parameters): #pylint: disable=dangerous-default-value
         for module in self:
