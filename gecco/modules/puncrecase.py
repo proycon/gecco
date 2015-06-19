@@ -195,7 +195,7 @@ class TIMBLPuncRecaseModule(Module):
             recase = True
 
         if cls == '-':
-            prevword = folia.previous(folia.Word,None)
+            prevword = word.previous(folia.Word,None)
             if prevword and distribution[cls] >= self.settings['deletionthreshold'] and all( not c.isalnum() for c in  prevword.text() ):
                 self.suggestdeletion(lock, prevword, cls='redundantpunctuation')
         elif cls:
