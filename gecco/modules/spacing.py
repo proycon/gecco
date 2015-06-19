@@ -215,18 +215,18 @@ class SplitModule(Module):
         if nextword:
             suggestion = self.getmergesuggestion(str(word), str(nextword))
             if suggestion:
-                self.mergecorrection(lock, suggestion, [word])
+                self.mergecorrection(lock, suggestion, [word, nextword])
 
 
     def runclient(self, client, word, lock, **parameters):
         """This method gets invoked by the Corrector when it should connect to a remote server, the client instance is passed and already available (will connect on first communication). word is a folia.Word instance"""
         nextword = word.next()
         if nextword:
-            nextword = str(nextword)
+            nextwordstr = str(nextword)
             wordstr = str(word)
-            suggestion = json.loads(client.communicate(wordstr+"\t" + nextword))
+            suggestion = json.loads(client.communicate(wordstr+"\t" + nextwordstr))
             if suggestion:
-                self.mergecorrection(lock, suggestion, [word])
+                self.mergecorrection(lock, suggestion, [word, nextword])
 
     def server_handler(self, input):
         """This methods gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
