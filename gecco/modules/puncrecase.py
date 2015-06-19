@@ -171,6 +171,7 @@ class TIMBLPuncRecaseModule(Module):
                 w = prevword.text().lower()
                 if w.isalnum():
                     leftcontext.insert(0, w )
+                currentword = prevword
             else:
                 leftcontext.insert(0, "<begin>")
 
@@ -182,6 +183,7 @@ class TIMBLPuncRecaseModule(Module):
                 w = nextword.text().lower()
                 if w.isalnum():
                     rightcontext.append(w )
+                currentword = nextword
             else:
                 rightcontext.append("<end>")
 
