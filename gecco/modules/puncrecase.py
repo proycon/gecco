@@ -166,7 +166,7 @@ class TIMBLPuncRecaseModule(Module):
         leftcontext = []
         currentword = word
         while len(leftcontext) < l:
-            prevword = currentword.prev(folia.Word,None)
+            prevword = currentword.previous(folia.Word,None)
             if prevword:
                 w = prevword.text.lower()
                 if w.isalnum():
