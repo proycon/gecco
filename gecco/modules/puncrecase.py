@@ -168,7 +168,7 @@ class TIMBLPuncRecaseModule(Module):
         while len(leftcontext) < l:
             prevword = currentword.previous(folia.Word,None)
             if prevword:
-                w = prevword.text.lower()
+                w = prevword.text().lower()
                 if w.isalnum():
                     leftcontext.insert(0, w )
             else:
@@ -179,7 +179,7 @@ class TIMBLPuncRecaseModule(Module):
         while len(rightcontext) < r:
             nextword = currentword.next(folia.Word,None)
             if nextword:
-                w = nextword.text.lower()
+                w = nextword.text().lower()
                 if w.isalnum():
                     rightcontext.append(w )
             else:
