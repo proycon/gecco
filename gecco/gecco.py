@@ -917,7 +917,7 @@ class Module:
                 if i > 0: q += " "
                 q += "SUBSTITUTE w WITH text \"" + newword + "\""
             q += ") WITH confidence " + str(confidence)
-        q = ") FOR SPAN ID \"" + word.id + "\""
+        q += ") FOR SPAN ID \"" + word.id + "\""
         q += " RETURN nothing"
         self.log(" FQL: " + q)
         q = fql.Query(q)
