@@ -352,6 +352,7 @@ class TIMBLSuffixConfusibleModule(Module):
 
 
     def getsuffix(self, confusible):
+        assert isinstance(confusible, str)
         suffix = None
         for suffix in self.suffixes: #suffixes are sorted from long to short
             if confusible.endswith(suffix):
@@ -374,13 +375,14 @@ class TIMBLSuffixConfusibleModule(Module):
         leftcontext = tuple([ str(w) for w in word.leftcontext(self.settings['leftcontext'],"<begin>") ])
         _, normalized = self.getsuffix(word.text())
         rightcontext = tuple([ str(w) for w in word.rightcontext(self.settings['rightcontext'],"<end>") ])
-        return leftcontext + tuple(normalized,) + rightcontext
+        return leftcontext + (normalized,) + rightcontext
 
 
     def processresult(self,word, lock, best, distribution):
-        suffix,_ = self.getsuffix(word)
-        if word != word[:-len(suffix)] + best:
-            self.addsuggestions(lock, word, [ (word[:-len(suffix)] + suggestion,p) for suggestion,p in distribution.items() if suggestion != suffix] )
+        wordstr = str(word)
+        suffix,_ = self.getsuffix(wordstr)
+        if wordstr != wordstr[:-len(suffix)] + best:
+            self.addsuggestions(lock, word, [ (wordstr[:-len(suffix)] + suggestion,p) for suggestion,p in distribution.items() if suggestion != suffix] )
 
 
     def run(self, word, lock, **parameters):
