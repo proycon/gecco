@@ -930,7 +930,7 @@ class Module:
         q += " SUGGESTION"
         q += " (SUBSTITUTE w WITH text \"" + newword + "\")"
         #q += " WITH confidence " + str(confidence)
-        q = ") FOR SPAN"
+        q += ") FOR SPAN"
         for i, ow in enumerate(originalwords):
             if i > 0: q += " &"
             q += " ID \"" + ow.id + "\""
