@@ -24,7 +24,7 @@ from collections import OrderedDict
 from threading import Thread, Lock
 from queue import Queue
 from pynlpl.formats import folia, fql
-from ucto import Tokenizer #pylint: disable=import-error
+from ucto import Tokenizer #pylint: disable=import-error,no-name-in-module
 
 import gecco.helpers.evaluation
 
