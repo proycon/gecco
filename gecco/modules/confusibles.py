@@ -372,7 +372,7 @@ class TIMBLSuffixConfusibleModule(Module):
     def getfeatures(self, word):
         """Get features at testing time, crosses sentence boundaries"""
         leftcontext = tuple([ str(w) for w in word.leftcontext(self.settings['leftcontext'],"<begin>") ])
-        _, normalized = self.getsuffix(word)
+        _, normalized = self.getsuffix(word.text())
         rightcontext = tuple([ str(w) for w in word.rightcontext(self.settings['rightcontext'],"<end>") ])
         return leftcontext + tuple(normalized,) + rightcontext
 
