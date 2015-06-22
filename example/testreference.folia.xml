@@ -32,11 +32,13 @@
           <t>a</t>
         </w>
         <w class="WORD" xml:id="untitled.p.1.s.1.w.6">
-          <t>concious</t>
           <correction annotator="proycon" annotatortype="manual" class="nonworderror" datetime="2015-06-22T11:51:28" xml:id="untitled.p.1.s.1.w.6.correction.1">
-            <suggestion auth="no">
+            <new>
               <t>conscious</t>
-            </suggestion>
+            </new>
+            <original auth="no">
+                <t>concious</t>
+            </original>
           </correction>
         </w>
         <w class="WORD" xml:id="untitled.p.1.s.1.w.7">

@@ -168,7 +168,7 @@ def processfile(outfile, reffile, evaldata):
         correction_out.match = False
         match = None
         for correction_ref in correction_out.alignedto:
-            if correction_ref.new().hastext(strict=False) and correction_ref.new().text().strip() in ( suggestion.text().strip() for suggestion in correction_out.suggestions() if suggestion.hastext(strict=False) ):
+            if correction_ref.hasnew() and correction_ref.new().hastext(strict=False) and correction_ref.new().text().strip() in ( suggestion.text().strip() for suggestion in correction_out.suggestions() if suggestion.hastext(strict=False) ):
                 #the reference text is in the suggestions!
                 correction_out.match = True
                 correction_ref.match = True
