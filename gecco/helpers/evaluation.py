@@ -278,9 +278,9 @@ def processfile(outfile, reffile, evaldata):
                 #print("HASTEXT NONSTRICT: ", correction_ref.hastext(strict=False),file=sys.stderr)
                 #print("TEXT: ", correction_ref.text(),file=sys.stderr)
                 try:
-                    print(" - false negative: Reference correction '" + origtext  +  "' -> '" + correction_ref.text() + "' (" + correction_ref.id + ") was missed alltogether in the Valkuil output",file=sys.stderr)
+                    print(" - false negative: Reference correction '" + origtext  +  "' -> '" + correction_ref.text() + "' (" + str(correction_ref.id) + ") was missed alltogether in the Valkuil output",file=sys.stderr)
                 except folia.NoSuchText:
-                    print(" - false negative: Reference correction '" + origtext  +  "' -> '(deletion)' (" + correction_ref.id + ") was missed alltogether in the Valkuil output",file=sys.stderr)
+                    print(" - false negative: Reference correction '" + origtext  +  "' -> '(deletion)' (" + str(correction_ref.id) + ") was missed alltogether in the Valkuil output",file=sys.stderr)
                 evaldata.fn += 1
                 evaldata.clsfn[correction_ref.cls] += 1
                 evaldata.aggrfn += 1
