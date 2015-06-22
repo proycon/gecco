@@ -21,13 +21,15 @@ class WordErrorListModule(Module):
     def verifysettings(self):
         super().verifysettings()
 
-        if 'delimiter' not in self.settings:
+        if 'delimiter' not in self.settings or not self.settings['delimiter']:
             self.settings['delimiter'] = "\t"
 
         if self.settings['delimiter'].lower() == 'space':
             self.settings['delimiter'] = " "
         elif self.settings['delimiter'].lower() == 'tab':
             self.settings['delimiter'] = "\t"
+        elif self.settings['delimiter'].lower() == 'tilde':
+            self.settings['delimiter'] = "~"
 
         if 'reversedformat' not in self.settings: #reverse format has (correct,wrong) pairs rather than (wrong,correct) pairs
             self.settings['reversedformat'] = False
