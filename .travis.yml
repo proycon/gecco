@@ -1,41 +1,11 @@
 language: python
 python:
-    - 3.2
-    - 3.3
     - 3.4
 before_install:
-    - sudo apt-get update
-    - sudo apt-get install pkg-config autoconf-archive autotools-dev libicu-dev libxml2-dev libbz2-dev zlib1g-dev libtar-dev libboost-dev
-    - git clone https://github.com/proycon/ticcutils
-    - cd ticcutils
-    - bash bootstrap.sh
-    - ./configure
-    - make
-    - sudo make install
-    - cd ..
-    - git clone https://github.com/proycon/libfolia
-    - cd libfolia
-    - bash bootstrap.sh
-    - ./configure
-    - make
-    - sudo make install
-    - cd ..
-    - git clone https://github.com/proycon/ucto
-    - cd ucto
-    - bash bootstrap.sh
-    - ./configure
-    - make
-    - sudo make install
-    - cd ..
-    - git clone https://github.com/proycon/timbl
-    - cd timbl
-    - bash bootstrap.sh
-    - ./configure
-    - make
-    - sudo make install
-    - cd ..
-    - pip install python3-timbl python-ucto colibri-core
+    - git clone https://github.com/proycon/LaMachine
+    - cd LaMachine
+    - bash virtualenv-bootstrap.sh
 install: 
     - python setup.py install
 script: 
-    - LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:$VIRTUALENV/lib ./test.sh >&2
+    - ./test.sh
