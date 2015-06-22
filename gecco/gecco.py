@@ -271,10 +271,16 @@ class Corrector:
                         module.train(sourcefile, modelfile, **parameters)
 
     def evaluate(self, args):
-        for  module in self.modules.values():
+        for module in self.modules.values():
             module.local = True
-        if args.parameters: parameters = dict(( tuple(p.split('=')) for p in args.parameters))
-        if args.modules: modules = args.modules.split(',')
+        if args.parameters:
+            parameters = dict(( tuple(p.split('=')) for p in args.parameters))
+        else:
+            parameters = {}
+        if args.modules: 
+            modules = args.modules.split(',')
+        else:
+            modules = []
 
         outputfiles = []
         if os.path.isdir(args.outputfilename):

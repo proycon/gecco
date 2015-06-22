@@ -1,0 +1,275 @@
+<?xml version='1.0' encoding='utf-8'?>
+<FoLiA xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://ilk.uvt.nl/folia" generator="pynlpl.formats.folia-v0.12.1.70" xml:id="untitled" version="0.12.0">
+  <metadata xmlns="http://ilk.uvt.nl/folia" type="native">
+    <annotations>
+      <token-annotation annotator="ucto" annotatortype="auto" datetime="2015-06-22T11:51:19" set="/home/proycon/lamachine/etc/ucto//tokconfig-en"/>
+      <correction-annotation set="https://raw.githubusercontent.com/proycon/folia/master/setdefinitions/spellingcorrection.foliaset.xml"/>
+    </annotations>
+  </metadata>
+  <text xmlns="http://ilk.uvt.nl/folia" xml:id="untitled.text">
+    <p xml:id="untitled.p.1">
+      <s xml:id="untitled.p.1.s.1">
+        <w class="WORD" xml:id="untitled.p.1.s.1.w.1">
+          <t>It</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.1.s.1.w.2">
+          <t>is</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.1.s.1.w.3">
+          <correction annotator="proycon" annotatortype="manual" class="nonworderror" datetime="2015-06-22T11:51:28" xml:id="untitled.p.1.s.1.w.3.correction.1">
+            <new>
+              <t>apparently</t>
+            </new>
+            <original auth="no">
+              <t>apparantly</t>
+            </original>
+          </correction>
+        </w>
+        <w class="WORD" xml:id="untitled.p.1.s.1.w.4">
+          <t>not</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.1.s.1.w.5">
+          <t>a</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.1.s.1.w.6">
+          <t>concious</t>
+          <correction annotator="proycon" annotatortype="manual" class="nonworderror" datetime="2015-06-22T11:51:28" xml:id="untitled.p.1.s.1.w.6.correction.1">
+            <suggestion auth="no">
+              <t>conscious</t>
+            </suggestion>
+          </correction>
+        </w>
+        <w class="WORD" xml:id="untitled.p.1.s.1.w.7">
+          <t>decision</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.1.s.1.w.8">
+          <t>to</t>
+        </w>
+        <w space="no" class="WORD" xml:id="untitled.p.1.s.1.w.9">
+          <t>err</t>
+        </w>
+        <w class="PUNCTUATION" xml:id="untitled.p.1.s.1.w.10">
+          <t>.</t>
+        </w>
+      </s>
+      <s xml:id="untitled.p.1.s.2">
+        <w class="WORD" xml:id="untitled.p.1.s.2.w.1">
+          <t>Sometimes</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.1.s.2.w.2">
+          <t>we</t>
+        </w>
+        <correction annotator="proycon" annotatortype="manual" class="nonworderror" datetime="2015-06-22T11:51:29" xml:id="untitled.p.1.s.2.w.3.correction.1">
+            <new>
+                <w class="WORD" xml:id="untitled.p.1.s.2.w.3a">
+                    <t>may</t>
+                </w>
+                <w class="WORD" xml:id="untitled.p.1.s.2.w.3b">
+                    <t>learn</t>
+                </w>
+            </new>
+            <original auth="no">
+                <w class="WORD" xml:id="untitled.p.1.s.2.w.3">
+                    <t>maylearn</t>
+                </w>
+            </original>
+        </correction>
+        <w class="WORD" xml:id="untitled.p.1.s.2.w.4">
+          <t>more</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.1.s.2.w.5">
+          <t>from</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.1.s.2.w.6">
+          <t>a</t>
+        </w>
+        <w class="SUFFIX" xml:id="untitled.p.1.s.2.w.7">
+          <t>man</t>
+        </w>
+        <w class="SUFFIX" xml:id="untitled.p.1.s.2.w.8">
+          <t>'s</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.1.s.2.w.9">
+          <t>errors</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.1.s.2.w.10">
+          <correction annotator="proycon" annotatortype="manual" class="confusible" datetime="2015-06-22T11:51:29" xml:id="untitled.p.1.s.2.w.10.correction.1">
+            <new>
+              <t>than</t>
+            </new>
+            <original auth="no">
+                <t>then</t>
+            </original>
+          </correction>
+        </w>
+        <w class="WORD" xml:id="untitled.p.1.s.2.w.11">
+          <t>from</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.1.s.2.w.12">
+          <t>his</t>
+        </w>
+        <w space="no" class="WORD" xml:id="untitled.p.1.s.2.w.13">
+          <t>virtues</t>
+        </w>
+        <w class="PUNCTUATION" xml:id="untitled.p.1.s.2.w.14">
+          <t>.</t>
+        </w>
+      </s>
+    </p>
+    <p xml:id="untitled.p.2">
+      <t>It is the highest form of self-respect to admit our errors and mis takes and make amends for them To make a mistake is only an error in judgment, but to adhere to it when it is discovered shows infirmity of character.</t>
+      <s xml:id="untitled.p.2.s.1">
+        <t>It is the highest form of self-respect to admit our errors and mis takes and make amends for them To make a mistake is only an error in judgment, but to adhere to it when it is discovered shows infirmity of character.</t>
+        <w class="WORD" xml:id="untitled.p.2.s.1.w.1">
+          <t>It</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.2.s.1.w.2">
+          <t>is</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.2.s.1.w.3">
+          <t>the</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.2.s.1.w.4">
+          <t>highest</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.2.s.1.w.5">
+          <t>form</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.2.s.1.w.6">
+          <t>of</t>
+        </w>
+        <w class="WORD-COMPOUND" xml:id="untitled.p.2.s.1.w.7">
+          <t>self-respect</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.2.s.1.w.8">
+          <t>to</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.2.s.1.w.9">
+          <t>admit</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.2.s.1.w.10">
+          <t>our</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.2.s.1.w.11">
+          <t>errors</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.2.s.1.w.12">
+          <t>and</t>
+        </w>
+        <correction annotator="splits" annotatortype="auto" class="spliterror" datetime="2015-06-22T11:51:30" xml:id="untitled.p.2.s.1.correction.1">
+          <original auth="no">
+            <w class="WORD" xml:id="untitled.p.2.s.1.w.13">
+              <t>mis</t>
+            </w>
+            <w class="WORD" xml:id="untitled.p.2.s.1.w.14">
+              <t>takes</t>
+            </w>
+          </original>
+          <new>
+            <w xml:id="suggestion.c5930eb2">
+              <t>mistakes</t>
+            </w>
+          </new>
+        </correction>
+        <w class="WORD" xml:id="untitled.p.2.s.1.w.15">
+          <t>and</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.2.s.1.w.16">
+          <t>make</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.2.s.1.w.17">
+          <t>amends</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.2.s.1.w.18">
+          <t>for</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.2.s.1.w.19">
+          <t>them</t>
+        </w>
+        <correction annotator="proycon" annotatortype="manual" class="missingpunctuation">
+            <new>
+                <w xml:id="untitled.p.2.s.1.w.19b" class="PUNCTUATION">
+                    <t>.</t>
+                </w>
+            </new>
+            <original auth="no" />
+        </correction>
+        <w class="WORD" xml:id="untitled.p.2.s.1.w.20">
+          <t>To</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.2.s.1.w.21">
+          <t>make</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.2.s.1.w.22">
+          <t>a</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.2.s.1.w.23">
+          <t>mistake</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.2.s.1.w.24">
+          <t>is</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.2.s.1.w.25">
+          <t>only</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.2.s.1.w.26">
+          <t>an</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.2.s.1.w.27">
+          <t>error</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.2.s.1.w.28">
+          <t>in</t>
+        </w>
+        <w space="no" class="WORD" xml:id="untitled.p.2.s.1.w.29">
+          <t>judgment</t>
+        </w>
+        <w class="PUNCTUATION" xml:id="untitled.p.2.s.1.w.30">
+            <t>,</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.2.s.1.w.31">
+          <t>but</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.2.s.1.w.32">
+          <t>to</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.2.s.1.w.33">
+          <t>adhere</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.2.s.1.w.34">
+          <t>to</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.2.s.1.w.35">
+          <t>it</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.2.s.1.w.36">
+          <t>when</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.2.s.1.w.37">
+          <t>it</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.2.s.1.w.38">
+          <t>is</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.2.s.1.w.39">
+          <t>discovered</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.2.s.1.w.40">
+          <t>shows</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.2.s.1.w.41">
+          <t>infirmity</t>
+        </w>
+        <w class="WORD" xml:id="untitled.p.2.s.1.w.42">
+          <t>of</t>
+        </w>
+        <w space="no" class="WORD" xml:id="untitled.p.2.s.1.w.43">
+          <t>character</t>
+        </w>
+        <w class="PUNCTUATION" xml:id="untitled.p.2.s.1.w.44">
+          <t>.</t>
+        </w>
+      </s>
+    </p>
+  </text>
+</FoLiA>
