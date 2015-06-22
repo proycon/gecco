@@ -50,7 +50,7 @@ class LexiconModule(Module):
         if 'minlength' not in self.settings:
             self.settings['minlength'] = 5 #shorter word will be ignored
         if 'minfreqthreshold' not in self.settings:
-            self.settings['minfreqthreshold'] = 10000
+            self.settings['minfreqthreshold'] = 250
         if 'maxnrclosest' not in self.settings:
             self.settings['maxnrclosest'] = 5
 

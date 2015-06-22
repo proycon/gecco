@@ -23,7 +23,8 @@ class WordErrorListModule(Module):
 
         if 'delimiter' not in self.settings:
             self.settings['delimiter'] = "\t"
-        elif self.settings['delimiter'].lower() == 'space':
+
+        if self.settings['delimiter'].lower() == 'space':
             self.settings['delimiter'] = " "
         elif self.settings['delimiter'].lower() == 'tab':
             self.settings['delimiter'] = "\t"
