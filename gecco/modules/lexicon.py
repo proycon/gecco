@@ -79,6 +79,9 @@ class LexiconModule(Module):
         else:
             classencoder = colibricore.ClassEncoder(classfile, self.settings['minlength'], self.settings['maxlength'])
 
+        if not os.path.exists(modelfile+'.cls'):
+            #make symlink to class file, using model name instead of source name
+            os.symlink(classfile, modelfile + '.cls')
 
         if not os.path.exists(corpusfile):
             self.log("Encoding corpus")
