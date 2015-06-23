@@ -42,6 +42,14 @@ class FoLiAOutput(unittest.TestCase):
         self.assertEqual(correction.cls,'nonworderror',"Checking class")
         self.assertTrue( any( s.text() == "conscious" for s in correction.suggestions() ),"Checking for correct suggestion" )
 
+    def test004_confusible(self):
+        """Checking confusible output"""
+        correction = findcorrectionbyannotator(self,'untitled.p.1.s.2.w.10','conf_thenthan')
+        self.assertTrue(correction, "Checking presence of suggestion for correction for confusible" )
+        self.assertEqual(correction.cls,'confusible',"Checking class")
+        self.assertEqual( correction.suggestions(0).text(), 'than' ,"Checking for correct suggestion" )
+        self.assertEqual( correction.suggestions(0).confidence, 0.75 ,"Checking for confidence" )
+
 if __name__ == '__main__':
     try:
         TESTDIR = sys.argv[1]
