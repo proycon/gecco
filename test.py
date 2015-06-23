@@ -8,7 +8,7 @@ TESTDIR = "./"
 
 class FoLiAUpdate(unittest.TestCase):
     def setUp(self):
-        self.doc = folia.Document(TESTDIR)
+        self.doc = folia.Document(file=TESTDIR + "/test.folia.xml")
 
     def test001_declaration(self):
         """Checking for presence of corrections declaration"""
@@ -23,6 +23,8 @@ if __name__ == '__main__':
     except:
         print("Expected one argument: test directory",file=sys.stderr)
         sys.exit(2)
+
+    del sys.argv[1]
 
     unittest.main()
 
