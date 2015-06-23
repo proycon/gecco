@@ -6,13 +6,41 @@ from pynlpl.formats import folia
 
 TESTDIR = "./"
 
-class FoLiAUpdate(unittest.TestCase):
+
+def findcorrectionbyannotator(test, elementid, annotator):
+    for c in test.doc[elementid].select(folia.Correction):
+        if c.annotator == annotator:
+            return c
+    return None
+
+class FoLiAOutput(unittest.TestCase):
     def setUp(self):
         self.doc = folia.Document(file=TESTDIR + "/test.folia.xml")
 
     def test001_declaration(self):
         """Checking for presence of corrections declaration"""
         self.assertTrue( self.doc.declared(folia.Correction,"https://raw.githubusercontent.com/proycon/folia/master/setdefinitions/spellingcorrection.foliaset.xml") )
+
+    def test002_errorlist(self):
+        """Checking errorlist output"""
+        correction = findcorrectionbyannotator(self,'untitled.p.1.s.1.w.3','errorlist')
+        self.assertTrue(correction, "Checking presence of suggestion for correction for errorlist" )
+        self.assertEqual(correction.cls,'nonworderror',"Checking class")
+        self.assertEqual(correction.suggestions(0).text() , "apparently", "Checking for correct suggestion" )
+
+    def test003_aspell(self):
+        """Checking aspell output"""
+        correction = findcorrectionbyannotator(self,'untitled.p.1.s.1.w.3','aspell')
+        self.assertTrue(correction, "Checking presence of suggestion for correction for aspell" )
+        self.assertEqual(correction.cls,'nonworderror',"Checking class")
+        self.assertTrue( any( s.text() == "apparently" for s in correction.suggestions() ),"Checking for correct suggestion" )
+
+    def test004_lexicon(self):
+        """Checking lexicon output"""
+        correction = findcorrectionbyannotator(self,'untitled.p.1.s.1.w.6','lexicon')
+        self.assertTrue(correction, "Checking presence of suggestion for correction for lexicon" )
+        self.assertEqual(correction.cls,'nonworderror',"Checking class")
+        self.assertTrue( any( s.text() == "conscious" for s in correction.suggestions() ),"Checking for correct suggestion" )
 
 if __name__ == '__main__':
     try:
