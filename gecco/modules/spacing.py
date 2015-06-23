@@ -21,6 +21,7 @@ from pynlpl.formats import folia
 from pynlpl.textprocessors import Windower
 from gecco.gecco import Module
 from gecco.modules.lexicon import LexiconModule
+from gecco.helpers.common import stripsourceextensions
 import colibricore #pylint: disable=import-error
 
 
@@ -44,8 +45,8 @@ class RunOnModule(Module):
 
     def train(self, sourcefile, modelfile, **parameters):
         self.log("Preparing to generate bigram model")
-        classfile = modelfile  +  ".cls"
-        corpusfile = modelfile +  ".dat"
+        classfile = stripsourceextensions(sourcefile) +  ".cls"
+        corpusfile = stripsourceextensions(sourcefile) +  ".dat"
 
         if not os.path.exists(classfile):
             self.log("Building class file")
@@ -55,6 +56,9 @@ class RunOnModule(Module):
         else:
             classencoder = colibricore.ClassEncoder(classfile)
 
+        if not os.path.exists(modelfile+'.cls'):
+            #make symlink to class file, using model name instead of source name
+            os.symlink(classfile, modelfile + '.cls')
 
         if not os.path.exists(corpusfile):
             self.log("Encoding corpus")
@@ -146,8 +150,8 @@ class SplitModule(Module):
 
     def train(self, sourcefile, modelfile, **parameters):
         self.log("Preparing to generate bigram model")
-        classfile = modelfile  +  ".cls"
-        corpusfile = modelfile +  ".dat"
+        classfile = stripsourceextensions(sourcefile) +  ".cls"
+        corpusfile = stripsourceextensions(sourcefile) +  ".dat"
 
         if not os.path.exists(classfile):
             self.log("Building class file")
@@ -157,6 +161,9 @@ class SplitModule(Module):
         else:
             classencoder = colibricore.ClassEncoder(classfile)
 
+        if not os.path.exists(modelfile+'.cls'):
+            #make symlink to class file, using model name instead of source name
+            os.symlink(classfile, modelfile + '.cls')
 
         if not os.path.exists(corpusfile):
             self.log("Encoding corpus")
@@ -166,6 +173,7 @@ class SplitModule(Module):
         options = colibricore.PatternModelOptions(mintokens=self.settings['freqthreshold'],minlength=1,maxlength=2) #unigrams and bigrams
         model = colibricore.UnindexedPatternModel()
         model.train(corpusfile, options)
+
 
         self.log("Saving model")
         model.write(modelfile)

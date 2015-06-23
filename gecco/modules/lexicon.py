@@ -19,8 +19,9 @@ from pynlpl.statistics import levenshtein
 from gecco.gecco import Module
 from gecco.helpers.caching import getcache
 from gecco.helpers.filters import hasalpha
-import colibricore
-import aspell
+from gecco.helpers.common import stripsourceextensions
+import colibricore #pylint: disable=import-error
+import aspell #pylint: disable=import-error
 
 class LexiconModule(Module):
     UNIT = folia.Word
@@ -67,8 +68,8 @@ class LexiconModule(Module):
 
     def train(self, sourcefile, modelfile, **parameters):
         self.log("Preparing to generate lexicon")
-        classfile = modelfile  +  ".cls"
-        corpusfile = modelfile +  ".dat"
+        classfile = stripsourceextensions(sourcefile) +  ".cls"
+        corpusfile = stripsourceextensions(sourcefile) +  ".dat"
 
         if not os.path.exists(classfile):
             self.log("Building class file")
@@ -88,13 +89,12 @@ class LexiconModule(Module):
         model = colibricore.UnindexedPatternModel()
         model.train(corpusfile, options)
 
-        self.savemodel(model, modelfile) #in separate function so it can be overloaded
+        self.savemodel(model, modelfile, classfile) #in separate function so it can be overloaded
 
 
-    def savemodel(self, model, modelfile):
+    def savemodel(self, model, modelfile, classfile):
         self.log("Saving model")
-        classfile = modelfile  +  ".cls"
-        classdecoder = colibri.ClassDecoder(classfile)
+        classdecoder = colibricore.ClassDecoder(classfile)
         with open(modelfile,'w',encoding='utf-8') as f:
             for pattern, occurrencecount in model.items():
                 if self.settings['reversedformat']:
@@ -232,7 +232,7 @@ class ColibriLexiconModule(LexiconModule):
         for pattern, freq in self.lexicon.items():
             yield (pattern.tostring(self.classdecoder), freq)
 
-    def savemodel(self, model, modelfile): #will be called by train()
+    def savemodel(self, model, modelfile, classfile): #will be called by train()
         self.log("Saving model")
         model.write(modelfile)
 

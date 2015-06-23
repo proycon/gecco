@@ -21,6 +21,7 @@ from timbl import TimblClassifier #pylint: disable=import-error
 import colibricore #pylint: disable=import-error
 from gecco.gecco import Module
 from gecco.helpers.hapaxing import gethapaxer
+from gecco.helpers.common import stripsourceextensions
 
 
 class TIMBLWordConfusibleModule(Module):
@@ -262,10 +263,11 @@ class TIMBLSuffixConfusibleModule(Module):
         if modelfile == self.confusiblefile:
             #Build frequency list
             self.log("Preparing to generate lexicon for suffix confusible module")
-            classfile = modelfile.replace('.lst','')  +  ".cls"
-            corpusfile = modelfile.replace('.lst','') +  ".dat"
+            classfile = stripsourceextensions(sourcefile) +  ".cls"
+            corpusfile = stripsourceextensions(sourcefile) +  ".dat"
 
             if not os.path.exists(classfile):
+
                 self.log("Building class file")
                 classencoder = colibricore.ClassEncoder("", self.settings['minlength'], self.settings['maxlength']) #character length constraints
                 classencoder.build(sourcefile)

@@ -689,6 +689,8 @@ class Module:
         else:
             return self.parent.root + filename
 
+
+
     def verifysettings(self):
         if 'id' not in self.settings:
             raise Exception("Module must have an ID!")

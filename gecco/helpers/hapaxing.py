@@ -10,8 +10,10 @@
 #
 #=======================================================================
 
-import colibricore
+import colibricore #pylint: disable=import-error
+import os.path
 
+from gecco.helpers.common import stripsourceextensions
 
 def gethapaxer(settings):
     hapaxer = None
@@ -47,8 +49,8 @@ class Hapaxer:
 
     def train(self):
         if self.sourcefile and not os.path.exists(self.modelfile):
-            classfile = self.modelfile  +  ".cls"
-            corpusfile = self.modelfile +  ".dat"
+            classfile = stripsourceextensions(self.sourcefile) +  ".cls"
+            corpusfile = stripsourceextensions(self.sourcefile) +  ".dat"
 
             if not os.path.exists(classfile):
                 classencoder = colibricore.ClassEncoder(self.minlength,self.maxlength)
@@ -59,7 +61,7 @@ class Hapaxer:
 
 
             if not os.path.exists(corpusfile):
-                classencoder.encodefile( sourcefile, corpusfile)
+                classencoder.encodefile( self.sourcefile, corpusfile)
 
             options = colibricore.PatternModelOptions(mintokens=self.threshold,minlength=1,maxlength=1)
             model = colibricore.UnindexedPatternModel()
