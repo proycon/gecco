@@ -42,7 +42,7 @@ class FoLiAOutput(unittest.TestCase):
         self.assertEqual(correction.cls,'nonworderror',"Checking class")
         self.assertTrue( any( s.text() == "conscious" for s in correction.suggestions() ),"Checking for correct suggestion" )
 
-    def test004_confusible(self):
+    def test005_confusible(self):
         """Checking confusible output"""
         correction = findcorrectionbyannotator(self,'untitled.p.1.s.2.w.10','conf_thenthan')
         self.assertTrue(correction, "Checking presence of suggestion for correction for confusible" )
