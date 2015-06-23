@@ -1,5 +1,5 @@
-id: example
-root: example/ #should ideally be an absolute path!
+id: test
+root: test/ #should ideally be an absolute path!
 language: en
 threads: 1
 modules:
