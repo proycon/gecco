@@ -24,4 +24,6 @@ if __name__ == '__main__':
         print("Expected one argument: test directory",file=sys.stderr)
         sys.exit(2)
 
+    unittest.main()
+
 
