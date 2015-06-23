@@ -1,25 +1,32 @@
 #!/bin/bash
 
 echo "Reset system">&2
-gecco example.yml reset
+gecco test.yml reset
 if [ $? -ne 0 ]; then
     echo "Reset failed!!!" >&2
 fi
 
 echo "Training system">&2
-gecco example.yml train
+gecco test.yml train
 if [ $? -ne 0 ]; then
     echo "Training failed!!!" >&2
 fi
 
 echo "Running system on test document">&2
-gecco example.yml run -s threads=1 -p debug=1 --local example/test.txt
+gecco test.yml run -s threads=1 -p debug=1 --local test/test.txt
 if [ $? -ne 0 ]; then
     echo "Run failed!!!" >&2
 fi
 
+echo "Running unit tests">&2
+python ./test.py test/
+if [ $? -ne 0 ]; then
+    echo "Unit tests failed!" >&2
+fi
+
+
 echo "Running and evaluating test document">&2
 if [ $? -ne 0 ]; then
-    gecco example.yml evaluate -s threads=1 -p debug=1 --local example/test.txt /tmp/test.folia.xml example/testreference.folia.xml
+    gecco test.yml evaluate -s threads=1 -p debug=1 --local test/test.txt test/test.folia.xml example/testreference.folia.xml
     echo "Evaluate failed!!!" >&2
 fi
