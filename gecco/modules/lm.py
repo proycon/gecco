@@ -20,12 +20,27 @@ import time
 from collections import OrderedDict
 from pynlpl.formats import folia
 from pynlpl.textprocessors import Windower
-from timbl import TimblClassifier
+from timbl import TimblClassifier #pylint: disable=import-error
 from gecco.gecco import Module
 from pynlpl.statistics import levenshtein
 
 
 class TIMBLLMModule(Module):
+    """The Language Model predicts words given their context (including right context). It uses a classifier-based approach.
+
+    Settings:
+    * ``threshold``    - Prediction confidence threshold, only when a prediction exceeds this threshold will it be recommended (default: 0.9, value must be higher than 0.5 by definition)
+    * ``minlength``    - Only consider words with a suffix that are at least this long (in characters)
+    * ``maxlength``    - Only consider words with a suffix that are at most this long (in characters)
+    * ``leftcontext``  - Left context size (in words) for the feature vector
+    * ``rightcontext`` - Right context size (in words) for the feature vector
+    * ``maxdistance``  - Maximum Levenshtein distance between a word and its correction (larger distances are pruned from suggestions)
+    * ``algorithm``    - The Timbl algorithm to use (see -a parameter in timbl) (default: IGTree)
+    * ``class``        - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: contexterror) 
+    Sources and models:
+    * a plain-text corpus (tokenized)  [``.txt``]     ->    a classifier instance base model [``.ibase``]
+
+    """
     UNIT = folia.Word
 
     def verifysettings(self):
