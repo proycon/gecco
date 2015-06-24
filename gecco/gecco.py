@@ -39,12 +39,11 @@ if 'VIRTUAL_ENV' in os.environ:
 VERSION = 0.1
 
 class ProcessorThread(Thread):
-    def __init__(self, parent, q, lock, loadbalancemaster, **parameters):
+    def __init__(self, parent, q, lock, **parameters):
         self.parent = parent
         self.q = q
         self.lock = lock
         self._stop = False
-        self.loadbalancemaster = loadbalancemaster
         self.parameters = parameters
         self.debug  = 'debug' in parameters and parameters['debug']
         self.clients = {} #each thread keeps a bunch of clients open to the servers of the various modules so we don't have to reconnect constantly (= faster)
@@ -119,7 +118,6 @@ class Corrector:
         #Gather servers
         self.servers = set( [m.settings['servers'] for m in self if not m.local ] )
 
-        self.loadbalancemaster = LoadBalanceMaster(self)
 
         self.units = set( [m.UNIT for m in self] )
         self.loaded = False
@@ -400,7 +398,7 @@ class Corrector:
         lock = Lock()
         threads = []
         for _ in range(self.settings['threads']):
-            thread = ProcessorThread(self, queue, lock, self.loadbalancemaster, **parameters)
+            thread = ProcessorThread(self, queue, lock,  **parameters)
             thread.setDaemon(True)
             thread.start()
             threads.append(thread)
@@ -645,42 +643,6 @@ class Corrector:
             print("No such command: " + args.command,file=sys.stderr)
             sys.exit(2)
         sys.exit(0)
-
-class LoadBalanceMaster: #will cache thingies
-    def __init__(self, parent):
-        self.parent = parent
-        self.hosts = set( x['host'] for x in  self.parent.servers ) 
-        self.minpollinterval = self.parent.settings['minpollinterval']
-        self.lastpoll = 0
-        self.loadmap = {} #host -> load
-
-    def get(self,servers):
-        """Generator returns hostnames from lowest load to highest (with caching)"""
-
-        if time.time() - self.lastpoll > self.minpollinterval:
-            self.loadmap = {} #reset
-            path = self.parent.root + "/run/"
-            #find all available servers
-            for filename in glob(path + "/*.pid"):
-                filename = os.path.basename(filename)
-                fields = filename.split('.')[:-1]
-                module = self.parent.modules[fields[0]]
-                port = int(self.parent.modules[fields[0]])
-
-
-                host = ".".join(filename.split(".")[:-1])
-                with open(filename,'r') as f:
-                    self.loadmap[host] = float(f.read().strip())
-            self.lastpoll = time.time()
-
-        for host in sorted(self.loadmap.items(), key=lambda x: x[1]):
-            for host2, port in servers:
-                if host2 == host:
-                    yield host, port
-
-
-class LoadBalanceMonitor: #Reports load balance back to master
-    pass #TODO
 
 
 class LineByLineClient:
