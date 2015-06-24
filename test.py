@@ -50,6 +50,15 @@ class FoLiAOutput(unittest.TestCase):
         self.assertEqual( correction.suggestions(0).text(), 'than' ,"Checking for correct suggestion" )
         self.assertEqual( correction.suggestions(0).confidence, 0.75 ,"Checking for confidence" )
 
+    def test006_split(self):
+        """Checking split output"""
+        correction = self.doc['untitled.p.2.s.1.w.12'].next(folia.Correction)
+        self.assertEqual( len(correction.current()), 2)
+        self.assertEqual(correction.cls,'spliterror',"Checking class")
+        self.assertEqual( correction.current().text(), 'mis takes')
+        self.assertEqual( correction.suggestions(0).text(), 'mistakes')
+        
+
 if __name__ == '__main__':
     try:
         TESTDIR = sys.argv[1]
