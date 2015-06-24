@@ -108,7 +108,7 @@ class TIMBLWordConfusibleModule(Module):
             iomodule = gzip
         else:
             iomodule = io
-        with iomodule.open(sourcefile,mode='rt',encoding='utf-8') as f:
+        with iomodule.open(sourcefile,mode='rt',encoding='utf-8',errors='backslashreplace') as f:
             for line in f:
                 for ngram in Windower(line, n):
                     confusible = ngram[l]
@@ -333,7 +333,7 @@ class TIMBLSuffixConfusibleModule(Module):
                 iomodule = gzip
             else:
                 iomodule = io
-            with iomodule.open(sourcefile,mode='rt',encoding='utf-8') as f:
+            with iomodule.open(sourcefile,mode='rt',encoding='utf-8', errors='backslashreplace') as f:
                 for line in f:
                     for ngram in Windower(line, n):
                         confusible = ngram[l]
