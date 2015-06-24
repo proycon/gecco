@@ -64,6 +64,8 @@ if [ $? -ne 0 ]; then
     echo "Stop servers failed!!!" >&2
     exit 2
 fi
+echo "Waiting 10 seconds to ensure all servers all started">&2
+sleep 10
 
 echo "Running system on test document (using servers)">&2
 gecco test.yml run test/test.txt

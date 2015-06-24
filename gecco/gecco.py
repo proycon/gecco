@@ -531,14 +531,14 @@ class Corrector:
                 except KeyError:
                     #PID for non-existant module, skip
                     continue
-                host = ".".join(fields.split('.')[1:-1])
+                host = ".".join(fields[1:-1])
                 port = int(fields[-1])
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 sock.settimeout(0.25) #module servers have to respond very quickly or we ignore them
                 try:
-                    sock = socket.connect( (host,port) )
-                    sock.sendall("%GETLOAD%\n")
-                    load = int(self.socket.recv(1024))
+                    sock.connect( (host,port) )
+                    sock.sendall(b"%GETLOAD%\n")
+                    load = float(sock.recv(1024))
                     module.servers.append( (host,port,load) )
                 except socket.timeout:
                     self.log("Connection to " + module.id + "@" +host+":" + str(port) + " timed out")
@@ -550,9 +550,9 @@ class Corrector:
         module = self.modules[module_id]
         self.log("Loading module")
         module.load()
-        self.log("Running server...")
+        self.log("Running server " + module_id+"@"+host+":"+str(port) + " ...")
         module.runserver(host,port) #blocking
-        self.log("Server ended.")
+        self.log("Server " + module_id+"@"+host+":"+str(port) + " ended.")
 
     def main(self):
         """Parse command line options and run the desired part of the system"""
