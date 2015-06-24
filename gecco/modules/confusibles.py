@@ -170,6 +170,7 @@ class TIMBLSuffixConfusibleModule(Module):
     Settings:
     * ``suffixes``     - List of suffixes (strings) that form a single set of confusibles.
     * ``freqthreshold``- Only consider words with a suffix that occur at least this many times
+    * ``maxratio``     - Maximum ratio expressing the maximally allowed frequency difference between the confusibles (value > 1, 0 = no limit)
     * ``minlength``    - Only consider words with a suffix that are at least this long (in characters)
     * ``maxlength``    - Only consider words with a suffix that are at most this long (in characters)
     * ``leftcontext``  - Left context size (in words) for the feature vector
@@ -213,6 +214,8 @@ class TIMBLSuffixConfusibleModule(Module):
             self.settings['maxlength'] = 25 #longer words will be ignored
         if 'minlength' not in self.settings:
             self.settings['minlength'] = 3 #shorter word will be ignored
+        if 'maxratio' not in self.settings:
+            self.settings['maxratio'] = 0 #no limit
 
 
         ibasefound = lstfound = False
@@ -285,6 +288,7 @@ class TIMBLSuffixConfusibleModule(Module):
             model = colibricore.UnindexedPatternModel()
             model.train(corpusfile, options)
 
+
             self.log("Finding confusible pairs")
             classdecoder = colibricore.ClassDecoder(classfile)
             self.confusibles = [] #pylint: disable=attribute-defined-outside-init
@@ -304,7 +308,13 @@ class TIMBLSuffixConfusibleModule(Module):
                                 if not otherpattern in model:
                                     if found: found = []
                                     break
-                                found.append(otherpattern_s)
+                                if self.settings['maxratio'] != 0:
+                                    freqs = (model.occurrencecount(pattern), model.occurrencecount(otherpattern))
+                                    ratio = max(freqs) / min(freqs)
+                                    if ratio < self.settings['maxratio']:
+                                        if found: found = []
+                                        break
+                                found.append(otherpattern_s )
                         if found:
                             self.confusibles.append(pattern_s)
                             for s in found:
