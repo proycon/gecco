@@ -567,6 +567,8 @@ class Corrector:
         parser_run.add_argument('--local', help="Run all modules locally, ignore remote servers", required=False, action='store_true')
         parser_startservers = subparsers.add_parser('startservers', help="Starts all the module servers that are configured to run on the current host. Issue once for each server used.")
         parser_startservers.add_argument('modules', help="Only start server for modules with the specified IDs (comma-separated list) (if omitted, all modules are run)", nargs='?',default="")
+        parser_stopservers = subparsers.add_parser('startservers', help="Stops all the module servers that are configured to run on the current host. Issue once for each server used.")
+        parser_stopservers.add_argument('modules', help="Only stop server for modules with the specified IDs (comma-separated list) (if omitted, all modules are run)", nargs='?',default="")
         parser_startserver = subparsers.add_parser('startserver', help="Start one module's server on the specified port, use 'startservers' instead")
         parser_startserver.add_argument('module', help="Module ID")
         parser_startserver.add_argument('host', help="Host/IP to bind to")
