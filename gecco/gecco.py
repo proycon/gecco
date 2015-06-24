@@ -474,14 +474,15 @@ class Corrector:
                             else:
                                 cmd = sys.argv[0] + " "
                             cmd += "startserver " + module.id + " " + host + " " + str(port)
-                            processes.append( subprocess.Popen(cmd.split(' ')) )
+                            processes.append( subprocess.Popen(cmd.split(' '),close_fds=True) )
             else:
                 print("Module " + module.id + " is local",file=sys.stderr)
 
         self.log(str(len(processes)) + " server(s) started.")
-        if processes:
-            os.wait() #blocking
-        self.log("All servers ended.")
+        sys.exit(0)
+        #if processes:
+        #    os.wait() #blocking
+        #self.log("All servers ended.")
 
 
     def startserver(self, module_id, host, port):
