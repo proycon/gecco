@@ -20,9 +20,11 @@ import yaml
 import datetime
 import time
 import subprocess
+import psutil
 from collections import OrderedDict
 from threading import Thread, Lock
 from queue import Queue
+from glob import glob
 from pynlpl.formats import folia, fql
 from ucto import Tokenizer #pylint: disable=import-error,no-name-in-module
 
@@ -69,7 +71,7 @@ class ProcessorThread(Thread):
                             if self.debug:
                                 begintime = time.time()
                                 module.log(" (Running " + module.id + " on '" + str(data) + "' [remote]")
-                            for server,port in  module.findserver(self.loadbalancemaster):
+                            for server,port,load in sorted(module.servers, key=lambda x: x[2]): 
                                 try:
                                     if (server,port) not in self.clients:
                                         self.clients[(server,port)] = module.CLIENT(server,port)
@@ -124,6 +126,8 @@ class Corrector:
 
     def load(self):
         if not self.loaded:
+            self.log("Querying remote modules")
+            self.findservers()
             self.log("Loading local modules")
             begintime =time.time()
 
@@ -152,6 +156,7 @@ class Corrector:
             self.loaded = True
             duration = time.time() - begintime
             self.log("Modules loaded (" + str(duration) + "s)")
+
 
 
     def verifysettings(self):
@@ -196,7 +201,7 @@ class Corrector:
             self.settings['threads'] = 1
 
         if not 'minpollinterval' in self.settings:
-            self.settings['minpollinterval'] = 30 #30 sec
+            self.settings['minpollinterval'] = 60 #60 sec
 
 
     def parseconfig(self,configfile):
@@ -463,6 +468,9 @@ class Corrector:
         MYHOSTS = set( [socket.getfqdn() , socket.gethostname(), socket.gethostbyname(socket.gethostname()), '127.0.0.1'] )
         self.log("Starting servers for "  + "/".join(MYHOSTS) )
 
+        if not os.path.isdir(self.root + "/run"):
+            os.mkdir(self.root + "/run")
+
         for module in self:
             if not module.local:
                 if not module_ids or module.id in module_ids:
@@ -474,15 +482,69 @@ class Corrector:
                             else:
                                 cmd = sys.argv[0] + " "
                             cmd += "startserver " + module.id + " " + host + " " + str(port)
-                            processes.append( subprocess.Popen(cmd.split(' '),close_fds=True) )
+                            self.log("Starting server " + module.id + "@" + host + ":" + str(port)  + " ...")
+                            process = subprocess.Popen(cmd.split(' '),close_fds=True) 
+                            with open(self.root + "/run/" + module.id + "." + self.host + "." + str(port) + ".pid",'w') as f:
+                                f.write(str(process.pid))
+                            processes.append(process)
             else:
                 print("Module " + module.id + " is local",file=sys.stderr)
 
         self.log(str(len(processes)) + " server(s) started.")
-        sys.exit(0)
         #if processes:
         #    os.wait() #blocking
         #self.log("All servers ended.")
+
+    def stopservers(self, module_ids=[]): #pylint: disable=dangerous-default-value
+        MYHOSTS = set( [socket.getfqdn() , socket.gethostname(), socket.gethostbyname(socket.gethostname()), '127.0.0.1'] )
+        self.log("Stopping servers for "  + "/".join(MYHOSTS) )
+
+        runpath = self.root + "/run/"
+        if not os.path.isdir(runpath):
+            os.mkdir(runpath)
+       
+        self.findservers()
+
+        for module in self.modules.values():
+            for host,port,load in module.servers:
+                if not module.local and module.id in module_ids and host in MYHOSTS:
+                    self.log("Stopping server " + module.id + "@" + host + ":" + str(port) + " ...")
+                    with open(runpath + module.id + "." + self.host + "." + str(port) + ".pid",'w') as f:
+                        pid = int(f.read().strip())
+                    os.kill(pid, 15)
+                    os.unlink(runpath + module.id + "." + self.host + "." + str(port) + ".pid")
+
+
+
+    def findservers(self):
+        """find all running servers and get the load, will be called by Corrector.load() once before a run"""
+        
+        #reset servers for modules
+        for module in self.modules.values():
+            module.servers = []
+
+        runpath = self.root + "/run/"
+        if os.path.isdir(runpath):
+            for filename in glob(runpath + "/*.pid"):
+                filename = os.path.basename(filename)
+                fields = filename.split('.')[:-1]
+                try:
+                    module = self.modules[fields[0]]
+                except KeyError:
+                    #PID for non-existant module, skip
+                    continue
+                host = ".".join(fields.split('.')[1:-1])
+                port = int(fields[-1])
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.settimeout(0.25) #module servers have to respond very quickly or we ignore them
+                try:
+                    sock = socket.connect( (host,port) )
+                    sock.sendall("%GETLOAD%\n")
+                    load = int(self.socket.recv(1024))
+                    module.servers.append( (host,port,load) )
+                except socket.timeout:
+                    self.log("Connection to " + module.id + "@" +host+":" + str(port) + " timed out")
+                    continue
 
 
     def startserver(self, module_id, host, port):
@@ -556,6 +618,8 @@ class Corrector:
             self.run(args.filename,modules, args.outputfile, **parameters)
         elif args.command == 'startservers':
             self.startservers(modules)
+        elif args.command == 'stopservers':
+            self.stopservers(modules)
         elif args.command == 'startserver':
             self.startserver(args.module, args.host, args.port)
         elif args.command == 'train':
@@ -585,17 +649,37 @@ class Corrector:
 class LoadBalanceMaster: #will cache thingies
     def __init__(self, parent):
         self.parent = parent
-        self.availableservers = self.parent.servers
+        self.hosts = set( x['host'] for x in  self.parent.servers ) 
         self.minpollinterval = self.parent.settings['minpollinterval']
+        self.lastpoll = 0
+        self.loadmap = {} #host -> load
+
+    def get(self,servers):
+        """Generator returns hostnames from lowest load to highest (with caching)"""
+
+        if time.time() - self.lastpoll > self.minpollinterval:
+            self.loadmap = {} #reset
+            path = self.parent.root + "/run/"
+            #find all available servers
+            for filename in glob(path + "/*.pid"):
+                filename = os.path.basename(filename)
+                fields = filename.split('.')[:-1]
+                module = self.parent.modules[fields[0]]
+                port = int(self.parent.modules[fields[0]])
 
 
-    def get(self,servers, skipservers=[]):
-        """Generator return servers from servers from highest to lower (with caching)"""
-        #TODO
-        raise NotImplementedError
+                host = ".".join(filename.split(".")[:-1])
+                with open(filename,'r') as f:
+                    self.loadmap[host] = float(f.read().strip())
+            self.lastpoll = time.time()
+
+        for host in sorted(self.loadmap.items(), key=lambda x: x[1]):
+            for host2, port in servers:
+                if host2 == host:
+                    yield host, port
 
 
-class LoadBalanceServer: #Reports load balance back to master
+class LoadBalanceMonitor: #Reports load balance back to master
     pass #TODO
 
 
@@ -659,7 +743,10 @@ class LineByLineServerHandler(socketserver.BaseRequestHandler):
             if not chunk: #connection broken
                 break
             msg = str(buffer,'utf-8').strip()
-            response = self.server.module.server_handler(msg)
+            if msg == "%GETLOAD%":
+                response = str(self.server.module.server_load())
+            else:
+                response = self.server.module.server_handler(msg)
             #print("Input: [" + msg + "], Response: [" + response + "]",file=sys.stderr)
             if isinstance(response,str):
                 response = response.encode('utf-8')
@@ -679,7 +766,8 @@ class Module:
     def __init__(self, parent,**settings):
         self.parent = parent
         self.settings = settings
-        self.submodclients = {} #each module keeps a bunch of clients open to the servers of the various isubmodules so we don't have to reconnect constantly (= faster)
+        self.submodclients = {} #each module keeps a bunch of clients open to the servers of the various submodules so we don't have to reconnect constantly (= faster)
+        self.servers = [] #only for the master process, will be populated by it later
         self.verifysettings()
 
     def getfilename(self, filename):
@@ -696,6 +784,9 @@ class Module:
         if 'id' not in self.settings:
             raise Exception("Module must have an ID!")
         self.id = self.settings['id']
+        for c in self.id:
+            if c in ('.',' ','/'):
+                raise ValueError("Invalid character in module ID (no spaces, period and slashes allowed): " + self.id)
 
 
         if 'source' in self.settings:
@@ -765,25 +856,15 @@ class Module:
             raise Exception("Module " + self.id + " is a submodule, but no servers are defined, submodules can not be local only")
 
 
-    def findserver(self, loadbalanceserver):
-        """Finds a suitable server for this module"""
-        if self.local:
-            raise Exception("Module is local")
-        elif len(self.settings['servers']) == 1:
-            #Easy, there is only one
-            yield self.settings['servers'][0] #2-tuple (host, port)
-        else:
-            #TODO: Do load balancing, find least busy server
-            for host, port in self.loadbalancemaster.get(self.settings['servers']):
-                yield host, port
 
     def getsubmoduleclient(self, submodule):
-        submodule.prepare() #will block until all submod dependencies are done
-        for server,port in submodule.findserver(self.parent.loadbalancemaster):
-            if (server,port) not in self.submodclients:
-                self.submodclients[(server,port)] = submodule.CLIENT(server,port)
-            return self.submodclients[(server,port)]
-        raise Exception("Could not find server for submodule " + submodule.id)
+        #submodule.prepare() #will block until all submod dependencies are done
+        #for server,port in submodule.findserver(self.parent.loadbalancemaster):
+        #    if (server,port) not in self.submodclients:
+        #        self.submodclients[(server,port)] = submodule.CLIENT(server,port)
+        #    return self.submodclients[(server,port)]
+        #raise Exception("Could not find server for submodule " + submodule.id)
+        raise NotImplementedError #may be obsolete
 
     def prepare(self):
         """Executed prior to running the module, waits until all dependencies have completed"""
@@ -848,6 +929,10 @@ class Module:
         for filename in filenames:
             if os.path.exists(filename):
                 os.unlink(filename)
+
+    def server_load(self):
+        """Returns a float indicating the load of this server. 0 = idle, 1 = max load, >1 overloaded. Returns normalised system load by default, buy may be overriden for module-specific behaviour."""
+        return os.getloadavg()[0] / psutil.cpu_count()
 
     ##### Callbacks invoked by the Corrector that MUST be implemented:
 
