@@ -482,7 +482,7 @@ class Corrector:
                             cmd += "startserver " + module.id + " " + host + " " + str(port)
                             self.log("Starting server " + module.id + "@" + host + ":" + str(port)  + " ...")
                             process = subprocess.Popen(cmd.split(' '),close_fds=True) 
-                            with open(self.root + "/run/" + module.id + "." + self.host + "." + str(port) + ".pid",'w') as f:
+                            with open(self.root + "/run/" + module.id + "." + host + "." + str(port) + ".pid",'w') as f:
                                 f.write(str(process.pid))
                             processes.append(process)
             else:
