@@ -125,7 +125,9 @@ class Corrector:
     def load(self):
         if not self.loaded:
             self.log("Querying remote modules")
-            self.findservers()
+            servers = self.findservers()
+            for module, host, port, load in servers:
+                self.log("  found " + module + "@" + host + ":" + str(port) + ", load " + str(load))
             self.log("Loading local modules")
             begintime =time.time()
 
@@ -503,6 +505,7 @@ class Corrector:
        
         self.findservers()
 
+
         for module in self.modules.values():
             for host,port,load in module.servers:
                 if not module.local and module.id in module_ids and host in MYHOSTS:
@@ -514,12 +517,15 @@ class Corrector:
 
 
 
+
     def findservers(self):
         """find all running servers and get the load, will be called by Corrector.load() once before a run"""
         
         #reset servers for modules
         for module in self.modules.values():
             module.servers = []
+
+        servers = []
 
         runpath = self.root + "/run/"
         if os.path.isdir(runpath):
@@ -540,9 +546,12 @@ class Corrector:
                     sock.sendall(b"%GETLOAD%\n")
                     load = float(sock.recv(1024))
                     module.servers.append( (host,port,load) )
+                    servers.append( (module.id, host,port,load) )
                 except socket.timeout:
                     self.log("Connection to " + module.id + "@" +host+":" + str(port) + " timed out")
                     continue
+
+        return servers
 
 
     def startserver(self, module_id, host, port):
