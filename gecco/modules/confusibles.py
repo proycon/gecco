@@ -293,7 +293,10 @@ class TIMBLSuffixConfusibleModule(Module):
             classdecoder = colibricore.ClassDecoder(classfile)
             self.confusibles = [] #pylint: disable=attribute-defined-outside-init
             for pattern in model:
-                pattern_s = pattern.tostring(classdecoder)
+                try:
+                    pattern_s = pattern.tostring(classdecoder)
+                except UnicodeDecodeError:
+                    self.log("WARNING: Unable to decode a pattern in the model!!! Invalid utf-8!")
                 for suffix in self.suffixes:
                     if pattern_s.endswith(suffix) and not pattern_s in self.confusibles:
                         found = []
