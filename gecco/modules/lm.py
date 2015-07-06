@@ -17,6 +17,7 @@ import io
 import bz2
 import gzip
 import time
+import datetime
 from collections import OrderedDict
 from pynlpl.formats import folia
 from pynlpl.textprocessors import Windower
@@ -110,7 +111,8 @@ class TIMBLLMModule(Module):
         else:
             iomodule = io
         with iomodule.open(sourcefile,mode='rt',encoding='utf-8') as f:
-            for line in f:
+            for i, line in enumerate(f):
+                if i % 100000 == 0: print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + " - " + str(i),file=sys.stderr)
                 for ngram in Windower(line, n):
                     focus = ngram[l]
                     leftcontext = tuple(ngram[:l])

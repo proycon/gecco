@@ -15,6 +15,8 @@ import json
 import io
 import bz2
 import gzip
+import sys
+import datetime
 from pynlpl.formats import folia
 from pynlpl.textprocessors import Windower
 from timbl import TimblClassifier #pylint: disable=import-error
@@ -109,7 +111,8 @@ class TIMBLWordConfusibleModule(Module):
         else:
             iomodule = io
         with iomodule.open(sourcefile,mode='rt',encoding='utf-8',errors='ignore') as f:
-            for line in f:
+            for i, line in enumerate(f):
+                if i % 100000 == 0: print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + " - " + str(i),file=sys.stderr)
                 for ngram in Windower(line, n):
                     confusible = ngram[l]
                     if confusible in self.settings['confusibles']:
@@ -347,8 +350,9 @@ class TIMBLSuffixConfusibleModule(Module):
             else:
                 iomodule = io
             with iomodule.open(sourcefile,mode='rt',encoding='utf-8', errors='ignore') as f:
-                for line in f:
+                for i, line in enumerate(f):
                     for ngram in Windower(line, n):
+                        if i % 100000 == 0: print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + " - " + str(i),file=sys.stderr)
                         confusible = ngram[l]
                         if confusible in self.confusibles:
                             if self.hapaxer:
