@@ -127,7 +127,7 @@ class TIMBLPuncRecaseModule(Module):
             iomodule = io
 
         buffer = [("<begin>",False,'')] * l
-        with iomodule.open(sourcefile,mode='rt',encoding='utf-8') as f:
+        with iomodule.open(sourcefile,mode='rt',encoding='utf-8',errors='ignore') as f:
             for line in f:
                 words = [ x.strip() for x in line.split(' ') if x ]
                 for i, word in enumerate(words):
