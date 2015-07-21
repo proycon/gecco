@@ -56,6 +56,8 @@ class Evaldata():
         self.aggrav = 0
         self.totalout = 0
         self.totalref = 0
+        self.aggrtotalout = 0
+        self.aggrtotalref = 0
 
     def output(self):
         print("OVERALL RESULTS")
@@ -71,12 +73,13 @@ class Evaldata():
         print(" F1-score (micro)                           : ", round(2*self.tp / (2*self.tp+self.fp+self.fn),2) )
         print("")
         print("Aggregated corrections when they are on the same words:")
-        print(" Aggregated average corrections                        : ", round(self.aggrav,2) )
-        print(" Total number of aggregated corrections in output      : ", self.aggrtp+self.aggrfp ),
-        print(" Total number of aggregated corrections in reference   : ",  self.aggrtp+self.aggrfn )
+        print(" Aggregated average corrections in output              : ", round(self.aggrav,2) )
+        print(" Total number of aggregated corrections in output      : ",  self.aggrtotalout ),
+        print(" Total number of aggregated corrections in reference   : ",  self.aggrtotalref )
         print(" Matching output aggregated corrections (tp)           : ",  self.aggrtp)
         print(" Missed output aggregated corrections (fp)             : ",  self.aggrfp)
         print(" Missed reference aggregated corrections (fn)          : ",  self.aggrfn)
+        print(" Virtual total (tp+fn)                                 : ",  self.aggrtp+self.aggrfn )
         print(" Aggregated precision (micro)                          : ", round(self.aggrtp / (self.aggrtp+self.aggrfp),2) )
         print(" Aggregated recall (micro)                             : ", round(self.aggrtp / (self.aggrtp+self.aggrfn),2) )
         print(" Aggregated F1-score (micro)                           : ", round(2*self.aggrtp / (2*self.aggrtp+self.aggrfp+self.aggrfn),2) )
@@ -223,6 +226,8 @@ def processfile(outfile, reffile, evaldata):
     #Compute aggregated precision, all correction on the same word(s) are combined, only one needs to match
     for correction_out in corrections_out:
         if not correction_out.handled:
+            evaldata.aggrtotalout += 1
+
             if isinstance(correction_out.parent, folia.Word):
                 correction_out.siblings = [ co for co in corrections_out if co.parent.id == correction_out.parent.id and co is not correction_out ]
             else:
@@ -242,6 +247,26 @@ def processfile(outfile, reffile, evaldata):
 
     #Computing recall
     for correction_ref in corrections_ref:
+        if not hasattr(correction_ref,'handled') or not correction_ref.handled:
+            evaldata.aggrtotalref += 1
+            correction_ref.handled = True
+
+            if isinstance(correction_ref.parent, folia.Word):
+                correction_ref.siblings = [ cr for cr in corrections_ref if cr.parent.id == correction_ref.parent.id and cr is not correction_ref ]
+            else:
+                correction_ref.siblings = [] #there are never multiple splits/merges in different corrections
+
+            nonematch = (not hasattr(correction_ref,'match') or not correction_ref.match) and (not hasattr(correction_ref, 'alignedto') or not correction_ref.alignedto)
+
+            for cr in correction_ref.siblings:
+                cr.handled = True
+                if (not hasattr(cr,'match') or not cr.match) and (not hasattr(cr, 'alignedto') or not cr.alignedto):
+                    nonematch = True
+
+            if nonematch:
+                evaldata.aggrfn += 1
+            
+
         evaldata.refclsdistr[correction_ref.cls] += 1
         if correction_ref.hasoriginal() and correction_ref.original().hastext(None,strict=False):
             origtext = correction_ref.original().text(None)
