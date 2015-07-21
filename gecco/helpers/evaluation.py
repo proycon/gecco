@@ -54,13 +54,18 @@ class Evaldata():
         self.refclsdistr = defaultdict(int)
         self.outclsdistr = defaultdict(int)
         self.aggrav = 0
+        self.totalout = 0
+        self.totalref = 0
 
     def output(self):
         print("OVERALL RESULTS")
         print("=================")
         print(" Total number of corrections in output      : ", self.tp+self.fp ),
-        print(" Total number of corrections in reference   : ",  self.tp+self.fn )
-        print(" Matching corrections                       : ",  self.tp)
+        print(" Total number of corrections in reference   : ", self.totalref ),
+        print(" Matching output corrections (tp)           : ",  self.tp)
+        print(" Missed output corrections (fp)             : ",  self.fp)
+        print(" Missed reference corrections (fn)          : ",  self.fn)
+        print(" Virtual total (tp+fn)                      : ",  self.tp+self.fn )
         print(" Precision (micro)                          : ", round(self.tp / (self.tp+self.fp),2) )
         print(" Recall (micro)                             : ", round(self.tp / (self.tp+self.fn),2) )
         print(" F1-score (micro)                           : ", round(2*self.tp / (2*self.tp+self.fp+self.fn),2) )
@@ -69,7 +74,9 @@ class Evaldata():
         print(" Aggregated average corrections                        : ", round(self.aggrav,2) )
         print(" Total number of aggregated corrections in output      : ", self.aggrtp+self.aggrfp ),
         print(" Total number of aggregated corrections in reference   : ",  self.aggrtp+self.aggrfn )
-        print(" Matching aggregated corrections                       : ",  self.aggrtp)
+        print(" Matching output aggregated corrections (tp)           : ",  self.aggrtp)
+        print(" Missed output aggregated corrections (fp)             : ",  self.aggrfp)
+        print(" Missed reference aggregated corrections (fn)          : ",  self.aggrfn)
         print(" Aggregated precision (micro)                          : ", round(self.aggrtp / (self.aggrtp+self.aggrfp),2) )
         print(" Aggregated recall (micro)                             : ", round(self.aggrtp / (self.aggrtp+self.aggrfn),2) )
         print(" Aggregated F1-score (micro)                           : ", round(2*self.aggrtp / (2*self.aggrtp+self.aggrfp+self.aggrfn),2) )
@@ -77,7 +84,7 @@ class Evaldata():
             print("")
             print("PER-MODULE RESULTS")
             print("====================")
-            for module in self.modtp:
+            for module in sorted(self.modtp):
                 print("Precision for " + module + " : ", round(self.modtp[module] / (self.modtp[module]+self.modfp[module]),2) )
             print("")
         if self.clstp:
@@ -99,13 +106,13 @@ class Evaldata():
         print("REFERENCE CLASS DISTRIBUTION")
         print("================================")
         totalfreq = sum(self.refclsdistr.values())
-        for cls, freq in self.refclsdistr.items():
+        for cls, freq in sorted(self.refclsdistr.items()):
             print(cls + " : ", freq, round(freq / totalfreq,2))
         print("")
         print("OUTPUT CLASS DISTRIBUTION")
         print("================================")
         totalfreq = sum(self.outclsdistr.values())
-        for cls, freq in self.outclsdistr.items():
+        for cls, freq in sorted(self.outclsdistr.items()):
             print(cls + " : ", freq, round(freq / totalfreq,2))
 
 
@@ -141,6 +148,9 @@ def processfile(outfile, reffile, evaldata):
     if not corrections_ref:
         print("No corrections in reference document " + refdoc.id + ", skipping...",file=sys.stderr)
         return
+
+    evaldata.totalout += len(corrections_out)
+    evaldata.totalref += len(corrections_ref)
 
     #match the ones that cover the same words
     for correction_out in corrections_out:
@@ -206,6 +216,9 @@ def processfile(outfile, reffile, evaldata):
 
         correction_out.handled = False #init next round
 
+
+    if evaldata.tp + evaldata.fp != evaldata.totalout:
+        raise Exception("Sanity check failed: tp + fp != totalout --  " + str(evaldata.tp) + " + " + str(evaldata.fp) + " != " + str(evaldata.totalout))
 
     #Compute aggregated precision, all correction on the same word(s) are combined, only one needs to match
     for correction_out in corrections_out:
