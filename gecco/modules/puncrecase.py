@@ -141,10 +141,10 @@ class TIMBLPuncRecaseModule(Module):
                         buffer.append( (word, word == word[0].upper() + word[1:].lower(), punc ) )
                     if len(buffer) == l + r + 1:
                         buffer = self.addtraininstance(classifier, buffer,l,r)
-                for i in range(0,r):
-                    buffer.append( ("<end>",False,'') )
-                    if len(buffer) == l + r + 1:
-                        buffer = self.addtraininstance(classifier, buffer,l,r)
+        for i in range(0,r):
+            buffer.append( ("<end>",False,'') )
+            if len(buffer) == l + r + 1:
+                buffer = self.addtraininstance(classifier, buffer,l,r)
 
         self.log("Training classifier...")
         classifier.train()
