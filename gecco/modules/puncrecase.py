@@ -61,6 +61,7 @@ class TIMBLPuncRecaseModule(Module):
         if 'insertionthreshold' not in self.settings:
             self.settings['insertionthreshold'] = 0.5
 
+
         self.hapaxer = gethapaxer(self.settings)
 
 
@@ -133,7 +134,7 @@ class TIMBLPuncRecaseModule(Module):
                 if i % 100000 == 0: print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + " - " + str(i),file=sys.stderr)
                 words = [ x.strip() for x in line.split(' ') if x ]
                 for i, word in enumerate(words):
-                    if i == 0 or words[i-1].isalnum():
+                    if i == 0 or any([ c.isalnum() for c in words[i-1]]):
                         punc = ''
                     else:
                         punc = words[i-1]
