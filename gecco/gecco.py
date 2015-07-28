@@ -102,10 +102,20 @@ class LoaderThread(Thread):
 
     def run(self):
         while not self.q.empty():
-            module = self.q.get() #data is an instance of module.UNIT
+            module = self.q.get()
             module.load()
             self.q.task_done()
 
+class ClientLoaderThread(Thread):
+    def __init__(self, q):
+        self.q = q
+        super().__init__()
+
+    def run(self):
+        while not self.q.empty():
+            module = self.q.get()
+            module.clientload()
+            self.q.task_done()
 
 
 class Corrector:
@@ -124,35 +134,57 @@ class Corrector:
 
     def load(self):
         if not self.loaded:
+            begintime =time.time()
             self.log("Querying remote modules")
+            remotequeue = Queue()
             servers = self.findservers()
             for module, host, port, load in servers:
                 self.log("  found " + module + "@" + host + ":" + str(port) + ", load " + str(load))
-            self.log("Loading local modules")
-            begintime =time.time()
+                if not module.local:
+                    remotequeue.put(module)
 
-            queue = Queue()
-            threads = []
-            for _ in range(self.settings['threads']):
-                thread = LoaderThread(queue)
-                thread.setDaemon(True)
-                threads.append(thread)
-
-
-            self.log(str(len(threads)) + " threads ready.")
+            localqueue = Queue()
 
             for module in self:
                 if module.local:
-                    queue.put( module )
+                    localqueue.put( module )
                     self.log("Queuing " + module.id + " for loading")
 
-            for thread in threads:
-                thread.start()
-                del thread
-            del threads
+            if remotequeue:
+                self.log("Loading remote modules")
+                threads = []
+                for _ in range(self.settings['threads']):
+                    thread = ClientLoaderThread(remotequeue)
+                    thread.setDaemon(True)
+                threads.append(thread)
 
-            queue.join()
-            del queue
+                self.log(str(len(threads)) + " threads ready.")
+                for thread in threads:
+                    thread.start()
+                    del thread
+                del threads
+
+                remotequeue.join()
+                del remotequeue
+
+            if localqueue:
+                self.log("Loading local modules")
+                threads = []
+                for _ in range(self.settings['threads']):
+                    thread = LoaderThread(localqueue)
+                    thread.setDaemon(True)
+                threads.append(thread)
+
+
+                self.log(str(len(threads)) + " threads ready.")
+                for thread in threads:
+                    thread.start()
+                    del thread
+                del threads
+
+                localqueue.join()
+                del localqueue
+
             self.loaded = True
             duration = time.time() - begintime
             self.log("Modules loaded (" + str(duration) + "s)")
@@ -927,12 +959,15 @@ class Module:
         raise NotImplementedError
 
 
-    #### Callback invoked by the module itself, MUST be implemented
+    #### Callback invoked by the module itself, MUST be implemented if any loading is done:
 
     def load(self):
         """Load the requested modules from self.models, module-specific so doesn't do anything by default"""
         pass
 
+    def clientload(self):
+        """Load the requested modules from self.models, module-specific so doesn't do anything by default. This is a subset that may be loaded for clients, it should load as little as possible (preferably nothing at all!)"""
+        pass
 
     ######################### FOLIA EDITING ##############################
     #

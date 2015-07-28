@@ -265,6 +265,17 @@ class TIMBLSuffixConfusibleModule(Module):
         self.classifier = TimblClassifier(fileprefix, self.gettimbloptions()) #pylint: disable=attribute-defined-outside-init
         self.classifier.load()
 
+    def clientload(self):
+        self.log("Loading models (for client)...")
+        self.confusibles = []#pylint: disable=attribute-defined-outside-init
+        if not os.path.exists(self.confusiblefile):
+            raise IOError("Missing expected confusible file: "  + self.confusiblefile + ". Did you forget to train the system?")
+        with open(self.confusiblefile,'r',encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    self.confusibles.append(line)
+
     def train(self, sourcefile, modelfile, **parameters):
         if modelfile == self.confusiblefile:
             #Build frequency list
