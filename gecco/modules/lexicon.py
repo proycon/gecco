@@ -87,6 +87,10 @@ class LexiconModule(Module):
             self.log("Encoding corpus")
             classencoder.encodefile( sourcefile, corpusfile)
 
+        if not os.path.exists(modelfile+'.cls'):
+            #make symlink to class file, using model name instead of source name
+            os.symlink(classfile, modelfile + '.cls')
+
         self.log("Generating frequency list")
         options = colibricore.PatternModelOptions(mintokens=self.settings['freqthreshold'],minlength=1,maxlength=1) #unigrams only
         model = colibricore.UnindexedPatternModel()
