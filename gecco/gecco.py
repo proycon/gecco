@@ -510,10 +510,10 @@ class Corrector:
                 self.log("Found server " + module.id + "@" + host + ":" + str(port) + " ...")
                 if not module.local and (not module_ids or module.id in module_ids) and host in MYHOSTS:
                     self.log("Stopping server " + module.id + "@" + host + ":" + str(port) + " ...")
-                    with open(runpath + module.id + "." + self.host + "." + str(port) + ".pid",'w') as f:
+                    with open(runpath + module.id + "." + host + "." + str(port) + ".pid",'w') as f:
                         pid = int(f.read().strip())
                     os.kill(pid, 15)
-                    os.unlink(runpath + module.id + "." + self.host + "." + str(port) + ".pid")
+                    os.unlink(runpath + module.id + "." + host + "." + str(port) + ".pid")
 
 
 
