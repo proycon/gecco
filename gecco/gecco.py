@@ -512,7 +512,10 @@ class Corrector:
                     self.log("Stopping server " + module.id + "@" + host + ":" + str(port) + " ...")
                     with open(runpath + module.id + "." + host + "." + str(port) + ".pid",'r') as f:
                         pid = int(f.read().strip())
-                    os.kill(pid, 15)
+                    try:
+                        os.kill(pid, 15)
+                    except ProcessLookupError:
+                        self.log("(process already dead)")
                     os.unlink(runpath + module.id + "." + host + "." + str(port) + ".pid")
 
 
