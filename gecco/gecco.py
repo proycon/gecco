@@ -985,7 +985,7 @@ class Module:
 
         q = "EDIT t (AS CORRECTION OF " + self.settings['set'] + " WITH class \"" + cls + "\" annotator \"" + self.settings['annotator'] + "\" annotatortype \"auto\" datetime now"
         for suggestion in suggestions:
-            if isinstance(suggestion, tuple):
+            if isinstance(suggestion, tuple) or isinstance(suggestion, list):
                 suggestion, confidence = suggestion
             else:
                 confidence = None
