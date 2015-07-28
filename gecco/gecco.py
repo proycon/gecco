@@ -140,7 +140,7 @@ class Corrector:
             servers = self.findservers()
             for module, host, port, load in servers:
                 self.log("  found " + module + "@" + host + ":" + str(port) + ", load " + str(load))
-                remotequeue.put(self[module])
+                remotequeue.put(self.modules[module])
 
             localqueue = Queue()
             for module in self:
