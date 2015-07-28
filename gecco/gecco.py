@@ -507,7 +507,6 @@ class Corrector:
 
         for module in self.modules.values():
             for host,port,load in module.servers:
-                self.log("Found server " + module.id + "@" + host + ":" + str(port) + " ...")
                 if not module.local and (not module_ids or module.id in module_ids) and host in MYHOSTS:
                     self.log("Stopping server " + module.id + "@" + host + ":" + str(port) + " ...")
                     with open(runpath + module.id + "." + host + "." + str(port) + ".pid",'r') as f:
