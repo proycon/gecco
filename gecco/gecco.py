@@ -996,12 +996,12 @@ class Module:
         q += ") FOR ID \"" + element.id + "\" RETURN nothing"
         self.log(" FQL: " + q)
         q = fql.Query(q)
-        #lock.acquire()
+        lock.acquire()
         #begintime = time.time()
         q(element.doc)
         #duration = time.time() - begintime
         #self.log(" (Query took " + str(duration) + "s)")
-        #lock.release()
+        lock.release()
 
 
     def adderrordetection(self, lock, element):
