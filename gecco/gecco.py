@@ -21,14 +21,18 @@ import datetime
 import time
 import subprocess
 import psutil
+import json
 from collections import OrderedDict
-from threading import Thread, Lock
-from queue import Queue
+#from threading import Thread, Lock
+#from queue import Queue
+from threading import Thread
+from multiprocessing import Process, Lock, JoinableQueue as Queue #pylint: disable=no-name-in-module
 from glob import glob
 from pynlpl.formats import folia, fql
 from ucto import Tokenizer #pylint: disable=import-error,no-name-in-module
 
 import gecco.helpers.evaluation
+
 
 import argparse
 
@@ -38,11 +42,114 @@ if 'VIRTUAL_ENV' in os.environ:
 
 VERSION = 0.1
 
-class ProcessorThread(Thread):
-    def __init__(self, parent, q, lock, **parameters):
-        self.parent = parent
-        self.q = q
-        self.lock = lock
+class DataThread(Process):
+    def __init__(self, corrector, foliadoc, module_ids, outputfile,  inputqueue, outputqueue, **parameters):
+        self.corrector = corrector
+        self.outputqueue = outputqueue
+        self.module_ids = module_ids
+        self.outputfile = outputfile
+        self.parameters = parameters
+        self._stop = False
+
+        #Load FoLiA document
+        if isinstance(foliadoc, str):
+            #We got a filename instead of a FoLiA document, that's okay
+            ext = foliadoc.split('.')[-1].lower()
+            if not ext in ('xml','folia','gz','bz2'):
+                #Preprocessing - Tokenize input text (plaintext) and produce FoLiA output
+                self.log("Starting Tokeniser")
+
+                inputtextfile = foliadoc
+
+                if ext == 'txt':
+                    outputtextfile = '.'.join(inputtextfile.split('.')[:-1]) + '.folia.xml'
+                else:
+                    outputtextfile = inputtextfile + '.folia.xml'
+
+                tokenizer = Tokenizer(self.settings['ucto'],xmloutput=True)
+                tokenizer.tokenize(inputtextfile, outputtextfile)
+
+                foliadoc = outputtextfile
+
+                self.corrector.log("Tokeniser finished")
+
+            #good, load
+            self.corrector.log("Reading FoLiA document")
+            self.foliadoc = folia.Document(file=foliadoc)
+        else:
+            self.foliadoc = foliadoc
+
+
+
+        begintime = time.time()
+        self.corrector.log("Initialising modules on document") #not parellel, acts on same document anyway, should be very quick
+        for module in self:
+            if not module_ids or module.id in module_ids:
+                self.corrector.log("\tInitialising module " + module.id)
+                module.init(foliadoc)
+
+        #data in inputqueue takes the form (module, data), where data is an instance of module.UNIT (a folia document or element)
+        if folia.Document in self.units:
+            self.corrector.log("\tPreparing input of full documents")
+
+            for module in self.corrector:
+                if not module_ids or module.id in module_ids:
+                    if module.UNIT is folia.Document:
+                        self.corrector.log("\t\tQueuing full-document module " + module.id)
+                        inputdata = module.prepareinput(self.foliadoc,**parameters)
+                        if inputdata:
+                            self.inputqueue.put( (module.id, self.foliadoc.id, inputdata) )
+
+        for unit in self.corrector.units:
+            if unit is not folia.Document:
+                self.corrector.log("\tPreparing input of " + str(unit.__name__))
+                for element in self.foliadoc.select(unit):
+                    for module in self:
+                        if not module_ids or module.id in module_ids:
+                            if module.UNIT is unit:
+                                inputdata = module.prepareinput(element,**parameters)
+                                if inputdata:
+                                    self.inputqueue.put( (module.id, element.id, inputdata ) )
+
+        self.inputqueue.put( (None,None,None) ) #signals the end of the queue
+
+        duration = time.time() - begintime
+        self.corrector.log("Input ready (" + str(duration) + "s)")
+
+    def run(self):
+        self.corrector.log("Processing queries...") #not parallel, acts on same document anyway, should be fairly quick depending on module
+        while not self._stop:
+            if not self.outputqueue.empty():
+                query = self.outputqueue.get() #data is an FQL query
+                if query is None: #signals the end of the queue
+                    self._stop = True
+                else:
+                    q = fql.Query(query)
+                    q(self.foliadoc)
+                    self.outputqueue.task_done()
+
+        self.corrector.log("Finalising modules on document") #not parallel, acts on same document anyway, should be fairly quick depending on module
+        for module in self.corrector:
+            if not self.module_ids or module.id in self.module_ids:
+                module.finish(self.foliadoc)
+
+        #Store FoLiA document
+        if self.outputfile:
+            self.corrector.log("Saving document " + self.outputfile + "....")
+            self.foliadoc.save(self.outputfile)
+        else:
+            self.corrector.log("Saving document " + self.foliadoc.filename + "....")
+            self.foliadoc.save()
+
+    def stop(self):
+        self._stop = True
+
+
+class ProcessorThread(Process):
+    def __init__(self, corrector,inputqueue, outputqueue, **parameters):
+        self.corrector = corrector
+        self.inputqueue = inputqueue
+        self.outputqueue = outputqueue
         self._stop = False
         self.parameters = parameters
         self.debug  = 'debug' in parameters and parameters['debug']
@@ -51,71 +158,56 @@ class ProcessorThread(Thread):
 
     def run(self):
         while not self._stop:
-            if not self.q.empty():
-                module, data = self.q.get() #data is an instance of module.UNIT
-                if not module.UNITFILTER or module.UNITFILTER(data):
-                    if not module.submodule: #modules marked a submodule won't be called by the main process, but are invoked by other modules instead
-                        module.prepare() #will block until all dependencies are done
-                        if module.local:
-                            if self.debug:
-                                begintime = time.time()
-                                module.log(" (Running " + module.id + " on '" + str(data) + "' [local])")
-                            module.run(data, self.lock, **self.parameters)
-                            if self.debug:
-                                duration = round(time.time() - begintime,4)
-                                module.log(" (...took " + str(duration) + "s)")
-                        else:
-                            skipservers= []
-                            connected = False
-                            if self.debug:
-                                begintime = time.time()
-                                module.log(" (Running " + module.id + " on '" + str(data) + "' [remote]")
-                            for server,port,load in sorted(module.servers, key=lambda x: x[2]): 
-                                try:
-                                    if (server,port) not in self.clients:
-                                        self.clients[(server,port)] = module.CLIENT(server,port)
-                                    if self.debug:
-                                        module.log(" (server=" + server + ", port=" + str(port) + ")")
-                                    module.runclient( self.clients[(server,port)], data, self.lock,  **self.parameters)
-                                    #will only be executed when connection succeeded:
-                                    connected = True
-                                    break
-                                except ConnectionRefusedError:
-                                    del self.clients[(server,port)]
-                            if not connected:
-                                self.q.task_done()
-                                raise Exception("Unable to connect client to server! All servers for module " + module.id + " are down!")
-                            if self.debug:
-                                duration = round(time.time() - begintime,4)
-                                module.log(" (...took " + str(duration) + "s)")
-                self.q.task_done()
-                self.parent.done.add(module.id)
+            if not self.inputqueue.empty():
+                module_id, unit_id, data = self.inputqueue.get() #data is an instance of module.UNIT
+                if module_id is None: #signals the last item
+                    self._stop = True
+                else:
+                    module =  self.corrector.modules[module_id]
+                    if not module.UNITFILTER or module.UNITFILTER(data):
+                        if not module.submodule: #modules marked a submodule won't be called by the main process, but are invoked by other modules instead
+                            module.prepare() #will block until all dependencies are done
+                            if module.local:
+                                if self.debug:
+                                    begintime = time.time()
+                                    module.log(" (Running " + module.id + " on '" + str(data) + "' [local])")
+                                module.runlocal(data, unit_id, self.outputqueue, **self.parameters)
+                                if self.debug:
+                                    duration = round(time.time() - begintime,4)
+                                    module.log(" (...took " + str(duration) + "s)")
+                            else:
+                                skipservers= []
+                                connected = False
+                                if self.debug:
+                                    begintime = time.time()
+                                    module.log(" (Running " + module.id + " on '" + str(data) + "' [remote]")
+                                for server,port,load in sorted(module.servers, key=lambda x: x[2]): 
+                                    try:
+                                        if (server,port) not in self.clients:
+                                            self.clients[(server,port)] = module.CLIENT(server,port)
+                                        if self.debug:
+                                            module.log(" (server=" + server + ", port=" + str(port) + ")")
+                                        module.runclient( self.clients[(server,port)], unit_id, data, self.outputqueue,  **self.parameters)
+                                        #will only be executed when connection succeeded:
+                                        connected = True
+                                        break
+                                    except ConnectionRefusedError:
+                                        del self.clients[(server,port)]
+                                if not connected:
+                                    self.inputqueue.task_done()
+                                    raise Exception("Unable to connect client to server! All servers for module " + module.id + " are down!")
+                                if self.debug:
+                                    duration = round(time.time() - begintime,4)
+                                    module.log(" (...took " + str(duration) + "s)")
+
+                self.inputqueue.task_done()
+
+        self.outputqueue.put( None ) #signals the end of the queue
 
     def stop(self):
         self._stop = True
 
 
-class LoaderThread(Thread):
-    def __init__(self, q):
-        self.q = q
-        super().__init__()
-
-    def run(self):
-        while not self.q.empty():
-            module = self.q.get()
-            module.load()
-            self.q.task_done()
-
-class ClientLoaderThread(Thread):
-    def __init__(self, q):
-        self.q = q
-        super().__init__()
-
-    def run(self):
-        while not self.q.empty():
-            module = self.q.get()
-            module.clientload()
-            self.q.task_done()
 
 
 class Corrector:
@@ -128,60 +220,23 @@ class Corrector:
         #Gather servers
         self.servers = set( [m.settings['servers'] for m in self if not m.local ] )
 
-
         self.units = set( [m.UNIT for m in self] )
         self.loaded = False
 
     def load(self):
         if not self.loaded:
             begintime =time.time()
-            self.log("Querying remote modules")
-            remotequeue = Queue()
+            self.log("Loading remote modules")
             servers = self.findservers()
             for module, host, port, load in servers:
                 self.log("  found " + module + "@" + host + ":" + str(port) + ", load " + str(load))
-                remotequeue.put(self.modules[module])
+                self.modules[module].clientload()
 
-            localqueue = Queue()
+            self.log("Loading local modules")
             for module in self:
                 if module.local:
-                    localqueue.put( module )
-                    self.log("Queuing " + module.id + " for loading")
-
-            if remotequeue:
-                self.log("Loading remote modules")
-                threads = []
-                for _ in range(self.settings['threads']):
-                    thread = ClientLoaderThread(remotequeue)
-                    thread.setDaemon(True)
-                threads.append(thread)
-
-                self.log(str(len(threads)) + " threads ready.")
-                for thread in threads:
-                    thread.start()
-                    del thread
-                del threads
-
-                remotequeue.join()
-                del remotequeue
-
-            if localqueue:
-                self.log("Loading local modules")
-                threads = []
-                for _ in range(self.settings['threads']):
-                    thread = LoaderThread(localqueue)
-                    thread.setDaemon(True)
-                threads.append(thread)
-
-
-                self.log(str(len(threads)) + " threads ready.")
-                for thread in threads:
-                    thread.start()
-                    del thread
-                del threads
-
-                localqueue.join()
-                del localqueue
+                    self.log("Loading " + module.id + " [local]")
+                    module.load()
 
             self.loaded = True
             duration = time.time() - begintime
@@ -262,6 +317,30 @@ class Corrector:
             self.append(module)
 
 
+    def run(self,filename,modules,outputfile,**parameters):
+        self.load()
+        inputqueue = Queue()
+        outputqueue = Queue()
+        datathread = DataThread(self,filename,modules, outputfile, inputqueue, outputqueue, **parameters)
+        datathread.setDaemon(False)
+        datathread.start()
+
+        begintime = time.time()
+        self.log("Processing modules")
+
+        threads = []
+        for _ in range(self.settings['threads']):
+            thread = ProcessorThread(self, inputqueue, outputqueue, **parameters)
+            thread.setDaemon(False)
+            thread.start()
+            threads.append(thread)
+
+        self.log(str(len(threads)) + " threads ready.")
+
+        inputqueue.join()
+        outputqueue.join()
+        duration = time.time() - begintime
+        self.log("Processing done (" + str(duration) + "s)")
 
     def __len__(self):
         return len(self.modules)
@@ -384,109 +463,6 @@ class Corrector:
                                     self.log("Deleting model " + modelfile + "...")
                                     module.reset(modelfile, sourcefile)
 
-    def run(self, foliadoc, module_ids=[], outputfile="",**parameters): #pylint: disable=dangerous-default-value
-        if isinstance(foliadoc, str):
-            #We got a filename instead of a FoLiA document, that's okay
-            ext = foliadoc.split('.')[-1].lower()
-            if not ext in ('xml','folia','gz','bz2'):
-                #Preprocessing - Tokenize input text (plaintext) and produce FoLiA output
-                self.log("Starting Tokeniser")
-
-                inputtextfile = foliadoc
-
-                if ext == 'txt':
-                    outputtextfile = '.'.join(inputtextfile.split('.')[:-1]) + '.folia.xml'
-                else:
-                    outputtextfile = inputtextfile + '.folia.xml'
-
-                tokenizer = Tokenizer(self.settings['ucto'],xmloutput=True)
-                tokenizer.tokenize(inputtextfile, outputtextfile)
-
-                foliadoc = outputtextfile
-
-                self.log("Tokeniser finished")
-
-            #good, load
-            self.log("Reading FoLiA document")
-            foliadoc = folia.Document(file=foliadoc)
-
-
-        self.load() #will only do something the first time executed
-
-        begintime = time.time()
-        self.log("Initialising modules on document") #not parellel, acts on same document anyway, should be very quick
-        for module in self:
-            if not module_ids or module.id in module_ids:
-                self.log("\tInitialising module " + module.id)
-                module.init(foliadoc)
-
-
-
-        self.done = set()
-
-        self.log("Initialising processor threads")
-
-        queue = Queue() #data in queue takes the form (module, data), where data is an instance of module.UNIT (a folia document or element)
-        lock = Lock()
-        threads = []
-        for _ in range(self.settings['threads']):
-            thread = ProcessorThread(self, queue, lock,  **parameters)
-            thread.setDaemon(True)
-            thread.start()
-            threads.append(thread)
-
-        self.log(str(len(threads)) + " threads ready.")
-
-        if folia.Document in self.units:
-            self.log("\tQueuing modules handling full documents")
-
-            for module in self:
-                if not module_ids or module.id in module_ids:
-                    if module.UNIT is folia.Document:
-                        self.log("\t\tQueuing module " + module.id)
-                        queue.put( (module, foliadoc) )
-
-        for unit in self.units:
-            if unit is not folia.Document:
-                self.log("\tQueuing modules handling " + str(unit.__name__))
-                for data in foliadoc.select(unit):
-                    for module in self:
-                        if not module_ids or module.id in module_ids:
-                            if module.UNIT is unit:
-                                queue.put( (module, data) )
-
-        duration = time.time() - begintime
-        self.log("Processing done (" + str(duration) + "s)")
-
-        self.log("Processing all modules....")
-        begintime = time.time()
-        queue.join()
-        duration = time.time() - begintime
-        self.log("Processing done (" + str(duration) + "s)")
-
-        for thread in threads:
-            thread.stop()
-            del thread
-
-        del queue
-        del lock
-        del threads
-
-        self.log("Finalising modules on document") #not parellel, acts on same document anyway, should be fairly quick depending on module
-        for module in self:
-            if not module_ids or module.id in module_ids:
-                module.finish(foliadoc)
-
-
-        #Store FoLiA document
-        if outputfile:
-            self.log("Saving document " + outputfile + "....")
-            foliadoc.save(outputfile)
-        else:
-            self.log("Saving document " + foliadoc.filename + "....")
-            foliadoc.save()
-
-        return foliadoc
 
 
 
@@ -657,7 +633,7 @@ class Corrector:
                 module.local = True
             if args.parameters: parameters = dict(( tuple(p.split('=')) for p in args.parameters))
             if args.modules: modules = args.modules.split(',')
-            self.run(args.filename,modules, args.outputfile, **parameters)
+            self.run(args._filename,modules,args.outputfile,**parameters)
         elif args.command == 'startservers':
             self.startservers(modules)
         elif args.command == 'stopservers':
@@ -733,7 +709,7 @@ class LineByLineClient:
 
 class LineByLineServerHandler(socketserver.BaseRequestHandler):
     """
-    The generic RequestHandler class for our server. Instantiated once per connection to the server, invokes the module's server_handler()
+    The generic RequestHandler class for our server. Instantiated once per connection to the server, invokes the module's run()
     """
 
     def handle(self):
@@ -752,7 +728,7 @@ class LineByLineServerHandler(socketserver.BaseRequestHandler):
             if msg == "%GETLOAD%":
                 response = str(self.server.module.server_load())
             else:
-                response = self.server.module.server_handler(msg)
+                response = json.dumps(self.server.module.run(msg))
             #print("Input: [" + msg + "], Response: [" + response + "]",file=sys.stderr)
             if isinstance(response,str):
                 response = response.encode('utf-8')
@@ -940,20 +916,41 @@ class Module:
         """Returns a float indicating the load of this server. 0 = idle, 1 = max load, >1 overloaded. Returns normalised system load by default, buy may be overriden for module-specific behaviour."""
         return os.getloadavg()[0] / psutil.cpu_count()
 
-    ##### Callbacks invoked by the Corrector that MUST be implemented:
 
-    def run(self, data, lock, **parameters):
-        """This method gets invoked by the Corrector when it runs locally."""
+    def runlocal(self, unit_id, inputdata, outputqueue, **parameters):
+        """This method gets invoked by the Corrector when the module is run locally."""
+        outputdata = self.run(inputdata)
+        queries = self.processoutput(outputdata, unit_id,**parameters)
+        if isinstance(queries,str):
+            outputqueue.put(queries)
+        else:
+            for query in queries:
+                outputqueue.put(query)
+
+
+    def runclient(self, client, unit_id, inputdata, outputqueue, **parameters):
+        """This method gets invoked by the Corrector when it should connect to a remote server, the client instance is passed and already available (will connect on first communication). """
+        outputdata = json.loads(client.communicate(inputdata)) 
+        queries = self.processoutput(outputdata, unit_id,**parameters)
+        if isinstance(queries,str):
+            outputqueue.put(queries)
+        else:
+            for query in queries:
+                outputqueue.put(query)
+
+    ##### Main callbacks invoked by the Corrector that MUST be implemented:
+
+    def prepareinput(self,unit,**parameters):
+        """Converts a FoLiA unit to whatever lower-level input-representation the module needs. The representation must be passable over network in JSON. Will be executed serially."""
         raise NotImplementedError
 
-    def runclient(self, client, data, lock,  **parameters):
-        """This method gets invoked by the Corrector when it should connect to a remote server, the client instance is passed and already available (will connect on first communication)"""
+
+    def run(self, inputdata):
+        """This methods gets called to turn inputdata into outputdata. It is the part that can be distributed over network and will be executed concurrently."""
         raise NotImplementedError
 
-    ##### Callback invoked by module's server, MUST be implemented:
-
-    def server_handler(self, msg):
-        """This methods gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
+    def processoutput(self,outputdata,unit_id,**parameters):
+        """Processes low-level output data and returns a list/tuple of FQL queries to perform on the data. Executed concurrently"""
         raise NotImplementedError
 
 
@@ -969,11 +966,11 @@ class Module:
 
     ######################### FOLIA EDITING ##############################
     #
-    # These methods are *NOT* available to server_handler() !
-    # Locks ensure that the state of the FoLiA document can't be corrupted by partial unfinished edits
+    # These methods are *NOT* available to module.run(), only to
+    # module.processoutput(outputdata,element_id)
 
-    def addsuggestions(self, lock, element, suggestions, **kwargs):
-        self.log("Adding correction for " + element.id + " " + element.text())
+    def addsuggestions(self, element_id, suggestions, **kwargs):
+        self.log("Adding correction for " + element_id)
 
         if 'cls' in kwargs:
             cls = kwargs['cls']
@@ -993,27 +990,17 @@ class Module:
             if confidence is not None:
                 q += " WITH confidence " + str(confidence)
 
-        q += ") FOR ID \"" + element.id + "\" RETURN nothing"
-        self.log(" FQL: " + q)
-        q = fql.Query(q)
-        lock.acquire()
-        #begintime = time.time()
-        q(element.doc)
-        #duration = time.time() - begintime
-        #self.log(" (Query took " + str(duration) + "s)")
-        lock.release()
+        q += ") FOR ID \"" + element_id + "\" RETURN nothing"
+        return q
 
 
-    def adderrordetection(self, lock, element):
-        self.log("Adding correction for " + element.id + " " + element.text())
+    def adderrordetection(self, element_id):
+        self.log("Adding correction for " + element_id )
 
         #add the correction
-        q =fql.Query("ADD errordetection OF " + self.settings['set'] + " WITH class \"" + self.settings['class'] + "\" annotator \"" + self.settings['annotator'] + "\" annotatortype \"auto\" datetime now FOR ID \"" + element.id + "\" RETURN nothing")
-        lock.acquire()
-        q(element.doc)
-        lock.release()
+        return "ADD errordetection OF " + self.settings['set'] + " WITH class \"" + self.settings['class'] + "\" annotator \"" + self.settings['annotator'] + "\" annotatortype \"auto\" datetime now FOR ID \"" + element_id + "\" RETURN nothing"
 
-    def splitcorrection(self, lock, word, suggestions):
+    def splitcorrection(self, word_id, suggestions):
         #suggestions is a list of  ([word], confidence) tuples
         q = "SUBSTITUTE (AS CORRECTION OF " + self.settings['set'] + " WITH class \"" + self.settings['class'] + "\" annotator \"" + self.settings['annotator'] + "\" annotatortype \"auto\" datetime now"
         for suggestion, confidence in suggestions:
@@ -1022,15 +1009,11 @@ class Module:
                 if i > 0: q += " "
                 q += "SUBSTITUTE w WITH text \"" + newword + "\""
             q += ") WITH confidence " + str(confidence)
-        q += ") FOR SPAN ID \"" + word.id + "\""
+        q += ") FOR SPAN ID \"" + word_id + "\""
         q += " RETURN nothing"
-        self.log(" FQL: " + q)
-        q = fql.Query(q)
-        lock.acquire()
-        q(word.doc)
-        lock.release()
+        return q
 
-    def mergecorrection(self, lock, newword, originalwords):
+    def mergecorrection(self, newword, originalwords):
         q = "SUBSTITUTE (AS CORRECTION OF " + self.settings['set'] + " WITH class \"" + self.settings['class'] + "\" annotator \"" + self.settings['annotator'] + "\" annotatortype \"auto\" datetime now"
         q += " SUGGESTION"
         q += " (SUBSTITUTE w WITH text \"" + newword + "\")"
@@ -1038,13 +1021,9 @@ class Module:
         q += ") FOR SPAN"
         for i, ow in enumerate(originalwords):
             if i > 0: q += " &"
-            q += " ID \"" + ow.id + "\""
+            q += " ID \"" + ow + "\""
         q += " RETURN nothing"
-        self.log(" FQL: " + q)
-        q = fql.Query(q)
-        lock.acquire()
-        q(originalwords[0].doc)
-        lock.release()
+        return q
 
     def suggestdeletion(self, lock, word,merge=False, **kwargs):
         #TODO: Convert to FQL

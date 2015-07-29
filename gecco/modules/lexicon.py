@@ -195,19 +195,15 @@ class LexiconModule(Module):
             return results
 
 
-    def run(self, word, lock, **parameters):
-        """This method gets invoked by the Corrector when it runs locally. word is a folia.Word instance"""
-        results = self.findclosest(str(word))
-        if results:
-            self.addsuggestions(lock, word, [ result for result,distance in results ] )
+    def prepareinput(self,word,**parameters):
+        """Takes the specified FoLiA unit for the module, and returns a string that can be passed to process()"""
+        return '!' + str(word) #! is the command to return closest suggestions if the word is not in the lexicon, ? merely return a boolean whether the word is in lexicon or not
 
-    def runclient(self, client, word, lock, **parameters):
-        """This method gets invoked by the Corrector when it should connect to a remote server, the client instance is passed and already available (will connect on first communication). word is a folia.Word instance"""
-        results = json.loads(client.communicate('!' + str(word))) #! is the command to return closest suggestions, ? merely return a boolean whether the word is in lexicon or not
-        if results:
-            self.addsuggestions(lock, word, [ result for result,distance in results ] )
 
-    def server_handler(self, input):
+    def processoutput(self, output, unit_id,**parameters):
+        return self.addsuggestions(unit_id, [ result for result,distance in output ] )
+
+    def run(self, input):
         """This methods gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
         if input:
             command = input[0]
@@ -219,7 +215,6 @@ class LexiconModule(Module):
                     return str(self[word])
                 except KeyError:
                     return "0"
-
 
         return "INVALID INPUT"
 
@@ -276,26 +271,18 @@ class AspellModule(Module):
         self.encoding = self.speller.ConfigKeys()['encoding'][1]
         self.log( "Dictionary encoding: " + self.encoding)
 
-    def run(self, word, lock, **parameters):
-        """This method gets invoked by the Corrector when it runs locally. word is a folia.Word instance"""
-        wordenc = str(word).encode(self.encoding)
-        suggestions = [ w for w in self.speller.suggest(wordenc) ]
-        if str(word) not in suggestions:
-            self.addsuggestions(lock, word, suggestions )
+    def prepareinput(self,word,**parameters):
+        """Takes the specified FoLiA unit for the module, and returns a string that can be passed to process()"""
+        return str(word) 
 
-    def runclient(self, client, word, lock, **parameters):
-        """This method gets invoked by the Corrector when it should connect to a remote server, the client instance is passed and already available (will connect on first communication). word is a folia.Word instance"""
-        suggestions= json.loads(client.communicate(str(word)))
-        if suggestions:
-            self.addsuggestions(lock, word, suggestions )
+    def processoutput(self, output, unit_id,**parameters):
+        return self.addsuggestions(unit_id, [ result for result,distance in output ] )
 
-    def server_handler(self, word):
+    def run(self, word):
         """This methods gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
         wordenc = word.encode(self.encoding)
         suggestions = [ w for w in self.speller.suggest(wordenc) ]
         if word not in suggestions:
-            return json.dumps(suggestions)
+            return suggestions
         else:
-            return "[]"
-
-
+            return []

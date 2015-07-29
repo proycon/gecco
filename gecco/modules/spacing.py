@@ -114,24 +114,16 @@ class RunOnModule(Module):
 
         return [ (parts, freq / maxfreq) for parts, freq in suggestions ] #normalise confidence score (highest option = 1)
 
-    def run(self, word, lock, **parameters):
-        """This method gets invoked by the Corrector when it runs locally. word is a folia.Word instance"""
-        wordstr = str(word)
-        suggestions = self.splitsuggestions(wordstr)
-        if suggestions:
-            self.splitcorrection(lock, word, suggestions)
 
+    def prepareinput(self,word,**parameters):
+        """Takes the specified FoLiA unit for the module, and returns a string that can be passed to process()"""
+        return str(word) 
 
-    def runclient(self, client, word, lock, **parameters):
-        """This method gets invoked by the Corrector when it should connect to a remote server, the client instance is passed and already available (will connect on first communication). word is a folia.Word instance"""
-        wordstr = str(word)
-        suggestions = json.loads(client.communicate(wordstr))
-        if suggestions:
-            self.splitcorrection(lock, word, suggestions )
+    def processoutput(self, suggestions, unit_id,**parameters):
+        return self.splitcorrection(unit_id, suggestions)
 
-    def server_handler(self, word):
-        """This methods gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
-        return json.dumps(self.splitsuggestions(word))
+    def run(self, word):
+        return self.splitsuggestions(word)
 
 
 class SplitModule(Module):
@@ -217,26 +209,22 @@ class SplitModule(Module):
                 return word+nextword
 
 
-    def run(self, word, lock, **parameters):
-        """This method gets invoked by the Corrector when it runs locally. word is a folia.Word instance"""
-        nextword = word.next()
-        if nextword:
-            suggestion = self.getmergesuggestion(str(word), str(nextword))
-            if suggestion:
-                self.mergecorrection(lock, suggestion, [word, nextword])
-
-
-    def runclient(self, client, word, lock, **parameters):
-        """This method gets invoked by the Corrector when it should connect to a remote server, the client instance is passed and already available (will connect on first communication). word is a folia.Word instance"""
-        nextword = word.next()
-        if nextword:
-            nextwordstr = str(nextword)
-            wordstr = str(word)
-            suggestion = json.loads(client.communicate(wordstr+"\t" + nextwordstr))
-            if suggestion:
-                self.mergecorrection(lock, suggestion, [word, nextword])
-
     def server_handler(self, input):
         """This methods gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
         word, nextword = input.split("\t")
         return json.dumps(self.getmergesuggestion(word, nextword))
+
+    def prepareinput(self,word,**parameters):
+        """Takes the specified FoLiA unit for the module, and returns a string that can be passed to process()"""
+        nextword = word.next()
+        if nextword:
+            self.originalids = (word.id, nextword.id) #remember this for processoutput later
+            return (str(word), str(nextword) )
+
+    def processoutput(self, suggestions, unit_id,**parameters):
+        return self.mergecorrection(suggestions, self.originalids)
+
+    def run(self, input):
+        word, nextword = input
+        return self.getmergesuggestion(word, nextword)
+
