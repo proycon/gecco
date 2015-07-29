@@ -1047,7 +1047,7 @@ class Module:
         lock.release()
 
     def suggestdeletion(self, lock, word,merge=False, **kwargs):
-        #MAYBE TODO: Convert to FQL
+        #TODO: Convert to FQL
         lock.acquire()
         parent = word.parent
         index = parent.getindex(word,False)
@@ -1066,7 +1066,7 @@ class Module:
         lock.release()
 
     def suggestinsertion(self,lock,pivotword, text,split=False):
-        #MAYBE TODO: Convert to FQL
+        #TODO: Convert to FQL
         lock.acquire()
         index = pivotword.parent.getindex(pivotword)
         if index != -1:
