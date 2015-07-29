@@ -66,22 +66,17 @@ class WordErrorListModule(Module):
                         else:
                             self.errorlist[wrong] = correct
 
-    def run(self, word, lock, **parameters):
-        """This method gets invoked by the Corrector when it runs locally. word is a folia.Word instance"""
-        wordstr = str(word)
-        if wordstr in self.errorlist:
-            suggestions = self.errorlist[wordstr]
-            self.addsuggestions(lock, word, suggestions)
+    def prepareinput(self,word,**parameters):
+        """Takes the specified FoLiA unit for the module, and returns a string that can be passed to process()"""
+        self.wordstr = str(word)
+        return self.wordstr
 
-    def runclient(self, client, word, lock, **parameters):
-        """This method gets invoked by the Corrector when it should connect to a remote server, the client instance is passed and already available (will connect on first communication). word is a folia.Word instance"""
-        wordstr = str(word)
-        response = client.communicate(wordstr)
-        if response != wordstr: #server will echo back the same thing if it's not in the error list
+    def processoutput(self, response, unit_id,**parameters):
+        if response != self.wordstr: #server will echo back the same thing if it's not in the error list
             suggestions = response.split("\t")
-            self.addsuggestions(lock, word, suggestions)
+            return self.addsuggestions(unit_id, suggestions)
 
-    def server_handler(self, word):
+    def run(self, word):
         """This methods gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
         if word in self.errorlist:
             suggestions = self.errorlist[word]
