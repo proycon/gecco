@@ -15,7 +15,8 @@ import os
 import json
 from collections import OrderedDict
 from pynlpl.formats import folia
-from pynlpl.statistics import levenshtein
+#from pynlpl.statistics import levenshtein
+import Levenshtein #pylint: disable=import-error
 from gecco.gecco import Module
 from gecco.helpers.caching import getcache
 from gecco.helpers.filters import hasalpha
@@ -172,12 +173,15 @@ class LexiconModule(Module):
                         return False
 
             #ok, not found, let's find closest matches by levenshtein distance
+            
 
             results = []
             for key, freq in self:
-                ld = levenshtein(word, key, self.settings['maxdistance'])
-                if ld <= self.settings['maxdistance']:
-                    results.append( (key, ld) )
+                #ld = levenshtein(word, key, self.settings['maxdistance'])
+                if abs(len(word) - len(key)) <= self.settings['maxdistance']:
+                    ld = Levenshtein.distance(word,key)
+                    if ld <= self.settings['maxdistance']:
+                        results.append( (key, ld) )
 
             results.sort(key=lambda x: x[1])
             results = results[:self.settings['maxnrclosest']]
