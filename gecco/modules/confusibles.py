@@ -129,13 +129,6 @@ class TIMBLWordConfusibleModule(Module):
         classifier.save()
 
 
-    def classify(self, word):
-        features = self.getfeatures(word)
-        if self.hapaxer: features = self.hapaxer(features)
-        best, distribution,_ = self.classifier.classify(features)
-        return best, distribution
-
-
     def getfeatures(self, word):
         """Get features at testing time, crosses sentence boundaries"""
         leftcontext = tuple([ str(w) for w in word.leftcontext(self.settings['leftcontext'],"<begin>") ])
@@ -143,28 +136,24 @@ class TIMBLWordConfusibleModule(Module):
         return leftcontext + rightcontext
 
 
-    def run(self, word, lock, **parameters):
-        """This method gets invoked by the Corrector when it runs locally. word is a folia.Word instance"""
-        wordstr = str(word)
-        if wordstr in self.confusibles:
-            #the word is one of our confusibles
-            best, distribution = self.classify(word)
-            if best != word:
-                self.addsuggestions(lock, word, list(distribution.items()))
 
-    def runclient(self, client, word, lock, **parameters):
-        """This method gets invoked by the Corrector when it should connect to a remote server, the client instance is passed and already available (will connect on first communication). word is a folia.Word instance"""
-        wordstr = str(word)
-        if wordstr in self.confusibles:
-            best, distribution = json.loads(client.communicate(json.dumps(self.getfeatures(word))))
-            if best != word:
-                self.addsuggestions(lock, word, list(distribution.items()))
+    def prepareinput(self,word,**parameters):
+        """Takes the specified FoLiA unit for the module, and returns a string that can be passed to process()"""
+        self.wordstr = str(word) #will be reused in processoutput
+        if self.wordstr in self.confusibles:
+            features = self.getfeatures(word)
+            if self.hapaxer: features = self.hapaxer(features)
+            return features
 
-    def server_handler(self, features):
+    def run(self, features):
         """This method gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
-        features = tuple(json.loads(features))
         best,distribution,_ = self.classifier.classify(features)
-        return json.dumps([best,distribution])
+        return (best,distribution)
+
+    def processoutput(self, output, unit_id,**parameters):
+        best,distribution = output
+        if best != self.wordstr:
+            return self.addsuggestions(unit_id, list(distribution.items()))
 
 
 class TIMBLSuffixConfusibleModule(Module):
@@ -408,30 +397,21 @@ class TIMBLSuffixConfusibleModule(Module):
         return leftcontext + (normalized,) + rightcontext
 
 
-    def processresult(self,word, lock, best, distribution):
-        wordstr = str(word)
-        suffix,_ = self.getsuffix(wordstr)
-        if wordstr != wordstr[:-len(suffix)] + best:
-            self.addsuggestions(lock, word, [ (wordstr[:-len(suffix)] + suggestion,p) for suggestion,p in distribution.items() if suggestion != suffix] )
+    def prepareinput(self,word,**parameters):
+        """Takes the specified FoLiA unit for the module, and returns a string that can be passed to process()"""
+        self.wordstr = str(word)
+        if self.wordstr in self.confusibles:
+            features = self.getfeatures(word)
+            if self.hapaxer: features = self.hapaxer(features)
+            return features
 
-
-    def run(self, word, lock, **parameters):
-        """This method gets invoked by the Corrector when it runs locally. word is a folia.Word instance"""
-        wordstr = str(word)
-        if wordstr in self.confusibles:
-            #the word is one of our confusibles
-            best, distribution = self.classify(word)
-            self.processresult(word,lock,best,distribution)
-
-    def runclient(self, client, word, lock, **parameters):
-        """This method gets invoked by the Corrector when it should connect to a remote server, the client instance is passed and already available (will connect on first communication). word is a folia.Word instance"""
-        wordstr = str(word)
-        if wordstr in self.confusibles:
-            best, distribution = json.loads(client.communicate(json.dumps(self.getfeatures(word))))
-            self.processresult(word,lock,best,distribution)
-
-    def server_handler(self, features):
+    def run(self, features):
         """This method gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
-        features = tuple(json.loads(features))
         best,distribution,_ = self.classifier.classify(features)
-        return json.dumps([best,distribution])
+        return (best,distribution)
+
+    def processoutput(self, output, unit_id,**parameters):
+        best,distribution = output
+        suffix,_ = self.getsuffix(self.wordstr)
+        if self.wordstr != self.wordstr[:-len(suffix)] + best:
+            return self.addsuggestions(unit_id, [ (self.wordstr[:-len(suffix)] + suggestion,p) for suggestion,p in distribution.items() if suggestion != suffix] )
