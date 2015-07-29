@@ -863,7 +863,7 @@ class Module:
     ####################### CALLBACKS ###########################
 
 
-    ##### Optional callbacks invoked by the Corrector (defaults may suffice)
+    ##### Default callbacks, almost never need to be overloaded:
 
     def init(self, foliadoc):
         """Initialises the module on the document. This method should set all the necessary declarations if they are not already present. It will be called sequentially and only once on the entire document."""
@@ -886,6 +886,37 @@ class Module:
         server_thread.join() #block until done
 
         server.shutdown()
+
+    def server_load(self):
+        """Returns a float indicating the load of this server. 0 = idle, 1 = max load, >1 overloaded. Returns normalised system load by default, buy may be overriden for module-specific behaviour."""
+        return os.getloadavg()[0] / psutil.cpu_count()
+
+
+    def runlocal(self, unit_id, inputdata, outputqueue, **parameters):
+        """This method gets invoked by the Corrector when the module is run locally."""
+        outputdata = self.run(inputdata)
+        queries = self.processoutput(outputdata, unit_id,**parameters)
+        if queries is not None:
+            if isinstance(queries,str):
+                outputqueue.put(queries)
+            else:
+                for query in queries:
+                    outputqueue.put(query)
+
+
+    def runclient(self, client, unit_id, inputdata, outputqueue, **parameters):
+        """This method gets invoked by the Corrector when it should connect to a remote server, the client instance is passed and already available (will connect on first communication). """
+        outputdata = json.loads(client.communicate(inputdata))
+        queries = self.processoutput(outputdata, unit_id,**parameters)
+        if queries is not None:
+            if isinstance(queries,str):
+                outputqueue.put(queries)
+            else:
+                for query in queries:
+                    outputqueue.put(query)
+
+    ##### Optional callbacks invoked by the Corrector (defaults may suffice)
+
 
 
     def finish(self, foliadoc):
@@ -912,45 +943,19 @@ class Module:
             if os.path.exists(filename):
                 os.unlink(filename)
 
-    def server_load(self):
-        """Returns a float indicating the load of this server. 0 = idle, 1 = max load, >1 overloaded. Returns normalised system load by default, buy may be overriden for module-specific behaviour."""
-        return os.getloadavg()[0] / psutil.cpu_count()
 
-
-    def runlocal(self, unit_id, inputdata, outputqueue, **parameters):
-        """This method gets invoked by the Corrector when the module is run locally."""
-        outputdata = self.run(inputdata)
-        queries = self.processoutput(outputdata, unit_id,**parameters)
-        if isinstance(queries,str):
-            outputqueue.put(queries)
-        else:
-            for query in queries:
-                outputqueue.put(query)
-
-
-    def runclient(self, client, unit_id, inputdata, outputqueue, **parameters):
-        """This method gets invoked by the Corrector when it should connect to a remote server, the client instance is passed and already available (will connect on first communication). """
-        outputdata = json.loads(client.communicate(inputdata)) 
-        queries = self.processoutput(outputdata, unit_id,**parameters)
-        if isinstance(queries,str):
-            outputqueue.put(queries)
-        else:
-            for query in queries:
-                outputqueue.put(query)
-
-    ##### Main callbacks invoked by the Corrector that MUST be implemented:
+    ##### Main callbacks invoked by the Corrector that MUST ALWAYS be implemented:
 
     def prepareinput(self,unit,**parameters):
         """Converts a FoLiA unit to whatever lower-level input-representation the module needs. The representation must be passable over network in JSON. Will be executed serially."""
         raise NotImplementedError
 
-
     def run(self, inputdata):
-        """This methods gets called to turn inputdata into outputdata. It is the part that can be distributed over network and will be executed concurrently."""
+        """This methods gets called to turn inputdata into outputdata. It is the part that can be distributed over network and will be executed concurrently. Return value will be automatically serialised as JSON for remote modules."""
         raise NotImplementedError
 
     def processoutput(self,outputdata,unit_id,**parameters):
-        """Processes low-level output data and returns a list/tuple of FQL queries to perform on the data. Executed concurrently"""
+        """Processes low-level output data and returns a an FQL query (string) or list/tuple of FQL queries to perform on the data. Executed concurrently. May return None if no query is needed."""
         raise NotImplementedError
 
 
