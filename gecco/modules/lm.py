@@ -23,6 +23,7 @@ from pynlpl.formats import folia
 from pynlpl.textprocessors import Windower
 from timbl import TimblClassifier #pylint: disable=import-error
 from gecco.gecco import Module
+from gecco.helpers.hapaxing import gethapaxer
 import Levenshtein #pylint: disable=import-error
 
 
@@ -74,7 +75,7 @@ class TIMBLLMModule(Module):
             self.debug = False
 
 
-        self.hapaxer = None #TODO
+        self.hapaxer = gethapaxer(self.settings)
 
         #self.cache = getcache(self.settings, 1000)
 
