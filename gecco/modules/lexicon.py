@@ -144,6 +144,12 @@ class LexiconModule(Module):
         for key, freq in self.lexicon.items():
             yield key, freq
 
+    def __getitem__(self, key):
+        try:
+            return self.lexicon[key]
+        except KeyError:
+            return 0
+
     def findclosest(self, word):
         #first try the cache
         if self.cache:
@@ -242,6 +248,10 @@ class ColibriLexiconModule(LexiconModule):
     def __iter__(self):
         for pattern, freq in self.lexicon.items():
             yield (pattern.tostring(self.classdecoder), freq)
+
+    def __getitem__(self, key):
+        pattern = self.classencoder.buildpattern(key)
+        return self.lexicon.occurrencecount(pattern)
 
     def savemodel(self, model, modelfile, classfile): #will be called by train()
         self.log("Saving model")
