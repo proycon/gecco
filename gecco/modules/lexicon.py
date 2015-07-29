@@ -162,7 +162,7 @@ class LexiconModule(Module):
         if l < self.settings['minlength'] or l > self.settings['maxlength']:
             #word too long or too short, ignore
             return False
-        elif word in self:
+        elif self[word] > 0:
             #word is in lexicon, no need to find suggestions
             return False
         else:
