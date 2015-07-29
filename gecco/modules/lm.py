@@ -23,7 +23,7 @@ from pynlpl.formats import folia
 from pynlpl.textprocessors import Windower
 from timbl import TimblClassifier #pylint: disable=import-error
 from gecco.gecco import Module
-from pynlpl.statistics import levenshtein
+import Levenshtein #pylint: disable=import-error
 
 
 class TIMBLLMModule(Module):
@@ -135,13 +135,14 @@ class TIMBLLMModule(Module):
             duration = round(time.time() - begintime,4)
             self.log(" (Classification took  " + str(duration) + "s, unfiltered distribution size=" + str(len(distribution)) + ")")
 
+        l = len(word)
         if self.settings['maxdistance']:
             #filter suggestions that are too distant
             if debug:
                 begintime = time.time()
             dist = {}
             for key, freq in distribution.items():
-                if freq >= self.threshold and levenshtein(word,key) <= self.settings['maxdistance']:
+                if freq >= self.threshold and abs(l - len(key)) <= self.settings['maxdistance'] and Levenshtein.distance(word,key) <= self.settings['maxdistance']:
                     dist[key] = freq
             if debug:
                 duration = round(time.time() - begintime,4)
