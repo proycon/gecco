@@ -68,6 +68,14 @@ class TIMBLLMModule(Module):
             self.settings['maxdistance'] = 2
 
 
+        if 'debug' in self.settings:
+            self.debug = bool(self.settings['debug'])
+        else:
+            self.debug = False
+
+
+        self.hapaxer = None #TODO
+
         #self.cache = getcache(self.settings, 1000)
 
         try:
@@ -126,31 +134,6 @@ class TIMBLLMModule(Module):
         classifier.save()
 
 
-    def classify(self, word,debug=False):
-        features = self.getfeatures(word)
-        if debug:
-            begintime = time.time()
-        best, distribution,_ = self.classifier.classify(features)
-        if debug:
-            duration = round(time.time() - begintime,4)
-            self.log(" (Classification took  " + str(duration) + "s, unfiltered distribution size=" + str(len(distribution)) + ")")
-
-        l = len(word)
-        if self.settings['maxdistance']:
-            #filter suggestions that are too distant
-            if debug:
-                begintime = time.time()
-            dist = {}
-            for key, freq in distribution.items():
-                if freq >= self.threshold and abs(l - len(key)) <= self.settings['maxdistance'] and Levenshtein.distance(word,key) <= self.settings['maxdistance']:
-                    dist[key] = freq
-            if debug:
-                duration = round(time.time() - begintime,4)
-                self.log(" (Levenshtein filtering took  " + str(duration) + "s, final distribution size=" + str(len(dist)) + ")")
-            return best, dist
-        else:
-            return best, distribution
-
 
     def getfeatures(self, word):
         """Get features at testing time"""
@@ -159,26 +142,39 @@ class TIMBLLMModule(Module):
         return leftcontext + rightcontext
 
 
-    def run(self, word, lock, **parameters):
-        """This method gets invoked by the Corrector when it runs locally. word is a folia.Word instance"""
-        wordstr = str(word)
-        best, distribution = self.classify(word, 'debug' in parameters and parameters['debug'])
-        if best != wordstr:
-            distribution = [ x for x in distribution.items() if x[1] >= self.threshold ]
-            if distribution:
-                self.addsuggestions(lock, word, distribution)
+    def prepareinput(self,word,**parameters):
+        """Takes the specified FoLiA unit for the module, and returns a string that can be passed to process()"""
+        self.wordstr = str(word) #will be reused in processoutput
+        features = self.getfeatures(word)
+        if self.hapaxer: features = self.hapaxer(features) #pylint: disable=not-callable
+        return features
 
-    def runclient(self, client, word, lock, **parameters):
-        """This method gets invoked by the Corrector when it should connect to a remote server, the client instance is passed and already available (will connect on first communication). word is a folia.Word instance"""
-        wordstr = str(word)
-        best, distribution = json.loads(client.communicate(json.dumps(self.getfeatures(word))))
-        if best != wordstr and distribution: #distribution filtering is done server-side
-            self.addsuggestions(lock, word,distribution)
+    def processoutput(self, output, unit_id,**parameters):
+        best,distribution = output
+        if best != self.wordstr and distribution:
+            return self.addsuggestions(unit_id, distribution)
 
-    def server_handler(self, features):
+    def run(self, features):
         """This method gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
-        features = tuple(json.loads(features))
+        if self.debug:
+            begintime = time.time()
         best,distribution,_ = self.classifier.classify(features)
-        distribution = [ x for x in distribution.items() if x[1] >= self.threshold ]
-        return json.dumps([best,distribution])
+        if self.debug:
+            duration = round(time.time() - begintime,4)
+            self.log(" (Classification took  " + str(duration) + "s, unfiltered distribution size=" + str(len(distribution)) + ")")
 
+        l = len(self.wordstr)
+        if self.settings['maxdistance']:
+            #filter suggestions that are too distant
+            if self.debug:
+                begintime = time.time()
+            dist = {}
+            for key, freq in distribution.items():
+                if freq >= self.threshold and abs(l - len(key)) <= self.settings['maxdistance'] and Levenshtein.distance(self.wordstr,key) <= self.settings['maxdistance']:
+                    dist[key] = freq
+            if self.debug:
+                duration = round(time.time() - begintime,4)
+                self.log(" (Levenshtein filtering took  " + str(duration) + "s, final distribution size=" + str(len(dist)) + ")")
+            return best, dist
+        else:
+            return best, [ x for x in distribution.items() if x[1] >= self.threshold ]
