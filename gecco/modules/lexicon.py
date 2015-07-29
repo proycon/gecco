@@ -184,7 +184,7 @@ class LexiconModule(Module):
             results = []
             for key, freq in self:
                 #ld = levenshtein(word, key, self.settings['maxdistance'])
-                if abs(len(word) - len(key)) <= self.settings['maxdistance']:
+                if abs(l - len(key)) <= self.settings['maxdistance']:
                     ld = Levenshtein.distance(word,key)
                     if ld <= self.settings['maxdistance']:
                         results.append( (key, ld) )
@@ -219,6 +219,8 @@ class LexiconModule(Module):
                     return str(self[word])
                 except KeyError:
                     return "0"
+
+
         return "INVALID INPUT"
 
 
@@ -241,9 +243,14 @@ class ColibriLexiconModule(LexiconModule):
     def __exists__(self, word):
         pattern = self.classencoder.buildpattern(word)
         if pattern.unknown():
+            print("DEBUG: " + word + " unknown")
             return False
         else:
-            return pattern in self.lexicon
+            e = pattern in self.lexicon
+            if not e:
+                print("DEBUG: " + word + " not in lexicon")
+            return e
+            #return pattern in self.lexicon
 
     def __iter__(self):
         for pattern, freq in self.lexicon.items():
