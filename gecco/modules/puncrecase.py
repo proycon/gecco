@@ -203,7 +203,7 @@ class TIMBLPuncRecaseModule(Module):
             prevword = word.previous(folia.Word,None)
             if prevword and distribution[cls] >= self.settings['deletionthreshold'] and all( not c.isalnum() for c in  prevword.text() ):
                 self.suggestdeletion(lock, prevword, cls='redundantpunctuation')
-        elif cls:
+        elif cls and cls in distribution:
             #insertion of punctuation
             if distribution[cls] >= self.settings['insertionthreshold']:
                 self.suggestinsertion(lock, word, cls)
