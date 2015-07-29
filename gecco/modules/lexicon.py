@@ -243,14 +243,9 @@ class ColibriLexiconModule(LexiconModule):
     def __exists__(self, word):
         pattern = self.classencoder.buildpattern(word)
         if pattern.unknown():
-            print("DEBUG: " + word + " unknown")
             return False
         else:
-            e = pattern in self.lexicon
-            if not e:
-                print("DEBUG: " + word + " not in lexicon")
-            return e
-            #return pattern in self.lexicon
+            return pattern in self.lexicon
 
     def __iter__(self):
         for pattern, freq in self.lexicon.items():
