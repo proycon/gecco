@@ -23,6 +23,7 @@ import subprocess
 import psutil
 import json
 import traceback
+from copy import deepcopy
 from collections import OrderedDict
 #from threading import Thread, Lock
 #from queue import Queue
@@ -47,7 +48,7 @@ class DataThread(Process):
     def __init__(self, corrector, foliadoc, module_ids, outputfile,  inputqueue, outputqueue, **parameters):
         super().__init__()
 
-        self.corrector = corrector
+        self.corrector = deepcopy(corrector)
         self.inputqueue = inputqueue
         self.outputqueue = outputqueue
         self.module_ids = module_ids
@@ -172,7 +173,7 @@ class DataThread(Process):
 
 class ProcessorThread(Process):
     def __init__(self, corrector,inputqueue, outputqueue, **parameters):
-        self.corrector = corrector
+        self.corrector = deepcopy(corrector)
         self.inputqueue = inputqueue
         self.outputqueue = outputqueue
         self._stop = False
