@@ -57,7 +57,7 @@ class DataThread(Process):
             ext = foliadoc.split('.')[-1].lower()
             if not ext in ('xml','folia','gz','bz2'):
                 #Preprocessing - Tokenize input text (plaintext) and produce FoLiA output
-                self.log("Starting Tokeniser")
+                self.corrector.log("Starting Tokeniser")
 
                 inputtextfile = foliadoc
 
