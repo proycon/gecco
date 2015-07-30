@@ -209,7 +209,7 @@ class LexiconModule(Module):
             command = input[0]
             word = input[1:]
             if command == '!': #find closest suggestions
-                return json.dumps(self.findclosest(word))
+                return self.findclosest(word)
             elif command == '?':
                 try:
                     return str(self[word])
