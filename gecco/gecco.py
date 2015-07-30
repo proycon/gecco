@@ -122,16 +122,15 @@ class DataThread(Process):
     def run(self):
         self.corrector.log("Processing queries...") #not parallel, acts on same document anyway, should be fairly quick depending on module
         while not self._stop:
-            if not self.outputqueue.empty():
-                module_id, unit_id, outputdata, inputdata = self.outputqueue.get() #data is an FQL query
-                if module_id is None: #signals the end of the queue
-                    self._stop = True
-                elif outputdata:
-                    module = self.corrector.modules[module_id]
-                    query = module.processoutput(outputdata, inputdata, unit_id,**self.parameters)
-                    q = fql.Query(query)
-                    q(self.foliadoc)
-                self.outputqueue.task_done()
+            module_id, unit_id, outputdata, inputdata = self.outputqueue.get() #data is an FQL query
+            if module_id is None: #signals the end of the queue
+                self._stop = True
+            elif outputdata:
+                module = self.corrector.modules[module_id]
+                query = module.processoutput(outputdata, inputdata, unit_id,**self.parameters)
+                q = fql.Query(query)
+                q(self.foliadoc)
+            self.outputqueue.task_done()
 
         self.corrector.log("Finalising modules on document") #not parallel, acts on same document anyway, should be fairly quick depending on module
         for module in self.corrector:
@@ -163,53 +162,52 @@ class ProcessorThread(Process):
 
     def run(self):
         while not self._stop:
-            if not self.inputqueue.empty():
-                module_id, unit_id, inputdata = self.inputqueue.get() 
-                if module_id is None: #signals the last item
-                    self._stop = True
-                else:
-                    module =  self.corrector.modules[module_id]
-                    if not module.UNITFILTER or module.UNITFILTER(inputdata):
-                        if not module.submodule: #modules marked a submodule won't be called by the main process, but are invoked by other modules instead
-                            module.prepare() #will block until all dependencies are done
-                            if module.local:
-                                if self.debug:
-                                    begintime = time.time()
-                                    module.log(" (Running " + module.id + " on " + repr(inputdata) + " [local])")
-                                outputdata = module.runlocal(inputdata, unit_id, **self.parameters)
-                                if outputdata is not None:
-                                    self.outputqueue.put( (module.id, unit_id, outputdata,inputdata) )
-                                if self.debug:
-                                    duration = round(time.time() - begintime,4)
-                                    module.log(" (...took " + str(duration) + "s)")
-                            else:
-                                skipservers= []
-                                connected = False
-                                if self.debug:
-                                    begintime = time.time()
-                                    module.log(" (Running " + module.id + " on " + repr(inputdata) + " [remote]")
-                                for server,port,load in sorted(module.servers, key=lambda x: x[2]): 
-                                    try:
-                                        if (server,port) not in self.clients:
-                                            self.clients[(server,port)] = module.CLIENT(server,port)
-                                        if self.debug:
-                                            module.log(" (server=" + server + ", port=" + str(port) + ")")
-                                        outputdata = module.runclient( self.clients[(server,port)], unit_id, inputdata,  **self.parameters)
-                                        if outputdata is not None:
-                                            self.outputqueue.put( (module.id, unit_id, outputdata,inputdata) )
-                                        #will only be executed when connection succeeded:
-                                        connected = True
-                                        break
-                                    except ConnectionRefusedError:
-                                        del self.clients[(server,port)]
-                                if not connected:
-                                    self.inputqueue.task_done()
-                                    raise Exception("Unable to connect client to server! All servers for module " + module.id + " are down!")
-                                if self.debug:
-                                    duration = round(time.time() - begintime,4)
-                                    module.log(" (...took " + str(duration) + "s)")
+            module_id, unit_id, inputdata = self.inputqueue.get() 
+            if module_id is None: #signals the last item
+                self._stop = True
+            else:
+                module =  self.corrector.modules[module_id]
+                if not module.UNITFILTER or module.UNITFILTER(inputdata):
+                    if not module.submodule: #modules marked a submodule won't be called by the main process, but are invoked by other modules instead
+                        module.prepare() #will block until all dependencies are done
+                        if module.local:
+                            if self.debug:
+                                begintime = time.time()
+                                module.log(" (Running " + module.id + " on " + repr(inputdata) + " [local])")
+                            outputdata = module.runlocal(inputdata, unit_id, **self.parameters)
+                            if outputdata is not None:
+                                self.outputqueue.put( (module.id, unit_id, outputdata,inputdata) )
+                            if self.debug:
+                                duration = round(time.time() - begintime,4)
+                                module.log(" (...took " + str(duration) + "s)")
+                        else:
+                            skipservers= []
+                            connected = False
+                            if self.debug:
+                                begintime = time.time()
+                                module.log(" (Running " + module.id + " on " + repr(inputdata) + " [remote]")
+                            for server,port,load in sorted(module.servers, key=lambda x: x[2]): 
+                                try:
+                                    if (server,port) not in self.clients:
+                                        self.clients[(server,port)] = module.CLIENT(server,port)
+                                    if self.debug:
+                                        module.log(" (server=" + server + ", port=" + str(port) + ")")
+                                    outputdata = module.runclient( self.clients[(server,port)], unit_id, inputdata,  **self.parameters)
+                                    if outputdata is not None:
+                                        self.outputqueue.put( (module.id, unit_id, outputdata,inputdata) )
+                                    #will only be executed when connection succeeded:
+                                    connected = True
+                                    break
+                                except ConnectionRefusedError:
+                                    del self.clients[(server,port)]
+                            if not connected:
+                                self.inputqueue.task_done()
+                                raise Exception("Unable to connect client to server! All servers for module " + module.id + " are down!")
+                            if self.debug:
+                                duration = round(time.time() - begintime,4)
+                                module.log(" (...took " + str(duration) + "s)")
 
-                self.inputqueue.task_done()
+            self.inputqueue.task_done()
 
         self.outputqueue.put( (None,None,None,None) ) #signals the end of the queue
 
@@ -345,6 +343,8 @@ class Corrector:
         self.log(str(len(threads)) + " threads ready.")
 
         inputqueue.join()
+        duration = time.time() - begintime
+        self.log("Input queue processed (" + str(duration) + "s)")
         outputqueue.join()
         duration = time.time() - begintime
         self.log("Processing done (" + str(duration) + "s)")
