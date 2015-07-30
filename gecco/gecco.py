@@ -22,6 +22,7 @@ import time
 import subprocess
 import psutil
 import json
+import traceback
 from collections import OrderedDict
 #from threading import Thread, Lock
 #from queue import Queue
@@ -131,6 +132,9 @@ class DataThread(Process):
                     query = module.processoutput(outputdata, inputdata, unit_id,**self.parameters)
                 except Exception as e: #pylint: disable=broad-except
                     self.corrector.log("***ERROR*** Exception processing output of " + module_id + ": " + str(e)) #not parallel, acts on same document anyway, should be fairly quick depending on module
+                    exc_type, exc_value, exc_traceback = sys.exc_info() 
+                    formatted_lines = traceback.format_exc().splitlines() 
+                    traceback.print_tb(exc_traceback, limit=50, file=sys.stderr)
                     query = None
                 if query is not None:
                     try:
@@ -138,8 +142,14 @@ class DataThread(Process):
                         q(self.foliadoc)
                     except fql.SyntaxError as e:
                         self.corrector.log("***ERROR*** FQL Syntax error in " + module_id + ":" + str(e)) #not parallel, acts on same document anyway, should be fairly quick depending on module
+                        exc_type, exc_value, exc_traceback = sys.exc_info() 
+                        formatted_lines = traceback.format_exc().splitlines() 
+                        traceback.print_tb(exc_traceback, limit=50, file=sys.stderr)
                     except fql.QueryError as e:
                         self.corrector.log("***ERROR*** FQL Query error in " + module_id + ":" + str(e)) #not parallel, acts on same document anyway, should be fairly quick depending on module
+                        exc_type, exc_value, exc_traceback = sys.exc_info() 
+                        formatted_lines = traceback.format_exc().splitlines() 
+                        traceback.print_tb(exc_traceback, limit=50, file=sys.stderr)
             self.outputqueue.task_done()
 
         self.corrector.log("Finalising modules on document") #not parallel, acts on same document anyway, should be fairly quick depending on module
