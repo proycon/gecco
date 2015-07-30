@@ -231,7 +231,6 @@ class ProcessorThread(Process):
 
             self.inputqueue.task_done()
 
-        self.outputqueue.put( (None,None,None,None) ) #signals the end of the queue
 
     def stop(self):
         self._stop = True
@@ -367,6 +366,7 @@ class Corrector:
         inputqueue.join()
         duration = time.time() - begintime
         self.log("Input queue processed (" + str(duration) + "s)")
+        outputqueue.put( (None,None,None,None) ) #signals the end of the queue
         datathread.join()
         duration = time.time() - begintime
         self.log("Processing done (" + str(duration) + "s)")
