@@ -329,7 +329,6 @@ class Corrector:
         inputqueue = Queue()
         outputqueue = Queue()
         datathread = DataThread(self,filename,modules, outputfile, inputqueue, outputqueue, **parameters)
-        datathread.setDaemon(False)
         datathread.start()
 
         begintime = time.time()
@@ -338,7 +337,6 @@ class Corrector:
         threads = []
         for _ in range(self.settings['threads']):
             thread = ProcessorThread(self, inputqueue, outputqueue, **parameters)
-            thread.setDaemon(False)
             thread.start()
             threads.append(thread)
 
