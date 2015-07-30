@@ -86,7 +86,7 @@ class DataThread(Process):
         for module in self.corrector:
             if not module_ids or module.id in module_ids:
                 self.corrector.log("\tInitialising module " + module.id)
-                module.init(foliadoc)
+                module.init(self.foliadoc)
 
         #data in inputqueue takes the form (module, data), where data is an instance of module.UNIT (a folia document or element)
         if folia.Document in self.units:
