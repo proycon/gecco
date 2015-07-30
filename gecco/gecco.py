@@ -566,6 +566,9 @@ class Corrector:
                 except socket.timeout:
                     self.log("Connection to " + module.id + "@" +host+":" + str(port) + " timed out")
                     continue
+                except ConnectionRefusedError:
+                    self.log("Connection to " + module.id + "@" +host+":" + str(port) + " refused")
+                    continue
 
         return servers
 

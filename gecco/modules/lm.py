@@ -158,7 +158,7 @@ class TIMBLLMModule(Module):
 
     def run(self, inputdata):
         """This method gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
-        _, features = inputdata
+        wordstr, features = inputdata
         if self.debug:
             begintime = time.time()
         best,distribution,_ = self.classifier.classify(features)
@@ -166,14 +166,14 @@ class TIMBLLMModule(Module):
             duration = round(time.time() - begintime,4)
             self.log(" (Classification took  " + str(duration) + "s, unfiltered distribution size=" + str(len(distribution)) + ")")
 
-        l = len(self.wordstr)
+        l = len(wordstr)
         if self.settings['maxdistance']:
             #filter suggestions that are too distant
             if self.debug:
                 begintime = time.time()
             dist = {}
             for key, freq in distribution.items():
-                if freq >= self.threshold and abs(l - len(key)) <= self.settings['maxdistance'] and Levenshtein.distance(self.wordstr,key) <= self.settings['maxdistance']:
+                if freq >= self.threshold and abs(l - len(key)) <= self.settings['maxdistance'] and Levenshtein.distance(wordstr,key) <= self.settings['maxdistance']:
                     dist[key] = freq
             if self.debug:
                 duration = round(time.time() - begintime,4)
