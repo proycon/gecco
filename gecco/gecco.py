@@ -44,6 +44,8 @@ VERSION = 0.1
 
 class DataThread(Process):
     def __init__(self, corrector, foliadoc, module_ids, outputfile,  inputqueue, outputqueue, **parameters):
+        super().__init__()
+
         self.corrector = corrector
         self.inputqueue = inputqueue
         self.outputqueue = outputqueue
