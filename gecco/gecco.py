@@ -214,7 +214,7 @@ class ProcessorThread(Process):
                                         self.clients[(server,port)] = module.CLIENT(server,port)
                                     client = self.clients[(server,port)]
                                     if self.debug:
-                                        module.log("[" + str(self.pid) + "] (server=" + server + ", port=" + str(port) + ", client=" + str(client) + ")")
+                                        module.log("[" + str(self.pid) + "] (server=" + server + ", port=" + str(port) + ", client=" + str(client) + ", corrector=" + str(self.corrector) + ", module=" + str(module) + ")")
                                     outputdata = module.runclient(client, unit_id, inputdata,  **self.parameters)
                                     if outputdata is not None:
                                         self.outputqueue.put( (module.id, unit_id, outputdata,inputdata) )
