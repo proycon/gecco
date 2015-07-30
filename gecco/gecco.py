@@ -175,7 +175,7 @@ class ProcessorThread(Process):
                             if module.local:
                                 if self.debug:
                                     begintime = time.time()
-                                    module.log(" (Running " + module.id + " on '" + repr(inputdata) + "' [local])")
+                                    module.log(" (Running " + module.id + " on " + repr(inputdata) + " [local])")
                                 outputdata = module.runlocal(inputdata, unit_id, **self.parameters)
                                 if outputdata is not None:
                                     self.outputqueue.put( (module.id, unit_id, outputdata,inputdata) )
@@ -187,7 +187,7 @@ class ProcessorThread(Process):
                                 connected = False
                                 if self.debug:
                                     begintime = time.time()
-                                    module.log(" (Running " + module.id + " on '" + repr(inputdata) + "' [remote]")
+                                    module.log(" (Running " + module.id + " on " + repr(inputdata) + " [remote]")
                                 for server,port,load in sorted(module.servers, key=lambda x: x[2]): 
                                     try:
                                         if (server,port) not in self.clients:
