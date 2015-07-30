@@ -115,7 +115,8 @@ class DataThread(Process):
                                 if inputdata is not None:
                                     self.inputqueue.put( (module.id, element.id, inputdata ) )
 
-        self.inputqueue.put( (None,None,None) ) #signals the end of the queue
+        for _ in range(self.corrector.settings['threads']):
+            self.inputqueue.put( (None,None,None) ) #signals the end of the queue, once for each thread
 
         duration = time.time() - begintime
         self.corrector.log("Input ready (" + str(duration) + "s)")
@@ -183,7 +184,7 @@ class ProcessorThread(Process):
     def run(self):
         while not self._stop:
             module_id, unit_id, inputdata = self.inputqueue.get() 
-            if module_id is None: #signals the last item
+            if module_id is None: #signals the last item (there will be one for each thread)
                 if self.debug: self.corrector.log(" (end of input queue)")
                 self._stop = True
             else:
