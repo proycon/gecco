@@ -735,7 +735,7 @@ class LineByLineServerHandler(socketserver.BaseRequestHandler):
             if msg == "%GETLOAD%":
                 response = str(self.server.module.server_load())
             else:
-                response = json.dumps(self.server.module.run(msg))
+                response = json.dumps(self.server.module.run(json.loads(msg)))
             #print("Input: [" + msg + "], Response: [" + response + "]",file=sys.stderr)
             if isinstance(response,str):
                 response = response.encode('utf-8')
