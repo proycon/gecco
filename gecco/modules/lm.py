@@ -158,7 +158,6 @@ class TIMBLLMModule(Module):
 
     def run(self, inputdata):
         """This method gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
-        print("DEBUG:", repr(inputdata), file=sys.stderr)
         _, features = inputdata
         if self.debug:
             begintime = time.time()
