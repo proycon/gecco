@@ -83,7 +83,7 @@ class DataThread(Process):
 
         begintime = time.time()
         self.corrector.log("Initialising modules on document") #not parellel, acts on same document anyway, should be very quick
-        for module in self:
+        for module in self.corrector:
             if not module_ids or module.id in module_ids:
                 self.corrector.log("\tInitialising module " + module.id)
                 module.init(foliadoc)
@@ -104,7 +104,7 @@ class DataThread(Process):
             if unit is not folia.Document:
                 self.corrector.log("\tPreparing input of " + str(unit.__name__))
                 for element in self.foliadoc.select(unit):
-                    for module in self:
+                    for module in self.corrector:
                         if not module_ids or module.id in module_ids:
                             if module.UNIT is unit:
                                 inputdata = module.prepareinput(element,**parameters)
