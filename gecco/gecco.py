@@ -127,14 +127,17 @@ class DataThread(Process):
                 self._stop = True
             elif outputdata:
                 module = self.corrector.modules[module_id]
-                query = module.processoutput(outputdata, inputdata, unit_id,**self.parameters)
+                try:
+                    query = module.processoutput(outputdata, inputdata, unit_id,**self.parameters)
+                except Exception as e: #pylint: disable=broad-except
+                    self.corrector.log("***ERROR*** Exception processing output of " + module_id + ": " + str(e)) #not parallel, acts on same document anyway, should be fairly quick depending on module
                 try:
                     q = fql.Query(query)
                     q(self.foliadoc)
                 except fql.SyntaxError as e:
-                    self.corrector.log("FQL Syntax error:" + str(e)) #not parallel, acts on same document anyway, should be fairly quick depending on module
+                    self.corrector.log("***ERROR*** FQL Syntax error in " + module_id + ":" + str(e)) #not parallel, acts on same document anyway, should be fairly quick depending on module
                 except fql.QueryError as e:
-                    self.corrector.log("FQL Query error:" + str(e)) #not parallel, acts on same document anyway, should be fairly quick depending on module
+                    self.corrector.log("***ERROR*** FQL Query error in " + module_id + ":" + str(e)) #not parallel, acts on same document anyway, should be fairly quick depending on module
             self.outputqueue.task_done()
 
         self.corrector.log("Finalising modules on document") #not parallel, acts on same document anyway, should be fairly quick depending on module
