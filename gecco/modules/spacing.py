@@ -119,7 +119,7 @@ class RunOnModule(Module):
         """Takes the specified FoLiA unit for the module, and returns a string that can be passed to process()"""
         return str(word) 
 
-    def processoutput(self, suggestions, unit_id,**parameters):
+    def processoutput(self, suggestions, inputdata, unit_id,**parameters):
         return self.splitcorrection(unit_id, suggestions)
 
     def run(self, word):
@@ -218,13 +218,13 @@ class SplitModule(Module):
         """Takes the specified FoLiA unit for the module, and returns a string that can be passed to process()"""
         nextword = word.next()
         if nextword:
-            self.originalids = (word.id, nextword.id) #remember this for processoutput later
-            return (str(word), str(nextword) )
+            return (str(word), str(nextword), nextword.id )
 
-    def processoutput(self, suggestions, unit_id,**parameters):
-        return self.mergecorrection(suggestions, self.originalids)
+    def processoutput(self, suggestions, inputdata, unit_id,**parameters):
+        _,_,next_id = inputdata
+        return self.mergecorrection(suggestions, (unit_id, next_id))
 
     def run(self, input):
-        word, nextword = input
+        word, nextword, _ = input
         return self.getmergesuggestion(word, nextword)
 

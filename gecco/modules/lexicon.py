@@ -200,7 +200,7 @@ class LexiconModule(Module):
         return '!' + str(word) #! is the command to return closest suggestions if the word is not in the lexicon, ? merely return a boolean whether the word is in lexicon or not
 
 
-    def processoutput(self, output, unit_id,**parameters):
+    def processoutput(self, output,inputdata, unit_id,**parameters):
         return self.addsuggestions(unit_id, [ result for result,distance in output ] )
 
     def run(self, input):
@@ -275,8 +275,9 @@ class AspellModule(Module):
         """Takes the specified FoLiA unit for the module, and returns a string that can be passed to process()"""
         return str(word) 
 
-    def processoutput(self, output, unit_id,**parameters):
-        return self.addsuggestions(unit_id, [ result for result,distance in output ] )
+    def processoutput(self, output, inputdata, unit_id,**parameters):
+        if output:
+            return self.addsuggestions(unit_id, [ result for result,distance in output ] )
 
     def run(self, word):
         """This methods gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""

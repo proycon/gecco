@@ -145,18 +145,20 @@ class TIMBLLMModule(Module):
 
     def prepareinput(self,word,**parameters):
         """Takes the specified FoLiA unit for the module, and returns a string that can be passed to process()"""
-        self.wordstr = str(word) #will be reused in processoutput
+        wordstr = str(word) #will be reused in processoutput
         features = self.getfeatures(word)
         if self.hapaxer: features = self.hapaxer(features) #pylint: disable=not-callable
-        return features
+        return wordstr, features
 
-    def processoutput(self, output, unit_id,**parameters):
-        best,distribution = output
-        if best != self.wordstr and distribution:
+    def processoutput(self, outputdata, inputdata, unit_id,**parameters):
+        wordstr,_ = inputdata
+        best,distribution = outputdata
+        if best != wordstr and distribution:
             return self.addsuggestions(unit_id, distribution)
 
-    def run(self, features):
+    def run(self, inputdata):
         """This method gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
+        _, features = inputdata
         if self.debug:
             begintime = time.time()
         best,distribution,_ = self.classifier.classify(features)

@@ -68,11 +68,10 @@ class WordErrorListModule(Module):
 
     def prepareinput(self,word,**parameters):
         """Takes the specified FoLiA unit for the module, and returns a string that can be passed to process()"""
-        self.wordstr = str(word)
-        return self.wordstr
+        return str(word)
 
-    def processoutput(self, response, unit_id,**parameters):
-        if response != self.wordstr: #server will echo back the same thing if it's not in the error list
+    def processoutput(self, response, unit_id, wordstr, **parameters):
+        if response != wordstr: #server will echo back the same thing if it's not in the error list
             suggestions = response.split("\t")
             return self.addsuggestions(unit_id, suggestions)
 

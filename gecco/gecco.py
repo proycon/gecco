@@ -97,7 +97,7 @@ class DataThread(Process):
                     if module.UNIT is folia.Document:
                         self.corrector.log("\t\tQueuing full-document module " + module.id)
                         inputdata = module.prepareinput(self.foliadoc,**parameters)
-                        if inputdata:
+                        if inputdata is not None:
                             self.inputqueue.put( (module.id, self.foliadoc.id, inputdata) )
 
         for unit in self.corrector.units:
@@ -108,7 +108,7 @@ class DataThread(Process):
                         if not module_ids or module.id in module_ids:
                             if module.UNIT is unit:
                                 inputdata = module.prepareinput(element,**parameters)
-                                if inputdata:
+                                if inputdata is not None:
                                     self.inputqueue.put( (module.id, element.id, inputdata ) )
 
         self.inputqueue.put( (None,None,None) ) #signals the end of the queue
@@ -120,12 +120,12 @@ class DataThread(Process):
         self.corrector.log("Processing queries...") #not parallel, acts on same document anyway, should be fairly quick depending on module
         while not self._stop:
             if not self.outputqueue.empty():
-                module_id, unit_id, outputdata = self.outputqueue.get() #data is an FQL query
+                module_id, unit_id, outputdata, inputdata = self.outputqueue.get() #data is an FQL query
                 if module_id is None: #signals the end of the queue
                     self._stop = True
                 elif outputdata:
                     module = self.corrector.modules[module_id]
-                    query = module.processoutput(outputdata, unit_id,**self.parameters)
+                    query = module.processoutput(outputdata, inputdata, unit_id,**self.parameters)
                     q = fql.Query(query)
                     q(self.foliadoc)
                 self.outputqueue.task_done()
@@ -175,7 +175,7 @@ class ProcessorThread(Process):
                                     module.log(" (Running " + module.id + " on '" + str(data) + "' [local])")
                                 outputdata = module.runlocal(data, unit_id, **self.parameters)
                                 if outputdata is not None:
-                                    self.outputqueue.put( (module.id, unit_id, outputdata) )
+                                    self.outputqueue.put( (module.id, unit_id, outputdata,data) )
                                 if self.debug:
                                     duration = round(time.time() - begintime,4)
                                     module.log(" (...took " + str(duration) + "s)")
@@ -193,7 +193,7 @@ class ProcessorThread(Process):
                                             module.log(" (server=" + server + ", port=" + str(port) + ")")
                                         outputdata = module.runclient( self.clients[(server,port)], unit_id, data,  **self.parameters)
                                         if outputdata is not None:
-                                            self.outputqueue.put( (module.id, unit_id, outputdata) )
+                                            self.outputqueue.put( (module.id, unit_id, outputdata,data) )
                                         #will only be executed when connection succeeded:
                                         connected = True
                                         break
@@ -208,7 +208,7 @@ class ProcessorThread(Process):
 
                 self.inputqueue.task_done()
 
-        self.outputqueue.put( (None,None,None) ) #signals the end of the queue
+        self.outputqueue.put( (None,None,None,None) ) #signals the end of the queue
 
     def stop(self):
         self._stop = True
@@ -939,14 +939,14 @@ class Module:
     ##### Main callbacks invoked by the Corrector that MUST ALWAYS be implemented:
 
     def prepareinput(self,unit,**parameters):
-        """Converts a FoLiA unit to whatever lower-level input-representation the module needs. The representation must be passable over network in JSON. Will be executed serially."""
+        """Converts a FoLiA unit to whatever lower-level input-representation the module needs. The representation must be passable over network in JSON. Will be executed serially. May return None to indicate the unit is not to be processed by the module."""
         raise NotImplementedError
 
     def run(self, inputdata):
-        """This methods gets called to turn inputdata into outputdata. It is the part that can be distributed over network and will be executed concurrently. Return value will be automatically serialised as JSON for remote modules."""
+        """This methods gets called to turn inputdata into outputdata. It is the part that can be distributed over network and will be executed concurrently. Return value will be automatically serialised as JSON for remote modules. May return None if no output is produced."""
         raise NotImplementedError
 
-    def processoutput(self,outputdata,unit_id,**parameters):
+    def processoutput(self,outputdata,inputdata,unit_id,**parameters):
         """Processes low-level output data and returns a an FQL query (string) or list/tuple of FQL queries to perform on the data. Executed concurrently. May return None if no query is needed."""
         raise NotImplementedError
 
@@ -964,7 +964,7 @@ class Module:
     ######################### FOLIA EDITING ##############################
     #
     # These methods are *NOT* available to module.run(), only to
-    # module.processoutput(outputdata,element_id)
+    # module.processoutput()
 
     def addsuggestions(self, element_id, suggestions, **kwargs):
         self.log("Adding correction for " + element_id)

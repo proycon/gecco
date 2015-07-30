@@ -139,20 +139,22 @@ class TIMBLWordConfusibleModule(Module):
 
     def prepareinput(self,word,**parameters):
         """Takes the specified FoLiA unit for the module, and returns a string that can be passed to process()"""
-        self.wordstr = str(word) #will be reused in processoutput
-        if self.wordstr in self.confusibles:
+        wordstr = str(word) #will be reused in processoutput
+        if wordstr in self.confusibles:
             features = self.getfeatures(word)
             if self.hapaxer: features = self.hapaxer(features)
-            return features
+            return wordstr, features
 
-    def run(self, features):
+    def run(self, inputdata):
         """This method gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
+        _, features = inputdata
         best,distribution,_ = self.classifier.classify(features)
         return (best,distribution)
 
-    def processoutput(self, output, unit_id,**parameters):
+    def processoutput(self, output, inputdata, unit_id,**parameters):
+        wordstr, _  = inputdata
         best,distribution = output
-        if best != self.wordstr:
+        if best != wordstr:
             return self.addsuggestions(unit_id, list(distribution.items()))
 
 
@@ -399,19 +401,21 @@ class TIMBLSuffixConfusibleModule(Module):
 
     def prepareinput(self,word,**parameters):
         """Takes the specified FoLiA unit for the module, and returns a string that can be passed to process()"""
-        self.wordstr = str(word)
-        if self.wordstr in self.confusibles:
+        wordstr = str(word)
+        if wordstr in self.confusibles:
             features = self.getfeatures(word)
             if self.hapaxer: features = self.hapaxer(features)
-            return features
+            return wordstr, features
 
-    def run(self, features):
+    def run(self, inputdata):
         """This method gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
+        _,features = inputdata
         best,distribution,_ = self.classifier.classify(features)
         return (best,distribution)
 
-    def processoutput(self, output, unit_id,**parameters):
+    def processoutput(self, output, inputdata, unit_id,**parameters):
+        wordstr,_ = inputdata
         best,distribution = output
-        suffix,_ = self.getsuffix(self.wordstr)
-        if self.wordstr != self.wordstr[:-len(suffix)] + best:
-            return self.addsuggestions(unit_id, [ (self.wordstr[:-len(suffix)] + suggestion,p) for suggestion,p in distribution.items() if suggestion != suffix] )
+        suffix,_ = self.getsuffix(wordstr)
+        if wordstr != wordstr[:-len(suffix)] + best:
+            return self.addsuggestions(unit_id, [ (wordstr[:-len(suffix)] + suggestion,p) for suggestion,p in distribution.items() if suggestion != suffix] )
