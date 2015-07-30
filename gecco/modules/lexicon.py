@@ -277,7 +277,7 @@ class AspellModule(Module):
 
     def processoutput(self, output, inputdata, unit_id,**parameters):
         if output:
-            return self.addsuggestions(unit_id, [ result for result,distance in output ] )
+            return self.addsuggestions(unit_id, output )
 
     def run(self, word):
         """This methods gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
