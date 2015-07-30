@@ -365,7 +365,7 @@ class Corrector:
         inputqueue.join()
         duration = time.time() - begintime
         self.log("Input queue processed (" + str(duration) + "s)")
-        outputqueue.join()
+        datathread.join()
         duration = time.time() - begintime
         self.log("Processing done (" + str(duration) + "s)")
 
