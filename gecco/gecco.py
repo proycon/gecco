@@ -906,7 +906,7 @@ class Module:
 
     def runclient(self, client, unit_id, inputdata, **parameters):
         """This method gets invoked by the Corrector when it should connect to a remote server, the client instance is passed and already available (will connect on first communication). """
-        return json.loads(client.communicate(inputdata))
+        return json.loads(client.communicate(json.dumps(inputdata)))
 
     ##### Optional callbacks invoked by the Corrector (defaults may suffice)
 
