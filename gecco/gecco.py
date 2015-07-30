@@ -195,26 +195,26 @@ class ProcessorThread(Process):
                         if module.local:
                             if self.debug:
                                 begintime = time.time()
-                                module.log(" (Running " + module.id + " on " + repr(inputdata) + " [local])")
+                                module.log("[" + str(self.pid) + "] (Running " + module.id + " on " + repr(inputdata) + " [local])")
                             outputdata = module.runlocal(inputdata, unit_id, **self.parameters)
                             if outputdata is not None:
                                 self.outputqueue.put( (module.id, unit_id, outputdata,inputdata) )
                             if self.debug:
                                 duration = round(time.time() - begintime,4)
-                                module.log(" (...took " + str(duration) + "s)")
+                                module.log("[" + str(self.pid) + "] (...took " + str(duration) + "s)")
                         else:
                             skipservers= []
                             connected = False
                             if self.debug:
                                 begintime = time.time()
-                                module.log(" (Running " + module.id + " on " + repr(inputdata) + " [remote]")
+                                module.log("[" + str(self.pid) + "]  (Running " + module.id + " on " + repr(inputdata) + " [remote]")
                             for server,port,load in sorted(module.servers, key=lambda x: x[2]): 
                                 try:
-                                    #if (server,port) not in self.clients:
-                                    #    self.clients[(server,port)] = module.CLIENT(server,port)
-                                    client = module.CLIENT(server,port)
+                                    if (server,port) not in self.clients:
+                                        self.clients[(server,port)] = module.CLIENT(server,port)
+                                    client = self.clients[(server,port)]
                                     if self.debug:
-                                        module.log(" (server=" + server + ", port=" + str(port) + ", client=" + str(client)+")")
+                                        module.log("[" + str(self.pid) + "] (server=" + server + ", port=" + str(port) + ", client=" + str(client) + ")")
                                     outputdata = module.runclient(client, unit_id, inputdata,  **self.parameters)
                                     if outputdata is not None:
                                         self.outputqueue.put( (module.id, unit_id, outputdata,inputdata) )
@@ -228,7 +228,7 @@ class ProcessorThread(Process):
                                 raise Exception("Unable to connect client to server! All servers for module " + module.id + " are down!")
                             if self.debug:
                                 duration = round(time.time() - begintime,4)
-                                module.log(" (...took " + str(duration) + "s)")
+                                module.log("[" + str(self.pid) + "] (...took " + str(duration) + "s)")
 
             self.inputqueue.task_done()
 
