@@ -120,9 +120,9 @@ class DataThread(Process):
         self.corrector.log("Input ready (" + str(duration) + "s)")
 
     def run(self):
-        self.corrector.log("Processing queries...") #not parallel, acts on same document anyway, should be fairly quick depending on module
+        self.corrector.log("Processing output...") #not parallel, acts on same document anyway, should be fairly quick depending on module
         while not self._stop:
-            module_id, unit_id, outputdata, inputdata = self.outputqueue.get() #data is an FQL query
+            module_id, unit_id, outputdata, inputdata = self.outputqueue.get()
             if module_id is None: #signals the end of the queue
                 self._stop = True
             elif outputdata:
