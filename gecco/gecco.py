@@ -89,7 +89,7 @@ class DataThread(Process):
                 module.init(self.foliadoc)
 
         #data in inputqueue takes the form (module, data), where data is an instance of module.UNIT (a folia document or element)
-        if folia.Document in self.units:
+        if folia.Document in self.corrector.units:
             self.corrector.log("\tPreparing input of full documents")
 
             for module in self.corrector:
