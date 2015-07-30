@@ -128,8 +128,13 @@ class DataThread(Process):
             elif outputdata:
                 module = self.corrector.modules[module_id]
                 query = module.processoutput(outputdata, inputdata, unit_id,**self.parameters)
-                q = fql.Query(query)
-                q(self.foliadoc)
+                try:
+                    q = fql.Query(query)
+                    q(self.foliadoc)
+                except fql.SyntaxError as e:
+                    self.corrector.log("FQL Syntax error:" + str(e)) #not parallel, acts on same document anyway, should be fairly quick depending on module
+                except fql.QueryError as e:
+                    self.corrector.log("FQL Query error:" + str(e)) #not parallel, acts on same document anyway, should be fairly quick depending on module
             self.outputqueue.task_done()
 
         self.corrector.log("Finalising modules on document") #not parallel, acts on same document anyway, should be fairly quick depending on module
