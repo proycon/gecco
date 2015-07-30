@@ -639,7 +639,7 @@ class Corrector:
                 module.local = True
             if args.parameters: parameters = dict(( tuple(p.split('=')) for p in args.parameters))
             if args.modules: modules = args.modules.split(',')
-            self.run(args._filename,modules,args.outputfile,**parameters)
+            self.run(args.filename,modules,args.outputfile,**parameters)
         elif args.command == 'startservers':
             self.startservers(modules)
         elif args.command == 'stopservers':
