@@ -120,13 +120,15 @@ class DataThread(Process):
         self.corrector.log("Processing queries...") #not parallel, acts on same document anyway, should be fairly quick depending on module
         while not self._stop:
             if not self.outputqueue.empty():
-                query = self.outputqueue.get() #data is an FQL query
-                if query is None: #signals the end of the queue
+                module_id, unit_id, outputdata = self.outputqueue.get() #data is an FQL query
+                if module_id is None: #signals the end of the queue
                     self._stop = True
-                else:
+                elif outputdata:
+                    module = self.corrector.modules[module_id]
+                    query = module.processoutput(outputdata, unit_id,**self.parameters)
                     q = fql.Query(query)
                     q(self.foliadoc)
-                    self.outputqueue.task_done()
+                self.outputqueue.task_done()
 
         self.corrector.log("Finalising modules on document") #not parallel, acts on same document anyway, should be fairly quick depending on module
         for module in self.corrector:
@@ -171,7 +173,9 @@ class ProcessorThread(Process):
                                 if self.debug:
                                     begintime = time.time()
                                     module.log(" (Running " + module.id + " on '" + str(data) + "' [local])")
-                                module.runlocal(data, unit_id, self.outputqueue, **self.parameters)
+                                outputdata = module.runlocal(data, unit_id, **self.parameters)
+                                if outputdata is not None:
+                                    self.outputqueue.put( (module.id, unit_id, outputdata) )
                                 if self.debug:
                                     duration = round(time.time() - begintime,4)
                                     module.log(" (...took " + str(duration) + "s)")
@@ -187,7 +191,9 @@ class ProcessorThread(Process):
                                             self.clients[(server,port)] = module.CLIENT(server,port)
                                         if self.debug:
                                             module.log(" (server=" + server + ", port=" + str(port) + ")")
-                                        module.runclient( self.clients[(server,port)], unit_id, data, self.outputqueue,  **self.parameters)
+                                        outputdata = module.runclient( self.clients[(server,port)], unit_id, data,  **self.parameters)
+                                        if outputdata is not None:
+                                            self.outputqueue.put( (module.id, unit_id, outputdata) )
                                         #will only be executed when connection succeeded:
                                         connected = True
                                         break
@@ -202,7 +208,7 @@ class ProcessorThread(Process):
 
                 self.inputqueue.task_done()
 
-        self.outputqueue.put( None ) #signals the end of the queue
+        self.outputqueue.put( (None,None,None) ) #signals the end of the queue
 
     def stop(self):
         self._stop = True
@@ -892,28 +898,14 @@ class Module:
         return os.getloadavg()[0] / psutil.cpu_count()
 
 
-    def runlocal(self, unit_id, inputdata, outputqueue, **parameters):
+    def runlocal(self, unit_id, inputdata, **parameters):
         """This method gets invoked by the Corrector when the module is run locally."""
-        outputdata = self.run(inputdata)
-        queries = self.processoutput(outputdata, unit_id,**parameters)
-        if queries is not None:
-            if isinstance(queries,str):
-                outputqueue.put(queries)
-            else:
-                for query in queries:
-                    outputqueue.put(query)
+        return self.run(inputdata)
 
 
-    def runclient(self, client, unit_id, inputdata, outputqueue, **parameters):
+    def runclient(self, client, unit_id, inputdata, **parameters):
         """This method gets invoked by the Corrector when it should connect to a remote server, the client instance is passed and already available (will connect on first communication). """
-        outputdata = json.loads(client.communicate(inputdata))
-        queries = self.processoutput(outputdata, unit_id,**parameters)
-        if queries is not None:
-            if isinstance(queries,str):
-                outputqueue.put(queries)
-            else:
-                for query in queries:
-                    outputqueue.put(query)
+        return json.loads(client.communicate(inputdata))
 
     ##### Optional callbacks invoked by the Corrector (defaults may suffice)
 
