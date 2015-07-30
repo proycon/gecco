@@ -66,7 +66,7 @@ class DataThread(Process):
                 else:
                     outputtextfile = inputtextfile + '.folia.xml'
 
-                tokenizer = Tokenizer(self.settings['ucto'],xmloutput=True)
+                tokenizer = Tokenizer(self.corrector.settings['ucto'],xmloutput=True)
                 tokenizer.tokenize(inputtextfile, outputtextfile)
 
                 foliadoc = outputtextfile
