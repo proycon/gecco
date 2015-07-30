@@ -70,13 +70,13 @@ class WordErrorListModule(Module):
         """Takes the specified FoLiA unit for the module, and returns a string that can be passed to process()"""
         return str(word)
 
-    def processoutput(self, response, unit_id, wordstr, **parameters):
+    def processoutput(self, response, wordstr, unit_id, **parameters):
         if response != wordstr: #server will echo back the same thing if it's not in the error list
             suggestions = response.split("\t")
             return self.addsuggestions(unit_id, suggestions)
 
     def run(self, word):
-        """This methods gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
+        """This method gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
         if word in self.errorlist:
             suggestions = self.errorlist[word]
             if isinstance(suggestions, str):

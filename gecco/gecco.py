@@ -184,6 +184,7 @@ class ProcessorThread(Process):
         while not self._stop:
             module_id, unit_id, inputdata = self.inputqueue.get() 
             if module_id is None: #signals the last item
+                if self.debug: self.corrector.log(" (end of input queue)")
                 self._stop = True
             else:
                 module =  self.corrector.modules[module_id]
