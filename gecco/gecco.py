@@ -27,7 +27,7 @@ from collections import OrderedDict
 #from threading import Thread, Lock
 #from queue import Queue
 from threading import Thread
-from multiprocessing import Process, Lock, JoinableQueue as Queue #pylint: disable=no-name-in-module
+from multiprocessing import Process, JoinableQueue as Queue #pylint: disable=no-name-in-module
 from glob import glob
 from pynlpl.formats import folia, fql
 from ucto import Tokenizer #pylint: disable=import-error,no-name-in-module
@@ -183,7 +183,7 @@ class ProcessorThread(Process):
 
     def run(self):
         while not self._stop:
-            module_id, unit_id, inputdata = self.inputqueue.get() 
+            module_id, unit_id, inputdata = self.inputqueue.get()
             if module_id is None: #signals the last item (there will be one for each thread)
                 if self.debug: self.corrector.log(" (end of input queue)")
                 self._stop = True
@@ -210,11 +210,12 @@ class ProcessorThread(Process):
                                 module.log(" (Running " + module.id + " on " + repr(inputdata) + " [remote]")
                             for server,port,load in sorted(module.servers, key=lambda x: x[2]): 
                                 try:
-                                    if (server,port) not in self.clients:
-                                        self.clients[(server,port)] = module.CLIENT(server,port)
+                                    #if (server,port) not in self.clients:
+                                    #    self.clients[(server,port)] = module.CLIENT(server,port)
+                                    client = module.CLIENT(server,port)
                                     if self.debug:
-                                        module.log(" (server=" + server + ", port=" + str(port) + ")")
-                                    outputdata = module.runclient( self.clients[(server,port)], unit_id, inputdata,  **self.parameters)
+                                        module.log(" (server=" + server + ", port=" + str(port) + ", client=" + str(client)+")")
+                                    outputdata = module.runclient(client, unit_id, inputdata,  **self.parameters)
                                     if outputdata is not None:
                                         self.outputqueue.put( (module.id, unit_id, outputdata,inputdata) )
                                     #will only be executed when connection succeeded:
@@ -1048,9 +1049,8 @@ class Module:
         q += " RETURN nothing"
         return q
 
-    def suggestdeletion(self, lock, word,merge=False, **kwargs):
+    def suggestdeletion(self, word,merge=False, **kwargs):
         #TODO: Convert to FQL
-        lock.acquire()
         parent = word.parent
         index = parent.getindex(word,False)
         if 'cls' in kwargs:
@@ -1065,11 +1065,9 @@ class Module:
             parent.data[index] = folia.Correction(word.doc, folia.Suggestion(word.doc, **sugkwargs), folia.Current(word.doc, word), set=self.settings['set'],cls=cls, annotator=self.settings['annotator'],annotatortype=folia.AnnotatorType.AUTO, datetime=datetime.datetime.now())
         else:
             self.log(" ERROR: Unable to suggest deletion of " + str(word.id) + ", item index not found")
-        lock.release()
 
-    def suggestinsertion(self,lock,pivotword, text,split=False):
+    def suggestinsertion(self,pivotword, text,split=False):
         #TODO: Convert to FQL
-        lock.acquire()
         index = pivotword.parent.getindex(pivotword)
         if index != -1:
             self.log(" Suggesting insertion before " + str(pivotword.id))
@@ -1080,7 +1078,6 @@ class Module:
             pivotword.parent.insert(index,folia.Correction(doc, folia.Suggestion(doc, folia.Word(doc,text,generate_id_in=pivotword.parent)), folia.Current(doc), set=self.settings['set'],cls=self.settings['class'], annotator=self.settings['annotator'],annotatortype=folia.AnnotatorType.AUTO, datetime=datetime.datetime.now(), generate_id_in=pivotword.parent))
         else:
             self.log(" ERROR: Unable to suggest insertion before " + str(pivotword.id) + ", item index not found")
-        lock.release()
 
 
 def main():
