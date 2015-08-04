@@ -716,7 +716,6 @@ class LineByLineClient:
         self.connected = False
 
     def connect(self):
-        print("Connecting to "  + self.host + ":" + str(self.port) ,file=sys.stderr)
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.connect( (self.host,self.port) )
         self.connected = True
