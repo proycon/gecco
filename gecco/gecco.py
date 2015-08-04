@@ -591,7 +591,8 @@ class Corrector:
                     sock.sendall(b"%GETLOAD%\n")
                     load = float(sock.recv(1024))
                     module.servers.append( (host,port,load) )
-                    module.local = False
+                    if not module.forcelocal:
+                        module.local = False
                     servers.append( (module.id, host,port,load) )
                 except socket.timeout:
                     self.log("Connection to " + module.id + "@" +host+":" + str(port) + " timed out")
@@ -669,8 +670,9 @@ class Corrector:
         parameters = {}
         modules = []
         if args.command == 'run':
-            for  module in self.modules.values():
+            for module in self.modules.values():
                 module.local = True
+                module.forcelocal = args.forcelocal
             if args.parameters: parameters = dict(( tuple(p.split('=')) for p in args.parameters))
             if args.modules: modules = args.modules.split(',')
             self.run(args.filename,modules,args.outputfile,**parameters)
