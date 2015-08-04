@@ -185,6 +185,7 @@ class ProcessorThread(Process):
     def run(self):
         while not self._stop:
             module_id, unit_id, inputdata = self.inputqueue.get()
+            self.inputqueue.task_done()
             if module_id is None: #signals the last item (there will be one for each thread)
                 if self.debug: self.corrector.log(" (end of input queue)")
                 self._stop = True
@@ -225,13 +226,11 @@ class ProcessorThread(Process):
                                 except ConnectionRefusedError:
                                     del self.clients[(server,port)]
                             if not connected:
-                                self.inputqueue.task_done()
                                 raise Exception("Unable to connect client to server! All servers for module " + module.id + " are down!")
                             if self.debug:
                                 duration = round(time.time() - begintime,4)
                                 module.log("[" + str(self.pid) + "] (...took " + str(duration) + "s)")
 
-            self.inputqueue.task_done()
 
 
     def stop(self):
