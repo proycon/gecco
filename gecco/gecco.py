@@ -591,7 +591,7 @@ class Corrector:
                     sock.sendall(b"%GETLOAD%\n")
                     load = float(sock.recv(1024))
                     module.servers.append( (host,port,load) )
-                    if not module.forcelocal:
+                    if not hasattr(module,'forcelocal') or not module.forcelocal:
                         module.local = False
                     servers.append( (module.id, host,port,load) )
                 except socket.timeout:
