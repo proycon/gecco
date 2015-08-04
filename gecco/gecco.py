@@ -182,6 +182,7 @@ class ProcessorThread(Process):
         self.clients = {} #each thread keeps a bunch of clients open to the servers of the various modules so we don't have to reconnect constantly (= faster)
         super().__init__()
 
+
     def run(self):
         while not self._stop:
             module_id, unit_id, inputdata = self.inputqueue.get()
@@ -245,13 +246,18 @@ class Corrector:
         self.settings = settings
         self.modules = OrderedDict()
         self.verifysettings()
-        self.tokenizer = Tokenizer(self.settings['ucto'])
+
+        if 'notokenizer' in self.settings and self.settings['notokenizer']:
+            self.tokenizer = None
+        else:
+            self.tokenizer = Tokenizer(self.settings['ucto'])
 
         #Gather servers
         self.servers = set( [m.settings['servers'] for m in self if not m.local ] )
 
         self.units = set( [m.UNIT for m in self] )
         self.loaded = False
+
 
     def load(self):
         if not self.loaded:
