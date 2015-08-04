@@ -672,7 +672,7 @@ class Corrector:
         if args.command == 'run':
             for module in self.modules.values():
                 module.local = True
-                module.forcelocal = args.forcelocal
+                module.forcelocal = args.local
             if args.parameters: parameters = dict(( tuple(p.split('=')) for p in args.parameters))
             if args.modules: modules = args.modules.split(',')
             self.run(args.filename,modules,args.outputfile,**parameters)
