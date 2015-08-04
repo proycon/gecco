@@ -839,7 +839,7 @@ class Module:
             raise Exception("Number of specified sources and models for module " + self.id + " should be equal!")
 
         if not 'logfunction' in self.settings:
-            self.settings['logfunction'] = lambda x: print("[" + self.id + "] " + x,file=sys.stderr) #will be rather messy when multithreaded
+            self.settings['logfunction'] = lambda x: print(datetime.datetime.now().strftime("%H:%M:%S.%f") + " [" + self.id + "] " + x,file=sys.stderr) #will be rather messy when multithreaded
         self.log = self.settings['logfunction']
 
         #Some defaults for FoLiA processing
