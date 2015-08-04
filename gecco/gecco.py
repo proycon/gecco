@@ -314,7 +314,7 @@ class Corrector:
 
 
         if not 'logfunction' in self.settings:
-            self.settings['logfunction'] = lambda x: print(datetime.datetime.now().strftime("%H:%m:%s") + " " + x,file=sys.stderr)
+            self.settings['logfunction'] = lambda x: print(datetime.datetime.now().strftime("%H:%M:%S.%f") + " " + x,file=sys.stderr)
         self.log = self.settings['logfunction']
 
 
