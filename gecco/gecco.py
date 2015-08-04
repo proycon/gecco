@@ -125,6 +125,7 @@ class DataThread(Process):
         self.corrector.log("Processing output...") #not parallel, acts on same document anyway, should be fairly quick depending on module
         while not self._stop:
             module_id, unit_id, outputdata, inputdata = self.outputqueue.get()
+            self.outputqueue.task_done()
             if module_id is None: #signals the end of the queue
                 self._stop = True
             elif outputdata:
@@ -151,7 +152,6 @@ class DataThread(Process):
                         exc_type, exc_value, exc_traceback = sys.exc_info() 
                         formatted_lines = traceback.format_exc().splitlines() 
                         traceback.print_tb(exc_traceback, limit=50, file=sys.stderr)
-            self.outputqueue.task_done()
 
         self.corrector.log("Finalising modules on document") #not parallel, acts on same document anyway, should be fairly quick depending on module
         for module in self.corrector:
@@ -775,7 +775,7 @@ class LineByLineServerHandler(socketserver.BaseRequestHandler):
             if response[-1] != 10: response += b"\n"
             self.request.sendall(response)
 
-class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+class ThreadedTCPServer(socketserver.ForkingMixIn, socketserver.TCPServer):
     pass
 
 class Module:
