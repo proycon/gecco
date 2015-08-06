@@ -213,13 +213,14 @@ class ProcessorThread(Process):
                                 module.log("[" + str(self.pid) + "]  (Running " + module.id + " on " + repr(inputdata) + " [remote]")
                             for server,port,load in sorted(module.servers, key=lambda x: x[2]): 
                                 try:
-                                    #if (server,port) not in self.clients:
-                                    #    self.clients[(server,port)] = module.CLIENT(server,port)
-                                    #client = self.clients[(server,port)]
-                                    client = module.CLIENT(server,port)
+                                    if (server,port) not in self.clients:
+                                        self.clients[(server,port)] = module.CLIENT(server,port)
+                                    client = self.clients[(server,port)]
                                     if self.debug:
-                                        module.log("[" + str(self.pid) + "] (server=" + server + ", port=" + str(port) + ", client=" + str(client) + ", corrector=" + str(self.corrector) + ", module=" + str(module) + ")")
+                                        module.log("[" + str(self.pid) + "] BEGIN (server=" + server + ", port=" + str(port) + ", client=" + str(client) + ", corrector=" + str(self.corrector) + ", module=" + str(module) + ")")
                                     outputdata = module.runclient(client, unit_id, inputdata,  **self.parameters)
+                                    if self.debug:
+                                        module.log("[" + str(self.pid) + "] END (server=" + server + ", port=" + str(port) + ", client=" + str(client) + ", corrector=" + str(self.corrector) + ", module=" + str(module) + ")")
                                     if outputdata is not None:
                                         self.outputqueue.put( (module.id, unit_id, outputdata,inputdata) )
                                     #will only be executed when connection succeeded:
@@ -227,14 +228,14 @@ class ProcessorThread(Process):
                                     break
                                 except ConnectionRefusedError:
                                     module.log("[" + str(self.pid) + "] Server " + server+":" + str(port) + ", module " + module.id + " refused connection, moving on...")
-                                    #del self.clients[(server,port)]
+                                    del self.clients[(server,port)]
                                 except Exception as e: 
                                     module.log("[" + str(self.pid) + "] Server communication failed for server " + server +":" + str(port) + ", module " + module.id + ", passed unit " + unit_id + " (traceback follows in debug), moving on...")
                                     if self.debug:
                                         exc_type, exc_value, exc_traceback = sys.exc_info() 
                                         formatted_lines = traceback.format_exc().splitlines() 
                                         traceback.print_tb(exc_traceback, limit=50, file=sys.stderr)
-                                    #del self.clients[(server,port)]
+                                    del self.clients[(server,port)]
                             if not connected:
                                 module.log("**ERROR** Unable to connect client to server! All servers for module " + module.id + " are down, skipping!")
                                 fatalerrors = True
@@ -767,26 +768,27 @@ class LineByLineServerHandler(socketserver.BaseRequestHandler):
     """
 
     def handle(self):
-        # self.request is the TCP socket connected to the client, self.server is the server
-        cont_recv = True
-        buffer = b''
-        while cont_recv:
-            chunk = self.request.recv(1024)
-            if not chunk or chunk[-1] == 10: #newline
-                cont_recv = False
-            buffer += chunk
-        if not chunk: #connection broken
-            return
-        msg = str(buffer,'utf-8').strip()
-        if msg == "%GETLOAD%":
-            response = str(self.server.module.server_load())
-        else:
-            response = json.dumps(self.server.module.run(json.loads(msg)))
-        #print("Input: [" + msg + "], Response: [" + response + "]",file=sys.stderr)
-        if isinstance(response,str):
-            response = response.encode('utf-8')
-        if response[-1] != 10: response += b"\n"
-        self.request.sendall(response)
+        while True: #We have to loop so the connection is not closed after one request
+            # self.request is the TCP socket connected to the client, self.server is the server
+            cont_recv = True
+            buffer = b''
+            while cont_recv:
+                chunk = self.request.recv(1024)
+                if not chunk or chunk[-1] == 10: #newline
+                    cont_recv = False
+                buffer += chunk
+            if not chunk: #connection broken
+                break
+            msg = str(buffer,'utf-8').strip()
+            if msg == "%GETLOAD%":
+                response = str(self.server.module.server_load())
+            else:
+                response = json.dumps(self.server.module.run(json.loads(msg)))
+            #print("Input: [" + msg + "], Response: [" + response + "]",file=sys.stderr)
+            if isinstance(response,str):
+                response = response.encode('utf-8')
+            if response[-1] != 10: response += b"\n"
+            self.request.sendall(response)
 
 class ThreadedTCPServer(socketserver.ForkingMixIn, socketserver.TCPServer):
 
@@ -795,7 +797,6 @@ class ThreadedTCPServer(socketserver.ForkingMixIn, socketserver.TCPServer):
         exc_type, exc_value, exc_traceback = sys.exc_info() 
         formatted_lines = traceback.format_exc().splitlines() 
         traceback.print_tb(exc_traceback, limit=50, file=sys.stderr)
-        sys.exit(2)
 
 
 class Module:
