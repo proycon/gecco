@@ -775,7 +775,7 @@ class LineByLineServerHandler(socketserver.BaseRequestHandler):
                 cont_recv = False
             buffer += chunk
         if not chunk: #connection broken
-            break
+            return
         msg = str(buffer,'utf-8').strip()
         if msg == "%GETLOAD%":
             response = str(self.server.module.server_load())
