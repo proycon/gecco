@@ -240,7 +240,7 @@ class ProcessorThread(Process):
                                 module.log("**ERROR** Unable to connect client to server! All servers for module " + module.id + " are down, skipping!")
                                 fatalerrors = True
                             duration = time.time() - begintime
-                            self.timequeue.put(duration)
+                            self.timequeue.put((module.id, duration))
                             if self.debug:
                                 module.log("[" + str(self.pid) + "] (...took " + str(round(duration,4)) + "s)")
 
@@ -390,14 +390,20 @@ class Corrector:
         outputqueue.put( (None,None,None,None) ) #signals the end of the queue
         datathread.join()
         duration = time.time() - begintime
-        timequeue.put(None)
+        timequeue.put((None,None))
+        virtualdurationpermod = defaultdict(float)
+        callspermod = defaultdict(int)
         virtualduration = 0.0
         while True:
-            x = timequeue.get()
-            if x is None:
+            modid, x = timequeue.get()
+            if modid is None:
                 break
             else:
+                virtualdurationpermod[modid] += x
+                callspermod[modid] += 1
                 virtualduration += x
+        for modid, d in sorted(virtualdurationpermod.items(),key=lambda x: x[1] * -1): 
+            print("\t"+modid + "\t" + str(round(d,4)) + "s\t" + str(callspermod[modid]) + " calls",file=sys.stderr)
         self.log("Processing done (real total " + str(round(duration,2)) + "s , virtual output " + str(virtualduration) + "s, real input " + str(inputduration) + "s)")
 
     def __len__(self):
