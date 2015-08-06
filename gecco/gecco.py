@@ -183,6 +183,7 @@ class ProcessorThread(Process):
 
 
     def run(self):
+        fatalerror = False
         while not self._stop:
             module_id, unit_id, inputdata = self.inputqueue.get()
             self.inputqueue.task_done()
@@ -224,18 +225,18 @@ class ProcessorThread(Process):
                                     connected = True
                                     break
                                 except ConnectionRefusedError:
-                                    if self.debug:
-                                        module.log("[" + str(self.pid) + "] Server refused connection, moving on...")
+                                    module.log("[" + str(self.pid) + "] Server " + server+":" + str(port) + ", module " + module.id + " refused connection, moving on...")
                                     del self.clients[(server,port)]
-                                except Exception as e: # ConnectionRefusedError:
+                                except Exception as e: 
+                                    module.log("[" + str(self.pid) + "] Server communication failed for server " + server +":" + str(port) + ", module " + module.id + ", passed unit " + unit_id + " (traceback follows in debug), moving on...")
                                     if self.debug:
-                                        module.log("[" + str(self.pid) + "] Client/server communication failed (traceback follows), moving on...")
                                         exc_type, exc_value, exc_traceback = sys.exc_info() 
                                         formatted_lines = traceback.format_exc().splitlines() 
                                         traceback.print_tb(exc_traceback, limit=50, file=sys.stderr)
                                     del self.clients[(server,port)]
                             if not connected:
-                                raise Exception("Unable to connect client to server! All servers for module " + module.id + " are down!")
+                                module.log("**ERROR** Unable to connect client to server! All servers for module " + module.id + " are down, skipping!")
+                                fatalerrors = True
                             if self.debug:
                                 duration = round(time.time() - begintime,4)
                                 module.log("[" + str(self.pid) + "] (...took " + str(duration) + "s)")
