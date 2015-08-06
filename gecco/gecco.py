@@ -609,6 +609,9 @@ class Corrector:
                 except ConnectionRefusedError:
                     self.log("Connection to " + module.id + "@" +host+":" + str(port) + " refused")
                     continue
+                except ValueError:
+                    self.log("Connection to " + module.id + "@" +host+":" + str(port) + " failed")
+                    continue
 
         return servers
 
