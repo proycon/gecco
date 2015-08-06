@@ -171,10 +171,11 @@ class DataThread(Process):
 
 
 class ProcessorThread(Process):
-    def __init__(self, corrector,inputqueue, outputqueue, **parameters):
+    def __init__(self, corrector,inputqueue, outputqueue, timequeue, **parameters):
         self.corrector = corrector
         self.inputqueue = inputqueue
         self.outputqueue = outputqueue
+        self.timequeue = timequeue
         self._stop = False
         self.parameters = parameters
         self.debug  = 'debug' in parameters and parameters['debug']
@@ -239,9 +240,10 @@ class ProcessorThread(Process):
                             if not connected:
                                 module.log("**ERROR** Unable to connect client to server! All servers for module " + module.id + " are down, skipping!")
                                 fatalerrors = True
+                            duration = time.time() - begintime
+                            self.timequeue.put(duration)
                             if self.debug:
-                                duration = round(time.time() - begintime,4)
-                                module.log("[" + str(self.pid) + "] (...took " + str(duration) + "s)")
+                                module.log("[" + str(self.pid) + "] (...took " + str(round(duration,4)) + "s)")
 
 
 
@@ -368,6 +370,7 @@ class Corrector:
         self.load()
         inputqueue = Queue()
         outputqueue = Queue()
+        timequeue = Queue()
         datathread = DataThread(self,filename,modules, outputfile, inputqueue, outputqueue, **parameters)
         datathread.start()
 
@@ -376,19 +379,28 @@ class Corrector:
 
         threads = []
         for _ in range(self.settings['threads']):
-            thread = ProcessorThread(self, inputqueue, outputqueue, **parameters)
+            thread = ProcessorThread(self, inputqueue, outputqueue, timequeue,**parameters)
             thread.start()
             threads.append(thread)
 
         self.log(str(len(threads)) + " threads ready.")
 
         inputqueue.join()
-        duration = time.time() - begintime
-        self.log("Input queue processed (" + str(duration) + "s)")
+        inputduration = time.time() - begintime
+        begintime = time.time()
+        self.log("Input queue processed (" + str(inputduration) + "s)")
         outputqueue.put( (None,None,None,None) ) #signals the end of the queue
         datathread.join()
         duration = time.time() - begintime
-        self.log("Processing done (" + str(duration) + "s)")
+        timequeue.put(None)
+        virtualduration = 0.0
+        while True:
+            x = timequeue.get()
+            if x is None:
+                break
+            else:
+                virtualduration += x
+        self.log("Processing done (total " + str(inputduration+duration) + "s , processing real " + str(duration) + "s, processing virtual " + str(virtualduration) + "s)")
 
     def __len__(self):
         return len(self.modules)
