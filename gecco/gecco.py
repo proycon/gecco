@@ -224,6 +224,15 @@ class ProcessorThread(Process):
                                     connected = True
                                     break
                                 except ConnectionRefusedError:
+                                    if self.debug:
+                                        module.log("[" + str(self.pid) + "] Server refused connection, moving on...")
+                                    del self.clients[(server,port)]
+                                except Exception as e: # ConnectionRefusedError:
+                                    if self.debug:
+                                        module.log("[" + str(self.pid) + "] Client/server communication failed (traceback follows), moving on...")
+                                        exc_type, exc_value, exc_traceback = sys.exc_info() 
+                                        formatted_lines = traceback.format_exc().splitlines() 
+                                        traceback.print_tb(exc_traceback, limit=50, file=sys.stderr)
                                     del self.clients[(server,port)]
                             if not connected:
                                 raise Exception("Unable to connect client to server! All servers for module " + module.id + " are down!")
