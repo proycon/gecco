@@ -766,27 +766,26 @@ class LineByLineServerHandler(socketserver.BaseRequestHandler):
     """
 
     def handle(self):
-        while True: #We have to loop so connection is not closed after one request
-            # self.request is the TCP socket connected to the client, self.server is the server
-            cont_recv = True
-            buffer = b''
-            while cont_recv:
-                chunk = self.request.recv(1024)
-                if not chunk or chunk[-1] == 10: #newline
-                    cont_recv = False
-                buffer += chunk
-            if not chunk: #connection broken
-                break
-            msg = str(buffer,'utf-8').strip()
-            if msg == "%GETLOAD%":
-                response = str(self.server.module.server_load())
-            else:
-                response = json.dumps(self.server.module.run(json.loads(msg)))
-            #print("Input: [" + msg + "], Response: [" + response + "]",file=sys.stderr)
-            if isinstance(response,str):
-                response = response.encode('utf-8')
-            if response[-1] != 10: response += b"\n"
-            self.request.sendall(response)
+        # self.request is the TCP socket connected to the client, self.server is the server
+        cont_recv = True
+        buffer = b''
+        while cont_recv:
+            chunk = self.request.recv(1024)
+            if not chunk or chunk[-1] == 10: #newline
+                cont_recv = False
+            buffer += chunk
+        if not chunk: #connection broken
+            break
+        msg = str(buffer,'utf-8').strip()
+        if msg == "%GETLOAD%":
+            response = str(self.server.module.server_load())
+        else:
+            response = json.dumps(self.server.module.run(json.loads(msg)))
+        #print("Input: [" + msg + "], Response: [" + response + "]",file=sys.stderr)
+        if isinstance(response,str):
+            response = response.encode('utf-8')
+        if response[-1] != 10: response += b"\n"
+        self.request.sendall(response)
 
 class ThreadedTCPServer(socketserver.ForkingMixIn, socketserver.TCPServer):
 
@@ -795,6 +794,7 @@ class ThreadedTCPServer(socketserver.ForkingMixIn, socketserver.TCPServer):
         exc_type, exc_value, exc_traceback = sys.exc_info() 
         formatted_lines = traceback.format_exc().splitlines() 
         traceback.print_tb(exc_traceback, limit=50, file=sys.stderr)
+        sys.exit(2)
 
 
 class Module:
