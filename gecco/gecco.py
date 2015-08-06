@@ -374,13 +374,8 @@ class Corrector:
         datathread.start()
 
         begintime = time.time()
-
-
-        inputqueue.join()
-        inputduration = time.time() - begintime
-        self.log("Input queue processed (" + str(inputduration) + "s)")
-
         self.log("Processing modules")
+
         threads = []
         for _ in range(self.settings['threads']):
             thread = ProcessorThread(self, inputqueue, outputqueue, timequeue,**parameters)
@@ -388,6 +383,10 @@ class Corrector:
             threads.append(thread)
 
         self.log(str(len(threads)) + " threads ready.")
+
+        inputqueue.join()
+        inputduration = time.time() - begintime
+        self.log("Input queue processed (" + str(inputduration) + "s)")
         outputqueue.put( (None,None,None,None) ) #signals the end of the queue
         datathread.join()
         duration = time.time() - begintime
