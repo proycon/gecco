@@ -213,9 +213,10 @@ class ProcessorThread(Process):
                                 module.log("[" + str(self.pid) + "]  (Running " + module.id + " on " + repr(inputdata) + " [remote]")
                             for server,port,load in sorted(module.servers, key=lambda x: x[2]): 
                                 try:
-                                    if (server,port) not in self.clients:
-                                        self.clients[(server,port)] = module.CLIENT(server,port)
-                                    client = self.clients[(server,port)]
+                                    #if (server,port) not in self.clients:
+                                    #    self.clients[(server,port)] = module.CLIENT(server,port)
+                                    #client = self.clients[(server,port)]
+                                    client = module.CLIENT(server,port)
                                     if self.debug:
                                         module.log("[" + str(self.pid) + "] (server=" + server + ", port=" + str(port) + ", client=" + str(client) + ", corrector=" + str(self.corrector) + ", module=" + str(module) + ")")
                                     outputdata = module.runclient(client, unit_id, inputdata,  **self.parameters)
@@ -226,14 +227,14 @@ class ProcessorThread(Process):
                                     break
                                 except ConnectionRefusedError:
                                     module.log("[" + str(self.pid) + "] Server " + server+":" + str(port) + ", module " + module.id + " refused connection, moving on...")
-                                    del self.clients[(server,port)]
+                                    #del self.clients[(server,port)]
                                 except Exception as e: 
                                     module.log("[" + str(self.pid) + "] Server communication failed for server " + server +":" + str(port) + ", module " + module.id + ", passed unit " + unit_id + " (traceback follows in debug), moving on...")
                                     if self.debug:
                                         exc_type, exc_value, exc_traceback = sys.exc_info() 
                                         formatted_lines = traceback.format_exc().splitlines() 
                                         traceback.print_tb(exc_traceback, limit=50, file=sys.stderr)
-                                    del self.clients[(server,port)]
+                                    #del self.clients[(server,port)]
                             if not connected:
                                 module.log("**ERROR** Unable to connect client to server! All servers for module " + module.id + " are down, skipping!")
                                 fatalerrors = True
