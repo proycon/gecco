@@ -386,7 +386,6 @@ class Corrector:
 
         inputqueue.join()
         inputduration = time.time() - begintime
-        begintime = time.time()
         self.log("Input queue processed (" + str(inputduration) + "s)")
         outputqueue.put( (None,None,None,None) ) #signals the end of the queue
         datathread.join()
@@ -399,7 +398,7 @@ class Corrector:
                 break
             else:
                 virtualduration += x
-        self.log("Processing done (total " + str(inputduration+duration) + "s , processing real " + str(duration) + "s, processing virtual " + str(virtualduration) + "s)")
+        self.log("Processing done (real total " + str(round(duration,2)) + "s , virtual output " + str(virtualduration) + "s, real input " + str(inputduration) + "s)")
 
     def __len__(self):
         return len(self.modules)
