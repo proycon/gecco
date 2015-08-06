@@ -195,10 +195,10 @@ class ProcessorThread(Process):
                 module =  self.corrector.modules[module_id]
                 if not module.UNITFILTER or module.UNITFILTER(inputdata):
                     if not module.submodule: #modules marked a submodule won't be called by the main process, but are invoked by other modules instead
+                        begintime = time.time()
                         module.prepare() #will block until all dependencies are done
                         if module.local:
                             if self.debug:
-                                begintime = time.time()
                                 module.log("[" + str(self.pid) + "] (Running " + module.id + " on " + repr(inputdata) + " [local])")
                             outputdata = module.runlocal(inputdata, unit_id, **self.parameters)
                             if outputdata is not None:
@@ -210,7 +210,6 @@ class ProcessorThread(Process):
                             skipservers= []
                             connected = False
                             if self.debug:
-                                begintime = time.time()
                                 module.log("[" + str(self.pid) + "]  (Running " + module.id + " on " + repr(inputdata) + " [remote]")
                             for server,port,load in sorted(module.servers, key=lambda x: x[2]): 
                                 try:
