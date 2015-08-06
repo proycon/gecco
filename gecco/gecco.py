@@ -217,10 +217,10 @@ class ProcessorThread(Process):
                                         self.clients[(server,port)] = module.CLIENT(server,port)
                                     client = self.clients[(server,port)]
                                     if self.debug:
-                                        module.log("[" + str(self.pid) + "] BEGIN (server=" + server + ", port=" + str(port) + ", client=" + str(client) + ", corrector=" + str(self.corrector) + ", module=" + str(module) + ")")
+                                        module.log("[" + str(self.pid) + "] BEGIN (server=" + server + ", port=" + str(port) + ", client=" + str(client) + ", corrector=" + str(self.corrector) + ", module=" + str(module) + ", unit=" + unit_id + ")")
                                     outputdata = module.runclient(client, unit_id, inputdata,  **self.parameters)
                                     if self.debug:
-                                        module.log("[" + str(self.pid) + "] END (server=" + server + ", port=" + str(port) + ", client=" + str(client) + ", corrector=" + str(self.corrector) + ", module=" + str(module) + ")")
+                                        module.log("[" + str(self.pid) + "] END (server=" + server + ", port=" + str(port) + ", client=" + str(client) + ", corrector=" + str(self.corrector) + ", module=" + str(module) + ", unit=" + unit_id + ")")
                                     if outputdata is not None:
                                         self.outputqueue.put( (module.id, unit_id, outputdata,inputdata) )
                                     #will only be executed when connection succeeded:
