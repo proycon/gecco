@@ -776,7 +776,13 @@ class LineByLineServerHandler(socketserver.BaseRequestHandler):
             self.request.sendall(response)
 
 class ThreadedTCPServer(socketserver.ForkingMixIn, socketserver.TCPServer):
-    pass
+
+    def handle_error(self,request,client_address):
+        print("An error occurred in the server for module " + self.module.id, file=sys.stderr)
+        exc_type, exc_value, exc_traceback = sys.exc_info() 
+        formatted_lines = traceback.format_exc().splitlines() 
+        traceback.print_tb(exc_traceback, limit=50, file=sys.stderr)
+
 
 class Module:
 
@@ -917,7 +923,7 @@ class Module:
         server = ThreadedTCPServer((host, port), self.SERVER)
         server.allow_reuse_address = True
         server.module = self
-        # Start a thread with the server -- that thread will then start one more thread for each request
+        # Start a thread with the server -- that thread will then fork for each request
         server_thread = Thread(target=server.serve_forever)
         # Exit the server thread when the main thread terminates
         server_thread.setDaemon(True)
