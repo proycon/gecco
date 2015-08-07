@@ -52,7 +52,9 @@ class LexiconModule(Module):
         if 'minlength' not in self.settings:
             self.settings['minlength'] = 5 #shorter word will be ignored
         if 'minfreqthreshold' not in self.settings:
-            self.settings['minfreqthreshold'] = 250
+            self.settings['minfreqthreshold'] = 10000
+        if 'freqfactor' not in self.settings:
+            self.settings['freqfactor'] = 10000
         if 'maxnrclosest' not in self.settings:
             self.settings['maxnrclosest'] = 5
 
@@ -104,7 +106,7 @@ class LexiconModule(Module):
         self.log("Saving model")
         classdecoder = colibricore.ClassDecoder(classfile)
         with open(modelfile,'w',encoding='utf-8') as f:
-            for pattern, occurrencecount in model.items():
+            for pattern, occurrencecount in sorted(model.items(), key=lambda x: -1 * x[1]):
                 if self.settings['reversedformat']:
                     f.write(pattern.tostring(classdecoder) + self.settings['delimiter'] + str(occurrencecount) + "\n")
                 else:
