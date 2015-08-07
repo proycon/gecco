@@ -57,6 +57,8 @@ class LexiconModule(Module):
             self.settings['freqfactor'] = 10000
         if 'maxnrclosest' not in self.settings:
             self.settings['maxnrclosest'] = 5
+        if 'ordered ' not in self.settings:
+            self.settings['ordered'] = True #Model file is ordered in descending frequency
 
         self.cache = getcache(self.settings, 1000) #2nd arg is default cache size
 
@@ -106,7 +108,11 @@ class LexiconModule(Module):
         self.log("Saving model")
         classdecoder = colibricore.ClassDecoder(classfile)
         with open(modelfile,'w',encoding='utf-8') as f:
-            for pattern, occurrencecount in sorted(model.items(), key=lambda x: -1 * x[1]):
+            if self.settings['ordered']:
+                items = sorted(model.items(), key=lambda x: -1 * x[1])
+            else:
+                items = model.items()
+            for pattern, occurrencecount in items:
                 if self.settings['reversedformat']:
                     f.write(pattern.tostring(classdecoder) + self.settings['delimiter'] + str(occurrencecount) + "\n")
                 else:
