@@ -152,6 +152,15 @@ class LexiconModule(Module):
         for key, freq in self.lexicon.items():
             yield key, freq
 
+    def filter(self, freqthreshold):
+        ordered = self.settings['ordered']
+        minfreqthreshold = self.settings['minfreqthreshold']
+        for key, freq in self.lexicon.items():
+            if ordered and (freq < freqthreshold or freq < minfreqthreshold):
+                break
+            yield key, freq
+
+
     def __getitem__(self, key):
         try:
             return self.lexicon[key]
@@ -170,27 +179,23 @@ class LexiconModule(Module):
         if l < self.settings['minlength'] or l > self.settings['maxlength']:
             #word too long or too short, ignore
             return False
-        elif self[word] > 0:
-            #word is in lexicon, no need to find suggestions
-            return False
         else:
-            #word is not in lexicon
+            freq = self[word]
 
             #but first try to strip known suffixes and prefixes and try again
             for suffix in self.settings['suffixes']:
                 if word.endswith(suffix):
                     if word[:-len(suffix)] in self:
-                        return False
+                        freq = max(self[word[:-len(suffix)]], freq)
             for prefix in self.settings['prefixes']:
                 if word.beginswith(prefix):
                     if word[len(prefix):] in self:
-                        return False
+                        freq = max(self[word[len(prefix):]], freq)
 
-            #ok, not found, let's find closest matches by levenshtein distance
-            
+            #find closest matches *above threshold* by levenshtein distance
 
             results = []
-            for key, freq in self:
+            for key, freq in self.filter(freq*self.settings['freqfactor']):
                 #ld = levenshtein(word, key, self.settings['maxdistance'])
                 if abs(l - len(key)) <= self.settings['maxdistance']:
                     ld = Levenshtein.distance(word,key)
