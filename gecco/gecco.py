@@ -806,7 +806,7 @@ class LineByLineServerHandler(socketserver.BaseRequestHandler):
             if response[-1] != 10: response += b"\n"
             self.request.sendall(response)
 
-class ThreadedTCPServer(socketserver.ForkingMixIn, socketserver.TCPServer):
+class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
 
     def handle_error(self,request,client_address):
         print("An error occurred in the server for module " + self.module.id, file=sys.stderr)
