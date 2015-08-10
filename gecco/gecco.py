@@ -707,8 +707,10 @@ class Corrector:
             if args.modules: modules = args.modules.split(',')
             self.run(args.filename,modules,args.outputfile,**parameters)
         elif args.command == 'startservers':
+            if args.modules: modules = args.modules.split(',')
             self.startservers(modules)
         elif args.command == 'stopservers':
+            if args.modules: modules = args.modules.split(',')
             self.stopservers(modules)
         elif args.command == 'startserver':
             self.startserver(args.module, args.host, args.port)
