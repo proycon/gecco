@@ -165,7 +165,10 @@ class TIMBLLMModule(Module):
             begintime = time.time()
         if self.cache:
             try:
-                return self.cache[features]
+                cached = self.cache[features]
+                duration = round(time.time() - begintime,4)
+                self.log(" (Return from cache in   " + str(duration) + "s)")
+                return cached
             except KeyError:
                 pass
         best,distribution,_ = self.classifier.classify(features)
