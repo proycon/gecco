@@ -114,9 +114,9 @@ class LexiconModule(Module):
                 items = model.items()
             for pattern, occurrencecount in items:
                 if self.settings['reversedformat']:
-                    f.write(pattern.tostring(classdecoder) + self.settings['delimiter'] + str(occurrencecount) + "\n")
-                else:
                     f.write(str(occurrencecount) + self.settings['delimiter'] + pattern.tostring(classdecoder) + "\n")
+                else:
+                    f.write(pattern.tostring(classdecoder) + self.settings['delimiter'] + str(occurrencecount) + "\n")
 
     def load(self):
         """Load the requested modules from self.models"""
