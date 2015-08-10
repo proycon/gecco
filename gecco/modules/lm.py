@@ -163,7 +163,7 @@ class TIMBLLMModule(Module):
         features = tuple(inputdata[1])
         if self.debug:
             begintime = time.time()
-        if self.cache:
+        if self.cache is not None:
             try:
                 cached = self.cache[features]
                 duration = round(time.time() - begintime,4)
