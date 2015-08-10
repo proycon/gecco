@@ -159,7 +159,8 @@ class TIMBLLMModule(Module):
 
     def run(self, inputdata):
         """This method gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
-        wordstr, features = inputdata
+        wordstr = inputdata[0]
+        features = tuple(inputdata[1])
         if self.debug:
             begintime = time.time()
         if self.cache:
@@ -184,9 +185,9 @@ class TIMBLLMModule(Module):
             if self.debug:
                 duration = round(time.time() - begintime,4)
                 self.log(" (Levenshtein filtering took  " + str(duration) + "s, final distribution size=" + str(len(dist)) + ")")
-            self.cache[features] = (best,dist)
+            self.cache.append(features, (best,dist))
             return best, dist
         else:
             dist = [ x for x in distribution.items() if x[1] >= self.threshold ]
-            self.cache[features] = (best,dist)
+            self.cache.append(features, (best,dist))
             return best, dist 
