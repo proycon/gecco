@@ -24,6 +24,7 @@ from pynlpl.textprocessors import Windower
 from timbl import TimblClassifier #pylint: disable=import-error
 from gecco.gecco import Module
 from gecco.helpers.hapaxing import gethapaxer
+from gecco.helpers.caching import getcache
 import Levenshtein #pylint: disable=import-error
 
 
@@ -77,7 +78,7 @@ class TIMBLLMModule(Module):
 
         self.hapaxer = gethapaxer(self.settings)
 
-        #self.cache = getcache(self.settings, 1000)
+        self.cache = getcache(self.settings, 1000)
 
         try:
             modelfile = self.models[0]
@@ -161,6 +162,11 @@ class TIMBLLMModule(Module):
         wordstr, features = inputdata
         if self.debug:
             begintime = time.time()
+        if self.cache:
+            try:
+                return self.cache[features]
+            except KeyError:
+                pass
         best,distribution,_ = self.classifier.classify(features)
         if self.debug:
             duration = round(time.time() - begintime,4)
@@ -178,6 +184,9 @@ class TIMBLLMModule(Module):
             if self.debug:
                 duration = round(time.time() - begintime,4)
                 self.log(" (Levenshtein filtering took  " + str(duration) + "s, final distribution size=" + str(len(dist)) + ")")
+            self.cache[features] = (best,dist)
             return best, dist
         else:
-            return best, [ x for x in distribution.items() if x[1] >= self.threshold ]
+            dist = [ x for x in distribution.items() if x[1] >= self.threshold ]
+            self.cache[features] = (best,dist)
+            return best, dist 
