@@ -166,8 +166,9 @@ class TIMBLLMModule(Module):
         if self.cache is not None:
             try:
                 cached = self.cache[features]
-                duration = round(time.time() - begintime,4)
-                self.log(" (Return from cache in   " + str(duration) + "s)")
+                if self.debug:
+                    duration = round(time.time() - begintime,4)
+                    self.log(" (Return from cache in   " + str(duration) + "s)")
                 return cached
             except KeyError:
                 pass
