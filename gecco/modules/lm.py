@@ -204,8 +204,6 @@ class ColibriLMModule(Module):
     Settings:
     * ``threshold``    - Prediction confidence threshold, only when a prediction exceeds this threshold will it be recommended (default: 0.9, value must be higher than 0.5 by definition)
     * ``freqthreshold`` - Frequency threshold for patterns to be included in the model
-    * ``minlength``    - Only consider words that are at least this long (in characters)
-    * ``maxlength``    - Only consider words that are at most this long (in characters)
     * ``leftcontext``  - Maximum left context size (in words) 
     * ``rightcontext``  - Maximum right context size (in words) 
     * ``maxdistance``  - Maximum Levenshtein distance between a word and its correction (larger distances are pruned from suggestions)
@@ -265,11 +263,11 @@ class ColibriLMModule(Module):
 
         if not os.path.exists(classfile):
             self.log("Building class file")
-            classencoder = colibricore.ClassEncoder("", self.settings['minlength'], self.settings['maxlength']) #character length constraints
+            classencoder = colibricore.ClassEncoder() 
             classencoder.build(sourcefile)
             classencoder.save(classfile)
         else:
-            classencoder = colibricore.ClassEncoder(classfile, self.settings['minlength'], self.settings['maxlength'])
+            classencoder = colibricore.ClassEncoder(classfile)
 
         if not os.path.exists(modelfile+'.cls'):
             #make symlink to class file, using model name instead of source name
