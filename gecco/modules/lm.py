@@ -358,7 +358,7 @@ class ColibriLMModule(Module):
                 if len(rightcontext) == 1:
                     break
                 else:
-                    rightcontext = rightcontext[:-1]
+                    rightcontext = rightcontext[:len(rightcontext) - 1]
 
         if self.debug:
             lookupduration = round(time.time() - begintime,4)
