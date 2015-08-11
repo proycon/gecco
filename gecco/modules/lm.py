@@ -287,7 +287,7 @@ class ColibriLMModule(Module):
         model.train(corpusfile, options)
 
         self.log("Saving model " + modelfile)
-        model.save(modelfile)
+        model.write(modelfile)
 
     def load(self):
         """Load the requested modules from self.models"""
