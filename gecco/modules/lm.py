@@ -368,7 +368,6 @@ class ColibriLMModule(Module):
             it = itertools.chain(leftdist.items(), rightdist.items()) 
 
 
-        if self.debug: self.log("(Filtering)")
 
         distribution = defaultdict(int)
         l = len(word)
@@ -402,7 +401,7 @@ class ColibriLMModule(Module):
             
 
     def processoutput(self, outputdata, inputdata, unit_id,**parameters):
-        wordstr,_ = inputdata
+        wordstr,_,_ = inputdata
         best,distribution = outputdata
         if best != wordstr and distribution:
             return self.addsuggestions(unit_id, distribution)
