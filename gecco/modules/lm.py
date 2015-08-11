@@ -319,6 +319,8 @@ class ColibriLMModule(Module):
         if self.debug:
             begintime = time.time()
 
+        if self.debug: self.log("(Extracting left context)")
+
         leftcontext = self.classencoder.buildpattern(" ".join(leftcontext))
         rightdist = {}
         while leftcontext:
@@ -330,6 +332,7 @@ class ColibriLMModule(Module):
             #shorten for next round
             leftcontext = leftcontext[1:]
 
+        if self.debug: self.log("(Extracting left context)")
         rightcontext = self.classencoder.buildpattern(" ".join(rightcontext))
         leftdist = {}
         while rightcontext:
@@ -357,6 +360,8 @@ class ColibriLMModule(Module):
         else:
             it = itertools.chain(leftcontext.items(), rightcontext.items()) 
 
+
+        if self.debug: self.log("(Filtering)")
 
         distribution = defaultdict(int)
         l = len(word)
