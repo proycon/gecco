@@ -282,7 +282,7 @@ class ColibriLMModule(Module):
             os.symlink(classfile, modelfile + '.cls')
 
         self.log("Generating pattern model")
-        options = colibricore.PatternModelOptions(mintokens=self.settings['freqthreshold'],minlength=1,maxlength=self.settings['maxcontext']) 
+        options = colibricore.PatternModelOptions(mintokens=self.settings['freqthreshold'],minlength=1,maxlength=self.maxcontext) 
         model = colibricore.IndexedPatternModel()
         model.train(corpusfile, options)
 
