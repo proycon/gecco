@@ -173,7 +173,7 @@ class TIMBLLMModule(Module):
                 return cached
             except KeyError:
                 pass
-        best,distribution,_ = self.classifier.classify(features)
+        best,distribution,_ = self.classifier.classify(features, True) #True=thread-safe
         if self.debug:
             duration = round(time.time() - begintime,4)
             self.log(" (Classification took  " + str(duration) + "s, unfiltered distribution size=" + str(len(distribution)) + ")")
