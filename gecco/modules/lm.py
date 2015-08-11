@@ -327,7 +327,7 @@ class ColibriLMModule(Module):
             leftcontext = self.classencoder.buildpattern(" ".join(leftcontext))
             while len(leftcontext) > 0:
                 if self.debug: self.log("(L=" + str(len(leftcontext)) + ")")
-                if not leftcontext.unknown():
+                if not leftcontext.unknown() and leftcontext in self.model:
                     if self.debug: self.log("(Getting right neighbours)")
                     for p, freq in self.model.getrightneighbours(leftcontext, 0, 0, 1): #unigram focus only
                         rightdist[p] = freq
@@ -345,7 +345,7 @@ class ColibriLMModule(Module):
             rightcontext = self.classencoder.buildpattern(" ".join(rightcontext))
             while len(rightcontext) > 0:
                 if self.debug: self.log("(R=" + str(len(rightcontext)) + ")")
-                if not rightcontext.unknown():
+                if not rightcontext.unknown() and rightcontext in self.model:
                     if self.debug: self.log("(Getting left neighbours)")
                     for p, freq in self.model.getleftneighbours(rightcontext, 0, 0, 1): #unigram focus only
                         leftdist[p] = freq
