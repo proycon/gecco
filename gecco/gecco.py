@@ -814,6 +814,7 @@ class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
         print("An error occurred in the server for module " + self.module.id, file=sys.stderr)
         exc_type, exc_value, exc_traceback = sys.exc_info() 
         formatted_lines = traceback.format_exc().splitlines() 
+        print(exc_type, exc_value,file=sys.stderr)
         traceback.print_tb(exc_traceback, limit=50, file=sys.stderr)
 
 
