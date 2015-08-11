@@ -365,9 +365,9 @@ class ColibriLMModule(Module):
             begintime = time.time()
 
         if not leftcontext:
-            it = rightcontext.items()
+            it = rightdist.items()
         elif not rightcontext:
-            it = leftcontext.items()
+            it = leftdist.items()
         elif not leftcontext and not rightcontext:
             if self.debug:
                 self.log("(Nothing found, " + str(lookupduration) + "s)")
