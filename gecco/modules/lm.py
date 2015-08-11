@@ -300,7 +300,7 @@ class ColibriLMModule(Module):
         self.log("Loading colibri model file " + modelfile)
         self.classencoder = colibricore.ClassEncoder(modelfile + '.cls')
         self.classdecoder = colibricore.ClassDecoder(modelfile + '.cls')
-        self.lexicon = colibricore.IndexedPatternModel(modelfile)
+        self.model = colibricore.IndexedPatternModel(modelfile)
 
     def prepareinput(self,word,**parameters):
         """Takes the specified FoLiA unit for the module, and returns a string that can be passed to process()"""
