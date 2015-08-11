@@ -323,15 +323,11 @@ class ColibriLMModule(Module):
         rightdist = {}
 
         if leftcontext:
-            if self.debug: self.log("(Extracting left context)")
             leftcontext = self.classencoder.buildpattern(" ".join(leftcontext))
             while len(leftcontext) > 0:
-                if self.debug: self.log("(L=" + str(len(leftcontext)) + ")")
                 if not leftcontext.unknown() and leftcontext in self.model:
-                    if self.debug: self.log("(Getting right neighbours)")
                     for p, freq in self.model.getrightneighbours(leftcontext, 0, 0, 1): #unigram focus only
                         rightdist[p] = freq
-                    if self.debug: self.log("(done)")
                     if rightdist: 
                         break
                 #shorten for next round
@@ -341,15 +337,11 @@ class ColibriLMModule(Module):
                     leftcontext = leftcontext[1:]
 
         if rightcontext:
-            if self.debug: self.log("(Extracting right context)")
             rightcontext = self.classencoder.buildpattern(" ".join(rightcontext))
             while len(rightcontext) > 0:
-                if self.debug: self.log("(R=" + str(len(rightcontext)) + ")")
                 if not rightcontext.unknown() and rightcontext in self.model:
-                    if self.debug: self.log("(Getting left neighbours)")
                     for p, freq in self.model.getleftneighbours(rightcontext, 0, 0, 1): #unigram focus only
                         leftdist[p] = freq
-                    if self.debug: self.log("(done)")
 
                     if leftdist: 
                         break
@@ -404,7 +396,7 @@ class ColibriLMModule(Module):
 
         if self.debug:
             filterduration = round(time.time() - begintime,4)
-            self.log(" (Lookup took  " + str(lookupduration) + "s, filtering took " + str(filterduration) + ", unfiltered distribution size=" + str(unfilteredcount) + ", filtered size + " + str(len(normdist)) + ")")
+            self.log(" (Lookup took  " + str(lookupduration) + "s, filtering took " + str(filterduration) + ", unfiltered distribution size=" + str(unfilteredcount) + ", filtered size= " + str(len(normdist)) + ")")
 
         return best, normdist
             
