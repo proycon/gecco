@@ -398,8 +398,9 @@ class ColibriLMModule(Module):
         total = sum(  distribution.values() )
         normdist = {}
         for w, freq in distribution:
-            if freq > total >= self.threshold:
-                normdist[w] = freq / total
+            freqnorm = freq/total
+            if freqnorm >= self.threshold:
+                normdist[w] = freqnorm
 
         if self.debug:
             filterduration = round(time.time() - begintime,4)
