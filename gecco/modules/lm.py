@@ -395,7 +395,7 @@ class ColibriLMModule(Module):
                 bestfreq = freq
 
     
-        total = sum( ( x[1] for x in distribution) )
+        total = sum(  distribution.values() )
         normdist = {}
         for w, freq in distribution:
             if freq > total >= self.threshold:
