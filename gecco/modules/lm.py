@@ -305,8 +305,8 @@ class ColibriLMModule(Module):
     def prepareinput(self,word,**parameters):
         """Takes the specified FoLiA unit for the module, and returns a string that can be passed to process()"""
         wordstr = str(word) #will be reused in processoutput
-        leftcontext = [ str(w) for w in word.leftcontext(word, self.settings['leftcontext']) if w is not None ]
-        rightcontext = [ str(w) for w in word.rightcontext(word, self.settings['rightcontext']) if w is not None ]
+        leftcontext = [ str(w) for w in word.leftcontext(self.settings['leftcontext']) if w is not None ]
+        rightcontext = [ str(w) for w in word.rightcontext(self.settings['rightcontext']) if w is not None ]
         if self.hapaxer: 
             leftcontext = self.hapaxer(leftcontext) #pylint: disable=not-callable
             rightcontext = self.hapaxer(rightcontext) #pylint: disable=not-callable
