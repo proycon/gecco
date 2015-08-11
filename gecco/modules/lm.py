@@ -257,7 +257,7 @@ class ColibriLMModule(Module):
             raise Exception("Expected one model, got 0 or more")
 
     def train(self, sourcefile, modelfile, **parameters):
-        self.log("Preparing to generate lexicon")
+        self.log("Preparing to generate Language Model")
         classfile = stripsourceextensions(sourcefile) +  ".cls"
         corpusfile = stripsourceextensions(sourcefile) +  ".dat"
 
