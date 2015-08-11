@@ -319,35 +319,37 @@ class ColibriLMModule(Module):
         if self.debug:
             begintime = time.time()
 
-        if self.debug: self.log("(Extracting left context)")
-
-        leftcontext = self.classencoder.buildpattern(" ".join(leftcontext))
-        rightdist = {}
-        while leftcontext:
-            if not leftcontext.unknown():
-                if self.debug: self.log("(Getting right neighbours)")
-                for p, freq in self.model.getrightneighbours(leftcontext, 0, 0, 1): #unigram focus only
-                    rightdist[p] = freq
-                if self.debug: self.log("(done)")
-                if rightdist: 
-                    break
-            #shorten for next round
-            leftcontext = leftcontext[1:]
-
-        if self.debug: self.log("(Extracting right context)")
-        rightcontext = self.classencoder.buildpattern(" ".join(rightcontext))
         leftdist = {}
-        while rightcontext:
-            if not rightcontext.unknown():
-                if self.debug: self.log("(Getting left neighbours)")
-                for p, freq in self.model.getleftneighbours(rightcontext, 0, 0, 1): #unigram focus only
-                    leftdist[p] = freq
-                if self.debug: self.log("(done)")
+        rightdist = {}
 
-                if leftdist: 
-                    break
-            #shorten for next round
-            rightcontext = rightcontext[:-1]
+        if leftcontext:
+            if self.debug: self.log("(Extracting left context)")
+            leftcontext = self.classencoder.buildpattern(" ".join(leftcontext))
+            while leftcontext:
+                if not leftcontext.unknown():
+                    if self.debug: self.log("(Getting right neighbours)")
+                    for p, freq in self.model.getrightneighbours(leftcontext, 0, 0, 1): #unigram focus only
+                        rightdist[p] = freq
+                    if self.debug: self.log("(done)")
+                    if rightdist: 
+                        break
+                #shorten for next round
+                leftcontext = leftcontext[1:]
+
+        if rightcontext:
+            if self.debug: self.log("(Extracting right context)")
+            rightcontext = self.classencoder.buildpattern(" ".join(rightcontext))
+            while rightcontext:
+                if not rightcontext.unknown():
+                    if self.debug: self.log("(Getting left neighbours)")
+                    for p, freq in self.model.getleftneighbours(rightcontext, 0, 0, 1): #unigram focus only
+                        leftdist[p] = freq
+                    if self.debug: self.log("(done)")
+
+                    if leftdist: 
+                        break
+                #shorten for next round
+                rightcontext = rightcontext[:-1]
 
         if self.debug:
             lookupduration = round(time.time() - begintime,4)
