@@ -373,7 +373,7 @@ class ColibriLMModule(Module):
                 self.log("(Nothing found, " + str(lookupduration) + "s)")
             return None
         else:
-            it = itertools.chain(leftcontext.items(), rightcontext.items()) 
+            it = itertools.chain(leftdist.items(), rightdist.items()) 
 
 
         if self.debug: self.log("(Filtering)")
