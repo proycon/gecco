@@ -91,10 +91,9 @@ class TIMBLLMModule(Module):
             modelfile = self.models[0]
             if not modelfile.endswith(".ibase"):
                 raise Exception("First model must be a TIMBL instance base model, which must have the extension '.ibase', got " + modelfile + " instead")
-            try:
-                lexiconfile = self.models[1]
-                if not lexiconfile.endswith("colibri.patternmodel"):
-                    raise Exception("Second model must be a Colibri pattern model, which must have the extensions '.colibri.patternmodel', got " + modelfile + " instead")
+            lexiconfile = self.models[1]
+            if not lexiconfile.endswith("colibri.patternmodel"):
+                raise Exception("Second model must be a Colibri pattern model, which must have the extensions '.colibri.patternmodel', got " + modelfile + " instead")
         except:
             raise Exception("Expected two models, the first a TIMBL instsance base, and the second a colibri patternmodel, got " + str(len(self.models)) )
 
