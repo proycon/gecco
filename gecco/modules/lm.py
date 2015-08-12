@@ -242,7 +242,7 @@ class TIMBLLMModule(Module):
                 #else:
                 #    return None,None
 
-        best,distribution,_ = self.classifier.classify(features) 
+        best,distribution,_ = self.classifier.classify(features,allowtopdistribution=False) 
         if self.debug:
             duration = round(time.time() - begintime,4)
             self.log(" (Classification took  " + str(duration) + "s, unfiltered distribution size=" + str(len(distribution)) + ")")
