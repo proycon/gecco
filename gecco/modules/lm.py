@@ -95,7 +95,7 @@ class TIMBLLMModule(Module):
             if not lexiconfile.endswith("colibri.patternmodel"):
                 raise Exception("Second model must be a Colibri pattern model, which must have the extensions '.colibri.patternmodel', got " + modelfile + " instead")
         except:
-            raise Exception("Expected two models, the first a TIMBL instsance base, and the second a colibri patternmodel, got " + str(len(self.models)) )
+            raise Exception("Expected two models, the first a TIMBL instance base, and the second a colibri patternmodel, got " + str(len(self.models)) )
 
     def gettimbloptions(self):
         return "-F Tabbed " + "-a " + str(self.settings['algorithm']) + " +D +vdb -G0"
@@ -213,6 +213,18 @@ class TIMBLLMModule(Module):
         if self.debug:
             begintime = time.time()
 
+                
+
+        if self.cache is not None:
+            try:
+                cached = self.cache[features]
+                if self.debug:
+                    duration = round(time.time() - begintime,4)
+                    self.log(" (Return from cache in   " + str(duration) + "s)")
+                return cached
+            except KeyError:
+                pass
+
         if self.lexicon:
             #ensure the previous word exists
             previousword = features[self.settings['leftcontext'] - 1]
@@ -229,18 +241,8 @@ class TIMBLLMModule(Module):
                 #        return None,None
                 #else:
                 #    return None,None
-                
 
-        if self.cache is not None:
-            try:
-                cached = self.cache[features]
-                if self.debug:
-                    duration = round(time.time() - begintime,4)
-                    self.log(" (Return from cache in   " + str(duration) + "s)")
-                return cached
-            except KeyError:
-                pass
-        best,distribution,_ = self.classifier.classify(features, True) #True=thread-safe
+        best,distribution,_ = self.classifier.classify(features) 
         if self.debug:
             duration = round(time.time() - begintime,4)
             self.log(" (Classification took  " + str(duration) + "s, unfiltered distribution size=" + str(len(distribution)) + ")")
