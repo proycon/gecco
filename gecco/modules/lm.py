@@ -36,6 +36,7 @@ class TIMBLLMModule(Module):
 
     Settings:
     * ``threshold``    - Prediction confidence threshold, only when a prediction exceeds this threshold will it be recommended (default: 0.9, value must be higher than 0.5 by definition)
+    * ``freqthreshold`` - If all context words occur below this set threshold, then no classification will take place.
     * ``leftcontext``  - Left context size (in words) for the feature vector
     * ``rightcontext`` - Right context size (in words) for the feature vector
     * ``maxdistance``  - Maximum Levenshtein distance between a word and its correction (larger distances are pruned from suggestions)
@@ -67,6 +68,11 @@ class TIMBLLMModule(Module):
         else:
             self.threshold = 0.9
 
+        if 'freqthreshold' not in self.settings:
+            self.freqthreshold = self.settings['freqthreshold']
+        else:
+            self.freqthreshold = 25
+
         if 'maxdistance' not in self.settings:
             self.settings['maxdistance'] = 2
 
@@ -84,7 +90,10 @@ class TIMBLLMModule(Module):
         try:
             modelfile = self.models[0]
             if not modelfile.endswith(".ibase"):
-                raise Exception("TIMBL models must have the extension ibase, got " + modelfile + " instead")
+                raise Exception("First model must be a TIMBL instance base model, which must have the extension '.ibase', got " + modelfile + " instead")
+            lexiconfile = self.models[1]
+            if not lexiconfile.endswith("colibri.patternmodel"):
+                raise Exception("Second model must be a Colibri pattern model, which must have the extensions '.colibri.patternmodel', got " + modelfile + " instead")
         except:
             raise Exception("Expected one model, got 0 or more")
 
@@ -99,43 +108,81 @@ class TIMBLLMModule(Module):
             raise Exception("Specify one or more models to load!")
 
         self.log("Loading models...")
-        modelfile = self.models[0]
+        modelfile, lexiconfile = self.models
         if not os.path.exists(modelfile):
-            raise IOError("Missing expected model file: " + modelfile + ". Did you forget to train the system?")
+            raise IOError("Missing expected timbl model file: " + modelfile + ". Did you forget to train the system?")
+        if not os.path.exists(lexiconfile):
+            raise IOError("Missing expected lexicon model file: " + lexiconfile + ". Did you forget to train the system?")
         self.log("Loading model file " + modelfile + "...")
         fileprefix = modelfile.replace(".ibase","") #has been verified earlier
         self.classifier = TimblClassifier(fileprefix, self.gettimbloptions(),threading=True)
         self.classifier.load()
 
+        self.log("Loading colibri model file for lexicon " + lexiconfile)
+        self.classencoder = colibricore.ClassEncoder(lexiconfile + '.cls')
+        self.lexicon = colibricore.UnindexedPatternModel(lexiconfile)
+
     def train(self, sourcefile, modelfile, **parameters):
-        l = self.settings['leftcontext']
-        r = self.settings['rightcontext']
-        n = l + 1 + r
+        if modelfile.endswith('.ibase'):
+            l = self.settings['leftcontext']
+            r = self.settings['rightcontext']
+            n = l + 1 + r
 
-        self.log("Generating training instances...")
-        fileprefix = modelfile.replace(".ibase","") #has been verified earlier
-        classifier = TimblClassifier(fileprefix, self.gettimbloptions())
-        if sourcefile.endswith(".bz2"):
-            iomodule = bz2
-        elif sourcefile.endswith(".gz"):
-            iomodule = gzip
-        else:
-            iomodule = io
-        with iomodule.open(sourcefile,mode='rt',encoding='utf-8') as f:
-            for i, line in enumerate(f):
-                if i % 100000 == 0: print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + " - " + str(i),file=sys.stderr)
-                for ngram in Windower(line, n):
-                    focus = ngram[l]
-                    leftcontext = tuple(ngram[:l])
-                    rightcontext = tuple(ngram[l+1:])
-                    classifier.append( leftcontext + rightcontext , focus )
+            self.log("Generating training instances...")
+            fileprefix = modelfile.replace(".ibase","") #has been verified earlier
+            classifier = TimblClassifier(fileprefix, self.gettimbloptions())
+            if sourcefile.endswith(".bz2"):
+                iomodule = bz2
+            elif sourcefile.endswith(".gz"):
+                iomodule = gzip
+            else:
+                iomodule = io
+            with iomodule.open(sourcefile,mode='rt',encoding='utf-8') as f:
+                for i, line in enumerate(f):
+                    if i % 100000 == 0: print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + " - " + str(i),file=sys.stderr)
+                    for ngram in Windower(line, n):
+                        focus = ngram[l]
+                        leftcontext = tuple(ngram[:l])
+                        rightcontext = tuple(ngram[l+1:])
+                        classifier.append( leftcontext + rightcontext , focus )
 
-        self.log("Training classifier...")
-        classifier.train()
+            self.log("Training classifier...")
+            classifier.train()
+
+            self.log("Saving model " + modelfile)
+            classifier.save()
+        elif modelfile.endswith('.patternmodel'):
+            self.log("Preparing to generate lexicon for Language Model")
+            classfile = stripsourceextensions(sourcefile) +  ".cls"
+            corpusfile = stripsourceextensions(sourcefile) +  ".dat"
+
+            if not os.path.exists(classfile):
+                self.log("Building class file")
+                classencoder = colibricore.ClassEncoder() 
+                classencoder.build(sourcefile)
+                classencoder.save(classfile)
+            else:
+                classencoder = colibricore.ClassEncoder(classfile)
+
+            if not os.path.exists(modelfile+'.cls'):
+                #make symlink to class file, using model name instead of source name
+                os.symlink(classfile, modelfile + '.cls')
+
+            if not os.path.exists(corpusfile):
+                self.log("Encoding corpus")
+                classencoder.encodefile( sourcefile, corpusfile)
+
+            if not os.path.exists(modelfile+'.cls'):
+                #make symlink to class file, using model name instead of source name
+                os.symlink(classfile, modelfile + '.cls')
+
+            self.log("Generating pattern model")
+            options = colibricore.PatternModelOptions(mintokens=self.settings['freqthreshold'],minlength=1,maxlength=1)
+            model = colibricore.UnindexedPatternModel()
+            model.train(corpusfile, options)
 
         self.log("Saving model " + modelfile)
-        classifier.save()
-
+        model.write(modelfile)
 
 
     def getfeatures(self, word):
@@ -154,9 +201,10 @@ class TIMBLLMModule(Module):
 
     def processoutput(self, outputdata, inputdata, unit_id,**parameters):
         wordstr,_ = inputdata
-        best,distribution = outputdata
-        if best != wordstr and distribution:
-            return self.addsuggestions(unit_id, distribution)
+        if wordstr is not None:
+            best,distribution = outputdata
+            if best != wordstr and distribution:
+                return self.addsuggestions(unit_id, distribution)
 
     def run(self, inputdata):
         """This method gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
@@ -164,6 +212,25 @@ class TIMBLLMModule(Module):
         features = tuple(inputdata[1])
         if self.debug:
             begintime = time.time()
+
+        if self.lexicon:
+            #ensure the previous word exists
+            previousword = features[self.settings['leftcontext'] - 1]
+            pattern = self.classencoder.buildpattern(previousword)
+            if pattern.unknown() or pattern not in self.lexicon:
+                if self.debug:
+                    duration = round(time.time() - begintime,4)
+                    self.log(" (Previous word not in lexicon, returned in   " + str(duration) + "s)")
+                return None,None
+                #if self.settings['rightcontext']:
+                #    nextword = features[self.settings['leftcontext']]
+                #    pattern = self.classencoder.buildpattern(nextword)
+                #    if pattern.unknown() or pattern not in self.lexicon:
+                #        return None,None
+                #else:
+                #    return None,None
+                
+
         if self.cache is not None:
             try:
                 cached = self.cache[features]
