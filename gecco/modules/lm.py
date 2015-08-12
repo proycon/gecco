@@ -104,7 +104,7 @@ class TIMBLLMModule(Module):
             raise IOError("Missing expected model file: " + modelfile + ". Did you forget to train the system?")
         self.log("Loading model file " + modelfile + "...")
         fileprefix = modelfile.replace(".ibase","") #has been verified earlier
-        self.classifier = TimblClassifier(fileprefix, self.gettimbloptions())
+        self.classifier = TimblClassifier(fileprefix, self.gettimbloptions(),threading=True)
         self.classifier.load()
 
     def train(self, sourcefile, modelfile, **parameters):
