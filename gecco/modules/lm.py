@@ -64,14 +64,14 @@ class TIMBLLMModule(Module):
             self.settings['rightcontext'] = 3
 
         if 'threshold' not in self.settings:
-            self.threshold = self.settings['threshold']
-        else:
             self.threshold = 0.9
+        else:
+            self.threshold = self.settings['threshold']
 
         if 'freqthreshold' not in self.settings:
-            self.freqthreshold = self.settings['freqthreshold']
-        else:
             self.freqthreshold = 25
+        else:
+            self.freqthreshold = self.settings['freqthreshold']
 
         if 'maxdistance' not in self.settings:
             self.settings['maxdistance'] = 2
