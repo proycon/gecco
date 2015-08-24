@@ -1,7 +1,7 @@
 English spelling corrector for Gecco - News Crawl Corpus
 ==========================================================
 
-Make sure you are in the ``gecco/example/newscorpus-en`` directory and follow the
+Make sure you are in the ``gecco/example/newscorpus-en/`` directory and follow the
 instructions:
 
 1) Call the downloadsourcedata.sh script from within this directory to download the
