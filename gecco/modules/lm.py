@@ -40,6 +40,8 @@ class TIMBLLMModule(Module):
     * ``leftcontext``  - Left context size (in words) for the feature vector
     * ``rightcontext`` - Right context size (in words) for the feature vector
     * ``maxdistance``  - Maximum Levenshtein distance between a word and its correction (larger distances are pruned from suggestions)
+    * ``minlength``    - Minimum length (in characters) for a word to be considered by the LM module
+    * ``probfactor``   - If the predicted word is in the target distribution, any suggestions must be more probable by this factor (default: 10)
     * ``algorithm``    - The Timbl algorithm to use (see -a parameter in timbl) (default: IGTree)
     * ``class``        - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: contexterror) 
     Sources and models:
@@ -72,6 +74,17 @@ class TIMBLLMModule(Module):
             self.freqthreshold = 25
         else:
             self.freqthreshold = self.settings['freqthreshold']
+
+        if 'minlength' not in self.settings:
+            self.minlength = 5
+        else:
+            self.minlength = self.settings['minlength']
+
+        if 'probfactor' not in self.settings:
+            self.probfactor = 10
+        else:
+            self.probfactor = self.settings['probfactor']
+
 
         if 'maxdistance' not in self.settings:
             self.settings['maxdistance'] = 2
@@ -195,9 +208,10 @@ class TIMBLLMModule(Module):
     def prepareinput(self,word,**parameters):
         """Takes the specified FoLiA unit for the module, and returns a string that can be passed to process()"""
         wordstr = str(word) #will be reused in processoutput
-        features = self.getfeatures(word)
-        if self.hapaxer: features = self.hapaxer(features) #pylint: disable=not-callable
-        return wordstr, features
+        if len(wordstr) > self.minlength:
+            features = self.getfeatures(word)
+            if self.hapaxer: features = self.hapaxer(features) #pylint: disable=not-callable
+            return wordstr, features
 
     def processoutput(self, outputdata, inputdata, unit_id,**parameters):
         wordstr,_ = inputdata
@@ -256,6 +270,13 @@ class TIMBLLMModule(Module):
             for key, freq in distribution.items():
                 if freq >= self.threshold and abs(l - len(key)) <= self.settings['maxdistance'] and Levenshtein.distance(wordstr,key) <= self.settings['maxdistance']:
                     dist[key] = freq
+            if wordstr in dist:
+                #typed word is part of distribution, are any of the candidates far more likely?
+                basefreq = dist[wordstr]
+                dist = { key: freq for key, freq in dist.items() if key == wordstr or freq > basefreq * self.probfactor }
+                if len(dist) == 1:
+                    #no correction necessary
+                    return None, None
             if self.debug:
                 duration = round(time.time() - begintime,4)
                 self.log(" (Levenshtein filtering took  " + str(duration) + "s, final distribution size=" + str(len(dist)) + ")")
