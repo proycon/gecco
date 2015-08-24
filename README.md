@@ -78,11 +78,8 @@ RESTful webservice, or through the web application (two interfaces).
  - Built-in training pipeline (given corpus input): Create models from sources
  - Built-in testing pipeline (given an error-annotated test corpus), returns report of evaluation metrics per module
  - **Distributed**, **Multithreaded** & **Scalable**:
-    - Load balancing: backend servers can run on multiple hosts, master process chooses host
-        with least load
-    - Master process always on a single host (reduces network load and increases performance)
-        - Multithreaded, modules can be invoked in parallel
-    - Module servers themselves may be multithreaded
+    - Load balancing: backend servers can run on multiple hosts, master process distributes amongst these
+    - Multithreaded, modules can be invoked in parallel, module servers themselves may be multithreaded too
  - Input and output is **FoLiA XML** (http://proycon.github.io/folia)
      - Automatic input conversion from plain text using ucto
 
