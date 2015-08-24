@@ -114,7 +114,7 @@ as a docker app, or as a compilation script setting up a Python virtual
 environment.
 
 Gecco uses memory-based technologies, and depending on the models you train,
-make take up considerable memory. For we recommend *at least* 16MB RAM. For
+may take up considerable memory. For we recommend *at least* 16MB RAM. For
 various modules, model size may be reduced by increasing frequency thresholds,
 but this will come at the cost of reduced accuracy.
 
