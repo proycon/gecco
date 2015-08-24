@@ -1,0 +1,89 @@
+id: newscorpus-en
+root: .
+language: en
+threads: 4
+modules:
+    - id: errorlist
+      delimiter: space
+      module: gecco.modules.errorlist.WordErrorListModule
+      models:
+        - models/errorlist.txt
+    - id: conf_thenthan
+      module: gecco.modules.confusibles.TIMBLWordConfusibleModule
+      confusibles: [then,than]
+      leftcontext: 3
+      rightcontext: 3
+      algorithm: IB1
+      sources:
+        - sources/newscorpus-en.bz2
+      models:
+        - models/conf_thenthan.ibase
+    - id: conf_theretheir
+      module: gecco.modules.confusibles.TIMBLWordConfusibleModule
+      confusibles: [there,their]
+      leftcontext: 3
+      rightcontext: 3
+      algorithm: IB1
+      sources:
+        - sources/newscorpus-en.bz2
+      models:
+        - models/conf_theretheir.ibase
+    - id: lm
+      module: gecco.modules.lm.TIMBLLMModule
+      threshold: 0.9
+      freqthreshold: 20
+      sources:
+        - sources/newscorpus-en.bz2
+        - sources/newscorpus-en.bz2
+      models:
+        - models/lm.ibase
+        - models/lm.colibri.patternmodel
+    - id: lexicon
+      module: gecco.modules.lexicon.ColibriLexiconModule
+      freqthreshold: 1000  #threshold should be high to prevent garbage in the module and to keep the size limited
+      sources:
+        - sources/newscorpus-en.bz2
+      models:
+        - models/lexicon.txt
+    - id: aspell
+      module: gecco.modules.lexicon.AspellModule
+      freqthreshold: 20
+      language: en
+    - id: runon
+      module: gecco.modules.spacing.RunOnModule
+      freqthreshold: 10
+      sources:
+        - sources/newscorpus-en.bz2
+      models:
+        - models/spacing.colibri.patternmodel
+    - id: splits
+      module: gecco.modules.spacing.SplitModule
+      freqthreshold: 10
+      sources:
+        - sources/newscorpus-en.bz2
+      models:
+        - models/spacing.colibri.patternmodel
+    - id: puncrecase
+      module: gecco.modules.puncrecase.TIMBLPuncRecaseModule
+      deletionthreshold: 0.95
+      insertionthreshold: 0.5
+      sources:
+        - sources/newscorpus-en.bz2
+      models:
+        - models/puncrecase.ibase
+    - id: conf_participle
+      module: gecco.modules.confusibles.TIMBLSuffixConfusibleModule
+      suffixes: [ed,ing]
+      leftcontext: 3
+      rightcontext: 3
+      freqthreshold: 20
+      maxlength: 25
+      minlength: 5
+      algorithm: IB1
+      sources:
+        - sources/newscorpus-en.bz2
+        - sources/newscorpus-en.bz2
+      models:
+        - models/conf_participle.lst
+        - models/conf_participle.ibase
+
