@@ -44,12 +44,13 @@ if 'VIRTUAL_ENV' in os.environ:
 VERSION = 0.1
 
 class DataThread(Process):
-    def __init__(self, corrector, foliadoc, module_ids, outputfile,  inputqueue, outputqueue, **parameters):
+    def __init__(self, corrector, foliadoc, module_ids, outputfile,  inputqueue, outputqueue, infoqueue,**parameters):
         super().__init__()
 
         self.corrector = corrector
         self.inputqueue = inputqueue
         self.outputqueue = outputqueue
+        self.infoqueue = infoqueue
         self.module_ids = module_ids
         self.outputfile = outputfile
         self.parameters = parameters
@@ -142,6 +143,7 @@ class DataThread(Process):
                     try:
                         q = fql.Query(query)
                         q(self.foliadoc)
+                        self.infoqueue.put( module.id) 
                     except fql.SyntaxError as e:
                         self.corrector.log("***ERROR*** FQL Syntax error in " + module_id + ":" + str(e)) #not parallel, acts on same document anyway, should be fairly quick depending on module
                         exc_type, exc_value, exc_traceback = sys.exc_info() 
@@ -152,6 +154,8 @@ class DataThread(Process):
                         exc_type, exc_value, exc_traceback = sys.exc_info() 
                         formatted_lines = traceback.format_exc().splitlines() 
                         traceback.print_tb(exc_traceback, limit=50, file=sys.stderr)
+
+        self.infoqueue.put(None) #signals end
 
         self.corrector.log("Finalising modules on document") #not parallel, acts on same document anyway, should be fairly quick depending on module
         for module in self.corrector:
@@ -370,7 +374,8 @@ class Corrector:
         inputqueue = Queue()
         outputqueue = Queue()
         timequeue = Queue()
-        datathread = DataThread(self,filename,modules, outputfile, inputqueue, outputqueue, **parameters)
+        infoqueue = Queue()
+        datathread = DataThread(self,filename,modules, outputfile, inputqueue, outputqueue, infoqueue,**parameters)
         datathread.start()
 
         begintime = time.time()
@@ -389,10 +394,17 @@ class Corrector:
         self.log("Input queue processed (" + str(inputduration) + "s)")
         outputqueue.put( (None,None,None,None) ) #signals the end of the queue
         datathread.join()
+        infopermod = defaultdict(int)
+        while True:
+            module_id = infoqueue.get()
+            if module_id is None:
+                break
+            infopermod[module_id] += 1
         duration = time.time() - begintime
         timequeue.put((None,None))
         virtualdurationpermod = defaultdict(float)
         callspermod = defaultdict(int)
+
         virtualduration = 0.0
         while True:
             modid, x = timequeue.get()
@@ -403,7 +415,7 @@ class Corrector:
                 callspermod[modid] += 1
                 virtualduration += x
         for modid, d in sorted(virtualdurationpermod.items(),key=lambda x: x[1] * -1): 
-            print("\t"+modid + "\t" + str(round(d,4)) + "s\t" + str(callspermod[modid]) + " calls",file=sys.stderr)
+            print("\t"+modid + "\t" + str(round(d,4)) + "s\t" + str(callspermod[modid]) + " calls\t" + str(infopermod[modid]) + " corrections",file=sys.stderr)
         self.log("Processing done (real total " + str(round(duration,2)) + "s , virtual output " + str(virtualduration) + "s, real input " + str(inputduration) + "s)")
 
     def __len__(self):
