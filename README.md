@@ -163,6 +163,19 @@ the script will be the tool that exposes all functionality:
 	corrector.append( TIMBLWordConfusibleModule("lexicon", source=["lexicon.txt","lexicon2.txt"],model=["lexicon.model","lexicon2.model"], servers=[("blah",1235)]  )
 	corrector.main()
 
+
+It is recommended to adopt a file/directory structure as described below. If you plan on using multiple hosts, you should store it on a shared network drive so all hosts can access the models:
+
+ - yourconfiguration.yml
+ - sources/
+ - models/
+
+An example system spelling correction system for English is provided with Gecco and resides in the ``example/`` directory. It is trained on trained on 250,000 lines of the proceedings of the European Parliament (the Europarl corpus):
+
+Jörg Tiedemann, 2012,
+    Parallel Data, Tools and Interfaces in OPUS. [pdf]
+    In Proceedings of the 8th International Conference on Language Resources and Evaluation (LREC'2012)
+
 ---------------------
 Command line usage
 ---------------------
