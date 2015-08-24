@@ -2,82 +2,130 @@
 GECCO - Generic Environment for Context-Aware Correction of Orthography
 =======================================================================
 
-A generic modular framework for spelling correction. Aimed to quickly build a
-complete context-aware spelling correction system given your own data set.
-Most components will be language independent and trainable from a source
-corpus, training is explicitly included in the framework. The framework aims
-to easily extendible, modules can be written in Python 3. Moreover, the framework
+A generic modular and distributed framework for spelling correction. Aimed to
+build complete context-aware spelling correction system given your own data
+set.  Most modules will be language independent and trainable from a source
+corpus, training is explicitly included in the framework. The framework aims to
+easily extendible, modules can be written in Python 3.  Moreover, the framework
 is scalable and distributable over multiple servers. 
 
-The system can be invoked from the command-line, as a Python binding, as a RESTful webservice, or
-through the web application (two interfaces).
+Given an input text, Gecco will add various suggestions for correction. 
 
+The system can be invoked from the command-line, as a Python binding, as a
+RESTful webservice, or through the web application (two interfaces).
 
-Features:
- - Generic built-in modules (all will have a server mode):
-    - Confusible Module
-        - Timbl-based (IGTree)
-        - alternative: Colibri-Core based
-    - Language Model Module
-        - Timbl-based (inspired on WOPR)
-        - alternative: SRILM-based, Colibri-Core based
-    - Aspell Module
-    - Lexicon Module
-        - Colibri-core
-    - Errorlist Module
-    - Split Module
-        - Colibri-core
-    - Runon Module
-        - Colibri-core
-    - Garbage Module
-    - Punctuation Module (new)
-    - Language Detection
+**Modules**:
+ - Generic built-in modules:
+    - **Confusible Module**
+        - A confusible module is able to discern which version of often
+          confused word is correct given the context. For example, the words
+          "then" and "than" are commonly confused in English.
+        - Your configuration should specify between which confusibles the module disambiguates.
+        - The module is implemented using the IGTree classifier (a k-Nearest Neighbour
+          approximation) in Timbl.
+    - **Suffix Confusible Module**
+        - A variant of the confusible module that checks commonly confused morphological
+          suffixes, rather than words.
+        - Your configuration should specify between which suffixes the module disambiguates
+        - The module is implemented using the IGTree classifier (a k-Nearest Neighbour
+          approximation) in Timbl.
+    - **Language Model Module**
+        - A language model predicts what words are likely to follow others,
+          similar to predictive typing applications commonly found on
+          smartphones.
+        - The module is implemented using the IGTree classifier (a k-Nearest Neighbour
+          approximation) in Timbl.
+    - **Aspell Module**
+        - Aspell is open-source lexicon-based software for spelling correction.
+          This module enables aspell to be used from gecco. This is not a
+          context-sensitive method.
+    - **Lexicon Module**
+        - The lexicon module enables you to automatically generate a lexicon
+          from corpus data and use it. This is not a context-sensitive method.
+        - Typed words are matched against the lexicon and the module will come
+          with suggestions within a certain Levenshtein distance. 
+    - **Errorlist Module**
+        - The errorlist module is a very simple module that checks whether a
+          word is in a known error list, and if so, provides the suggestions
+          from that list. This is not a context-sensitive method.
+    - **Split Module**
+        - The split module detects words that are split but should be written
+          together.
+        - Implemented using Colibri Core
+    - **Runon Module**
+        - The runon module detects words that are written as one but should be
+          split.
+        - Implemented using Colibri Core
+    - **Punctuation & Recase Module**
+        - The punctuation & recase module attempts to detect missing
+          punctuation, superfluous punctuation, and missing capitals.
+        - The module is implemented using the IGTree classifier (a k-Nearest Neighbour
+          approximation) in Timbl.
+ - Modules suggested but not implemented yet:
+    - *Language Detection Module*
+        - (Not written yet, option for later)
+    - *Sound-alike Module*
+        - (Not written yet, option for later)
+
+**Features**
  - Easily extendible by adding modules using the gecco module API
  - Language independent
- - Built-in training pipeline (given corpus input)
- - Built-in testing pipeline (given test corpus), returns simple report of
-   evaluation metrics per module
- - Built-in tuning pipeline (given development corpus), tunes and stores parameter
-   weights
- - Distributable & Scalable:
+ - Built-in training pipeline (given corpus input): Create models from sources
+ - Built-in testing pipeline (given an error-annotated test corpus), returns report of evaluation metrics per module
+ - **Distributed**, **Multithreaded** & **Scalable**:
     - Load balancing: backend servers can run on multiple hosts, master process chooses host
         with least load
     - Master process always on a single host (reduces network load and increases performance)
         - Multithreaded, modules can be invoked in parallel
- - Input and output is FoLiA XML
+    - Module servers themselves may be multithreaded
+ - Input and output is **FoLiA XML** (http://proycon.github.io/folia)
      - Automatic input conversion from plain text using ucto
-   
+  
+-----------------------
+Installation
+-----------------------
+
+Gecco relies on a large number of dependencies, including but not limited to:
+
 Dependencies:
  - Generic:
-  - python 3
-  - pynlpl (for FoLiA)
-  - python-ucto & ucto
+  - python 3.3 or higher
+  - pynlpl (https://github.com/proycon/pynlpl), needed for FoLiA support
+    (https://proycon.github.io/folia)
+  - python-ucto & ucto (in turn depending on libfolia, ticcutils)
  - Module-specific:
-  - Timbl
-  - Aspell
-  - colibri-core (py3)
+  - Timbl (http://ilk.uvt.nl/timbl)
+  - Colibri Core (https://github.com/proycon/colibri-core/)
+  - Aspell (http://aspell.net)
   - aspell-python-py3
   - python-timbl
  - Webservice:
-  - CLAM (port to Python 3 still in progress)
+  - CLAM (port to Python 3) (https://proycon.github.io/clam)
 
-Workload:
- - Build framework
- - Abstract Module
-   - Client/server functionality
- - Load balancing
- - Reimplement all modules within new framework, in Python
- - CLAM integration
- - Generic client (separate from main command line tool)
+To install Gecco, we strongly recommend you to use our LaMachine distribution:
+https://github.com/proycon/lamachine .
 
+LaMachine includes Gecco and can be run in multiple ways: as a virtual machine,
+as a docker app, or as a compilation script setting up a Python virtual
+environment.
+
+Gecco uses memory-based technologies, and depending on the models you train,
+make take up considerable memory. For we recommend *at least* 16MB RAM. For
+various modules, model size may be reduced by increasing frequency thresholds,
+but this will come at the cost of reduced accuracy.
+
+Gecco will only run on POSIX-complaint operating systems (i.e. Linux, BSD, Mac OS X), not on Windows.
 
 ----------------
- Configuration
+Configuration
 ----------------
+
+To build an actual spelling correction system, you need to have corpus sources
+and create a gecco configuration that enable the modules you desire with the
+parameters you want. 
 
 A Gecco system consists of a configuration, either in the form of a simple Python
 script or an external YAML configuration file.
-
 
 Example YAML configuration:
 
@@ -85,12 +133,12 @@ Example YAML configuration:
     path: /path/to/fowlt
     language: en
     modules:
-        - module: IGTreeConfusibleModule
+        - module: gecco.modules.confusibles.TIMBLWordConfusibleModule
           id: confusibles
-          source: train.txt
-          test: test.txt                        [or a floating point value to automatically reserve a portion of the train set]
-          tune: tune.txt                        [or a floating point value to automatically reserve a portion of the train set]
-          model: confusible.model
+          source: 
+            - train.txt
+          model: 
+            - confusible.model
           servers:
               - host: blah
                 port: 12345
@@ -101,11 +149,14 @@ Example YAML configuration:
 Alternatively, the configuration can be done in Python directly, in which case
 the script will be the tool that exposes all functionality:
 
+    from gecco import Corrector
+    from gecco.modules.confusibles import TIMBLWordConfusibleModule
+
 	corrector = Corrector(id="fowlt", root="/path/to/fowlt/")
-	corrector.append( IGTreeConfusibleModule("thenthan", source="train.txt",test_crossvalidate=True,test=0.1,tune=0.1,model="confusibles.model", confusible=('then','than')))
-	corrector.append( IGTreeConfusibleModule("its", source="train.txt",test_crossvalidate=True,test=0.1,tune=0.1,model="confusibles.model", confusible=('its',"it's")))
-	corrector.append( ErrorListModule("errorlist", source="errorlist.txt",model="errorlist.model", servers=[("blah",1234),("blah2",1234)]  )
-	corrector.append( LexiconModule("lexicon", source=["lexicon.txt","lexicon2.txt"],model=["lexicon.model","lexicon2.model"], servers=[("blah",1235)]  )
+	corrector.append( TIMBLWordConfusibleModule("thenthan", source="train.txt",test_crossvalidate=True,test=0.1,tune=0.1,model="confusibles.model", confusible=('then','than')))
+	corrector.append( TIMBLWordConfusibleModule("its", source="train.txt",test_crossvalidate=True,test=0.1,tune=0.1,model="confusibles.model", confusible=('its',"it's")))
+	corrector.append( TIMBLWordConfusibleModule("errorlist", source="errorlist.txt",model="errorlist.model", servers=[("blah",1234),("blah2",1234)]  )
+	corrector.append( TIMBLWordConfusibleModule("lexicon", source=["lexicon.txt","lexicon2.txt"],model=["lexicon.model","lexicon2.model"], servers=[("blah",1235)]  )
 	corrector.main()
 
 ---------------------
@@ -121,38 +172,33 @@ or
     $ myspellingcorrector.py [subcommand]
 
 
-Subcommands:
+Syntax:
 
- * `reset [$id]` -- delete models for all modules or specified module
- * `train [$id]` -- train all modules or specified module
 
- * `start [$id]` -- Start module servers (all or specified) that match the
-    current host, this will have to be run for each host 
-
- * `run [filename] [$id] [$parameters]` -- Run (all or specified module) on specified FoLiA document
  
- * `build` -- Builds CLAM configuration and wrapper and django webinterface
- * `runserver` -- Starts CLAM webservice (using development server, not
-   recommended for production use) and Django interface (using development
-   server, not for producion use)
 
 ----------------
 Server setup
 ---------------
 
-On each server that runs one or more modules a `gecco myconfig.yml start` has
-to be issued to start the modules. Modules not set up to run as a server will
-simply be started and invoked locally on request.
+On each host that serves one or more modules, a `gecco myconfig.yml
+startservers` has to be issued. Modules not set up to run as a server will
+simply be started and invoked locally on request, which is something you want
+to prevent as this usually takes up too much time.
 
-`gecco run <input.folia.xml>` is executed on the master server to process a
-given FoLiA document or plaintext document, it will invoke all the modules
-which may be distributed over multiple servers, if multiple server instances of
-the same module are running, the one with the lowest load is selected. Output will
-be delivered in FoLiA XML.
+`gecco run <input.folia.xml>` is executed to process a
+given FoLiA document or plaintext document, it starts a master process that
+will invoke all the modules, which may be distributed over multiple servers. If multiple server instances of
+the same module are running, the load will be distributed over them. Output will be delivered in FoLiA XML.
 
-RESTUL webservice access is available through CLAM, the CLAM service can be
-automatically generated. Web-application access is available either through the
-generic interface in CLAM, as well as the more user-friendly interface of
+----------------------------------------
+Gecco as a webservice/web-application
+----------------------------------------
+
+RESTUL webservice access will be available through CLAM, the CLAM service can
+be automatically generated. This, however, is currently not implemented yet.
+Web-application will eventually be available either through the generic
+interface in CLAM, as well as the more user-friendly interface of
 Valkuil/Fowlt.
 
 
