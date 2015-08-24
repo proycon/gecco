@@ -23,6 +23,7 @@ import subprocess
 import psutil
 import json
 import traceback
+import random
 from collections import OrderedDict, defaultdict
 #from threading import Thread, Lock
 #from queue import Queue
@@ -189,6 +190,8 @@ class ProcessorThread(Process):
         self.parameters = parameters
         self.debug  = 'debug' in parameters and parameters['debug']
         self.clients = {} #each thread keeps a bunch of clients open to the servers of the various modules so we don't have to reconnect constantly (= faster)
+        self.seqnr = {}
+        self.random = random.Random()
         super().__init__()
 
 
@@ -220,7 +223,10 @@ class ProcessorThread(Process):
                             connected = False
                             if self.debug:
                                 module.log("[" + str(self.pid) + "]  (Running " + module.id + " on " + repr(inputdata) + " [remote]")
-                            for server,port,load in sorted(module.servers, key=lambda x: x[2]): 
+                            if module.id not in self.seqnr:
+                                self.seqnr[module.id] = self.random.randint(0,len(module.servers)) #start with a random sequence nr
+                            for server,port,load in module.getserver(self.seqnr[module.id]):  #get the server for this sequence nr, sequence numbers ensure rotation between servers
+                                self.seqnr[module.id] += 1 #increase sequence number for this module
                                 try:
                                     if (server,port) not in self.clients:
                                         self.clients[(server,port)] = module.CLIENT(server,port)
@@ -273,7 +279,7 @@ class Corrector:
             self.tokenizer = Tokenizer(self.settings['ucto'])
 
         #Gather servers
-        self.servers = set( [m.settings['servers'] for m in self if not m.local ] )
+        #self.servers = set( [m.settings['servers'] for m in self if not m.local ] )
 
         self.units = set( [m.UNIT for m in self] )
         self.loaded = False
@@ -548,7 +554,7 @@ class Corrector:
 
 
     def startservers(self, module_ids=[]): #pylint: disable=dangerous-default-value
-        """Starts all servers for the current host"""
+        """Starts all servers on the current host"""
 
         processes = []
 
@@ -558,22 +564,30 @@ class Corrector:
         if not os.path.isdir(self.root + "/run"):
             os.mkdir(self.root + "/run")
 
+
+        host = socket.getfqdn()
+
         for module in self:
             if not module.local:
                 if not module_ids or module.id in module_ids:
-                    for host,port in module.settings['servers']:
-                        if host in MYHOSTS:
-                            #Start this server *in a separate subprocess*
-                            if self.configfile:
-                                cmd = "gecco " + self.configfile + " "
-                            else:
-                                cmd = sys.argv[0] + " "
-                            cmd += "startserver " + module.id + " " + host + " " + str(port)
-                            self.log("Starting server " + module.id + "@" + host + ":" + str(port)  + " ...")
-                            process = subprocess.Popen(cmd.split(' '),close_fds=True) 
-                            with open(self.root + "/run/" + module.id + "." + host + "." + str(port) + ".pid",'w') as f:
-                                f.write(str(process.pid))
-                            processes.append(process)
+                    portfound = False #port is tasty, let's find port!
+                    while not portfound:
+                        port = random.randint(10000,65000) #get a random port
+                        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                        result = sock.connect_ex(('127.0.0.1',port))
+                        if result != 0:
+                            portfound = True
+                    #Start this server *in a separate subprocess*
+                    if self.configfile:
+                        cmd = "gecco " + self.configfile + " "
+                    else:
+                        cmd = sys.argv[0] + " "
+                    cmd += "startserver " + module.id + " " + host + " " + str(port)
+                    self.log("Starting server " + module.id + "@" + host + ":" + str(port)  + " ...")
+                    process = subprocess.Popen(cmd.split(' '),close_fds=True) 
+                    with open(self.root + "/run/" + module.id + "." + host + "." + str(port) + ".pid",'w') as f:
+                        f.write(str(process.pid))
+                    processes.append(process)
             else:
                 print("Module " + module.id + " is local",file=sys.stderr)
 
@@ -635,8 +649,8 @@ class Corrector:
                     sock.sendall(b"%GETLOAD%\n")
                     load = float(sock.recv(1024))
                     module.servers.append( (host,port,load) )
-                    if not hasattr(module,'forcelocal') or not module.forcelocal:
-                        module.local = False
+                    if hasattr(module,'forcelocal') and  module.forcelocal:
+                        module.local = True
                     servers.append( (module.id, host,port,load) )
                 except socket.timeout:
                     self.log("Connection to " + module.id + "@" +host+":" + str(port) + " timed out")
@@ -699,6 +713,7 @@ class Corrector:
         parser_reset  = subparsers.add_parser('reset', help="Reset modules, deletes all trained models that have sources. Issue prior to train if you want to start anew.")
         parser_reset.add_argument('modules', help="Only reset for modules with the specified IDs (comma-separated list) (if omitted, all modules are reset)", nargs='?',default="")
 
+        parser_wipe = subparsers.add_parser('wipe', help="Forcibly deletes all knowledge of running servers, use only when you are sure no module servers are running (stop them with stopservers), or they will be orphaned. Used to clean up after a crash.")
 
 
 
@@ -748,6 +763,13 @@ class Corrector:
         elif args.command == 'reset':
             if args.modules: modules = args.modules.split(',')
             self.reset(modules)
+        elif args.command == 'wipe':
+            count = 0
+            runpath = self.root + "/run/"
+            for filename in glob(runpath + "/*.pid"):
+                count += 1
+                os.unlink(filename)
+            print("Wiped " + str(count) + " servers from memory. If any were still running, they are now orphans!",file=sys.stderr)
         elif not args.command:
             parser.print_help()
         else:
@@ -929,12 +951,21 @@ class Module:
         else:
             self.submodule = bool(self.settings['submodule'])
 
-        self.local = not ('servers' in self.settings and self.settings['servers']) #will be overriden later if --local is set
+
+        if not 'local' in self.settings:
+            self.local = False
+        else:
+            self.local = bool(self.settings['local'])
 
         if self.submodule and self.local:
             raise Exception("Module " + self.id + " is a submodule, but no servers are defined, submodules can not be local only")
 
 
+    def getserver(self, index):
+        if not self.servers:
+            return []
+        index = index % len(self.servers)
+        return self.servers[index]
 
     def getsubmoduleclient(self, submodule):
         #submodule.prepare() #will block until all submod dependencies are done
