@@ -2,10 +2,15 @@
 GECCO - Generic Environment for Context-Aware Correction of Orthography
 =======================================================================
 
-A generic modular and distributed framework for spelling correction. Aimed to
+    by Maarten van Gompel
+    Centre for Language and Speech Technology, Radboud University Nijmegen
+    Sponsored by Revisely (http://revise.ly)
+    Licensed under the GNU Public License v3
+
+Gecco is a generic modular and distributed framework for spelling correction. Aimed to
 build complete context-aware spelling correction system given your own data
-set.  Most modules will be language independent and trainable from a source
-corpus, training is explicitly included in the framework. The framework aims to
+set.  Most modules will be language-independent and trainable from a source
+corpus. Training is explicitly included in the framework. The framework aims to
 easily extendible, modules can be written in Python 3.  Moreover, the framework
 is scalable and distributable over multiple servers. 
 
@@ -80,7 +85,9 @@ RESTful webservice, or through the web application (two interfaces).
     - Module servers themselves may be multithreaded
  - Input and output is **FoLiA XML** (http://proycon.github.io/folia)
      - Automatic input conversion from plain text using ucto
-  
+
+Gecco is the successor of Valkuil.net and Fowlt.net.
+ 
 -----------------------
 Installation
 -----------------------
@@ -88,21 +95,21 @@ Installation
 Gecco relies on a large number of dependencies, including but not limited to:
 
 Dependencies:
- - Generic:
+ - *Generic*:
   - python 3.3 or higher
   - pynlpl (https://github.com/proycon/pynlpl), needed for FoLiA support
     (https://proycon.github.io/folia)
   - python-ucto & ucto (in turn depending on libfolia, ticcutils)
- - Module-specific:
+ - *Module-specific*:
   - Timbl (http://ilk.uvt.nl/timbl)
   - Colibri Core (https://github.com/proycon/colibri-core/)
   - Aspell (http://aspell.net)
   - aspell-python-py3
   - python-timbl
- - Webservice:
+ - *Webservice*:
   - CLAM (port to Python 3) (https://proycon.github.io/clam)
 
-To install Gecco, we strongly recommend you to use our LaMachine distribution:
+To install Gecco, we *strongly* recommend you to use our LaMachine distribution:
 https://github.com/proycon/lamachine .
 
 LaMachine includes Gecco and can be run in multiple ways: as a virtual machine,
@@ -174,7 +181,27 @@ or
 
 Syntax:
 
+    usage: gecco [-h]
+                {run,startservers,stopservers,startserver,train,evaluate,reset}
+                ...
 
+    Gecco is a generic, scalable and modular spelling correction framework
+
+    Commands:
+    {run,startservers,stopservers,startserver,train,evaluate,reset}
+        run                 Run the spelling corrector on the specified input file
+        startservers        Starts all the module servers that are configured to
+                            run on the current host. Issue once for each host.
+        stopservers         Stops all the module servers that are configured to
+                            run on the current host. Issue once for each host.
+        startserver         Start one module's server on the specified port, use
+                            'startservers' instead
+        train               Train modules
+        evaluate            Runs the spelling corrector on input data and compares
+                            it to reference data, produces an evaluation report
+        reset               Reset modules, deletes all trained models that have
+                            sources. Issue prior to train if you want to start
+                            anew.
  
 
 ----------------
@@ -186,20 +213,24 @@ startservers` has to be issued. Modules not set up to run as a server will
 simply be started and invoked locally on request, which is something you want
 to prevent as this usually takes up too much time.
 
-`gecco run <input.folia.xml>` is executed to process a
-given FoLiA document or plaintext document, it starts a master process that
-will invoke all the modules, which may be distributed over multiple servers. If multiple server instances of
-the same module are running, the load will be distributed over them. Output will be delivered in FoLiA XML.
+`gecco run <input.folia.xml>` is executed to process a given FoLiA document or
+plaintext document, it starts a master process that will invoke all the
+modules, which may be distributed over multiple servers. If multiple server
+instances of the same module are available, the load will be distributed over
+them. Output will be delivered in the FoLiA XML format and will contain
+suggestions for correction.  
 
 ----------------------------------------
-Gecco as a webservice/web-application
+Gecco as a webservice
 ----------------------------------------
 
-RESTUL webservice access will be available through CLAM, the CLAM service can
-be automatically generated. This, however, is currently not implemented yet.
-Web-application will eventually be available either through the generic
-interface in CLAM, as well as the more user-friendly interface of
-Valkuil/Fowlt.
+RESTUL webservice access will be available through CLAM. This, however, is currently not implemented yet.
+
+------------------------------
+Gecco as a web-application
+------------------------------
+
+A web-application will eventually be available, modelled after Valkuil.net/Fowlt.net.
 
 
 	
