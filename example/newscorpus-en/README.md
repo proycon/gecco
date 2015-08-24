@@ -5,17 +5,17 @@ English spelling correction system based on News Corpus
 necessary corpus. The system uses an excerpt of the News Crawl 2012 corpus, obtained from: 
 http://www.statmt.org/wmt13/translation-task.html#download
 
- ./downloadsourcedata.sh
+    $ ./downloadsourcedata.sh
 
 1) Train the system:
 
- gecco newscorpus-en.yml train
+    $ gecco newscorpus-en.yml train
 
 2) Start the servers on the current host:
 
- gecco newscorpus-en.yml startservers
+    $ gecco newscorpus-en.yml startservers
 
 3) Run it on some input document
 
- gecco newscorpus-en.yml run input.txt
+    $ gecco newscorpus-en.yml run input.txt
  
