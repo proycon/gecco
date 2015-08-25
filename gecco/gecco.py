@@ -1133,6 +1133,8 @@ class Module:
         return "ADD errordetection OF " + self.settings['set'] + " WITH class \"" + self.settings['class'] + "\" annotator \"" + self.settings['annotator'] + "\" annotatortype \"auto\" datetime now FOR ID \"" + element_id + "\" RETURN nothing"
 
     def splitcorrection(self, word_id, suggestions):
+        #split one word into multiple
+
         #suggestions is a list of  ([word], confidence) tuples
         q = "SUBSTITUTE (AS CORRECTION OF " + self.settings['set'] + " WITH class \"" + self.settings['class'] + "\" annotator \"" + self.settings['annotator'] + "\" annotatortype \"auto\" datetime now"
         for suggestion, confidence in suggestions:
@@ -1146,6 +1148,8 @@ class Module:
         return q
 
     def mergecorrection(self, newword, originalwords):
+        #merge multiple words into one
+
         q = "SUBSTITUTE (AS CORRECTION OF " + self.settings['set'] + " WITH class \"" + self.settings['class'] + "\" annotator \"" + self.settings['annotator'] + "\" annotatortype \"auto\" datetime now"
         q += " SUGGESTION"
         q += " (SUBSTITUTE w WITH text \"" + newword + "\")"
@@ -1158,7 +1162,16 @@ class Module:
         return q
 
     def suggestdeletion(self, word,merge=False, **kwargs):
-        #TODO: Convert to FQL
+        q = "SUBSTITUTE (AS CORRECTION OF " + self.settings['set'] + " WITH class \"" + self.settings['class'] + "\" annotator \"" + self.settings['annotator'] + "\" annotatortype \"auto\" datetime now"
+        if merge:
+            q += " SUGGESTION MERGE (DELETE w) " #TODO: this is new FQL syntax, implement in FQL lib
+        else:
+            q += " SUGGESTION (DELETE w) " #TODO: this is new FQL syntax, implement in FQL lib
+        q += ") FOR SPAN ID \"" + word.id + "\""
+        q += " RETURN nothing"
+        return q
+
+        #----------- OLD (TODO: REMOVE) -----------
         parent = word.parent
         index = parent.getindex(word,False)
         if 'cls' in kwargs:
@@ -1175,7 +1188,16 @@ class Module:
             self.log(" ERROR: Unable to suggest deletion of " + str(word.id) + ", item index not found")
 
     def suggestinsertion(self,pivotword, text,split=False):
-        #TODO: Convert to FQL
+        q = "PREPEND (AS CORRECTION OF " + self.settings['set'] + " WITH class \"" + self.settings['class'] + "\" annotator \"" + self.settings['annotator'] + "\" annotatortype \"auto\" datetime now"
+        if split:
+            q += " SUGGESTION SPLIT (ADD w WITH text \"" + text + "\") " #TODO: this is new FQL syntax, implement in FQL lib
+        else:
+            q += " SUGGESTION (ADD w WITH text \"" + text + "\") " #TODO: this is new FQL syntax, implement in FQL lib
+        q += ") FOR ID \"" + pivotword.id + "\""
+        q += " RETURN nothing"
+        return q
+
+        #----------- OLD (TODO: REMOVE) -----------
         index = pivotword.parent.getindex(pivotword)
         if index != -1:
             self.log(" Suggesting insertion before " + str(pivotword.id))
