@@ -1192,7 +1192,7 @@ def main():
     try:
         configfile = sys.argv[1]
         if configfile in ("-h","--help"):
-            raise
+            raise IndexError
         elif configfile == "--helpmodules":
             #Bit hacky, but it works
             print("Gecco Modules and Parameters")
