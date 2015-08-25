@@ -225,32 +225,35 @@ class ProcessorThread(Process):
                                 module.log("[" + str(self.pid) + "]  (Running " + module.id + " on " + repr(inputdata) + " [remote]")
                             if module.id not in self.seqnr:
                                 self.seqnr[module.id] = self.random.randint(0,len(module.servers)) #start with a random sequence nr
-                            for server,port,load in module.getserver(self.seqnr[module.id]):  #get the server for this sequence nr, sequence numbers ensure rotation between servers
-                                self.seqnr[module.id] += 1 #increase sequence number for this module
-                                try:
-                                    if (server,port) not in self.clients:
-                                        self.clients[(server,port)] = module.CLIENT(server,port)
-                                    client = self.clients[(server,port)]
-                                    if self.debug:
-                                        module.log("[" + str(self.pid) + "] BEGIN (server=" + server + ", port=" + str(port) + ", client=" + str(client) + ", corrector=" + str(self.corrector) + ", module=" + str(module) + ", unit=" + unit_id + ")")
-                                    outputdata = module.runclient(client, unit_id, inputdata,  **self.parameters)
-                                    if self.debug:
-                                        module.log("[" + str(self.pid) + "] END (server=" + server + ", port=" + str(port) + ", client=" + str(client) + ", corrector=" + str(self.corrector) + ", module=" + str(module) + ", unit=" + unit_id + ")")
-                                    if outputdata is not None:
-                                        self.outputqueue.put( (module.id, unit_id, outputdata,inputdata) )
-                                    #will only be executed when connection succeeded:
-                                    connected = True
-                                    break
-                                except ConnectionRefusedError:
-                                    module.log("[" + str(self.pid) + "] Server " + server+":" + str(port) + ", module " + module.id + " refused connection, moving on...")
-                                    del self.clients[(server,port)]
-                                except Exception as e: 
-                                    module.log("[" + str(self.pid) + "] Server communication failed for server " + server +":" + str(port) + ", module " + module.id + ", passed unit " + unit_id + " (traceback follows in debug), moving on...")
-                                    if self.debug:
-                                        exc_type, exc_value, exc_traceback = sys.exc_info() 
-                                        formatted_lines = traceback.format_exc().splitlines() 
-                                        traceback.print_tb(exc_traceback, limit=50, file=sys.stderr)
-                                    del self.clients[(server,port)]
+                            try:
+                                for server,port,load in module.getserver(self.seqnr[module.id]):  #get the server for this sequence nr, sequence numbers ensure rotation between servers
+                                    self.seqnr[module.id] += 1 #increase sequence number for this module
+                                    try:
+                                        if (server,port) not in self.clients:
+                                            self.clients[(server,port)] = module.CLIENT(server,port)
+                                        client = self.clients[(server,port)]
+                                        if self.debug:
+                                            module.log("[" + str(self.pid) + "] BEGIN (server=" + server + ", port=" + str(port) + ", client=" + str(client) + ", corrector=" + str(self.corrector) + ", module=" + str(module) + ", unit=" + unit_id + ")")
+                                        outputdata = module.runclient(client, unit_id, inputdata,  **self.parameters)
+                                        if self.debug:
+                                            module.log("[" + str(self.pid) + "] END (server=" + server + ", port=" + str(port) + ", client=" + str(client) + ", corrector=" + str(self.corrector) + ", module=" + str(module) + ", unit=" + unit_id + ")")
+                                        if outputdata is not None:
+                                            self.outputqueue.put( (module.id, unit_id, outputdata,inputdata) )
+                                        #will only be executed when connection succeeded:
+                                        connected = True
+                                        break
+                                    except ConnectionRefusedError:
+                                        module.log("[" + str(self.pid) + "] Server " + server+":" + str(port) + ", module " + module.id + " refused connection, moving on...")
+                                        del self.clients[(server,port)]
+                                    except Exception as e: 
+                                        module.log("[" + str(self.pid) + "] Server communication failed for server " + server +":" + str(port) + ", module " + module.id + ", passed unit " + unit_id + " (traceback follows in debug), moving on...")
+                                        if self.debug:
+                                            exc_type, exc_value, exc_traceback = sys.exc_info() 
+                                            formatted_lines = traceback.format_exc().splitlines() 
+                                            traceback.print_tb(exc_traceback, limit=50, file=sys.stderr)
+                                        del self.clients[(server,port)]
+                            except IndexError:
+                                module.log("**ERROR** No servers started for " + module.id)
                             if not connected:
                                 module.log("**ERROR** Unable to connect client to server! All servers for module " + module.id + " are down, skipping!")
                                 fatalerrors = True
@@ -960,7 +963,7 @@ class Module:
 
     def getserver(self, index):
         if not self.servers:
-            return []
+            raise IndexError("No servers")
         index = index % len(self.servers)
         return self.servers[index]
 
