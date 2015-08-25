@@ -226,8 +226,12 @@ class ProcessorThread(Process):
                             if module.id not in self.seqnr:
                                 self.seqnr[module.id] = self.random.randint(0,len(module.servers)) #start with a random sequence nr
                             try:
-                                for server,port,load in module.getserver(self.seqnr[module.id]):  #get the server for this sequence nr, sequence numbers ensure rotation between servers
+                                startseqnr = self.seqnr[module.id] 
+                                while not connected:
+                                    server,port,load = module.getserver(self.seqnr[module.id])  #get the server for this sequence nr, sequence numbers ensure rotation between servers
                                     self.seqnr[module.id] += 1 #increase sequence number for this module
+                                    if self.seqnr[module.id] >= startseqnr + (10 * len(module.servers)):
+                                        break #max 10 retries over all servers
                                     try:
                                         if (server,port) not in self.clients:
                                             self.clients[(server,port)] = module.CLIENT(server,port)
@@ -241,7 +245,6 @@ class ProcessorThread(Process):
                                             self.outputqueue.put( (module.id, unit_id, outputdata,inputdata) )
                                         #will only be executed when connection succeeded:
                                         connected = True
-                                        break
                                     except ConnectionRefusedError:
                                         module.log("[" + str(self.pid) + "] Server " + server+":" + str(port) + ", module " + module.id + " refused connection, moving on...")
                                         del self.clients[(server,port)]
@@ -965,7 +968,6 @@ class Module:
         if not self.servers:
             raise IndexError("No servers")
         index = index % len(self.servers)
-        print("DEBUG: returning ", repr(self.servers[index]),file=sys.stderr)
         return self.servers[index]
 
     def getsubmoduleclient(self, submodule):
