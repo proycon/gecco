@@ -107,11 +107,12 @@ class TIMBLLMModule(Module):
             modelfile = self.models[0]
             if not modelfile.endswith(".ibase"):
                 raise Exception("First model must be a TIMBL instance base model, which must have the extension '.ibase', got " + modelfile + " instead")
-            lexiconfile = self.models[1]
-            if not lexiconfile.endswith("colibri.patternmodel"):
-                raise Exception("Second model must be a Colibri pattern model, which must have the extensions '.colibri.patternmodel', got " + modelfile + " instead")
+            if len(self.models) > 1:
+                lexiconfile = self.models[1]
+                if not lexiconfile.endswith("colibri.patternmodel"):
+                    raise Exception("Second model must be a Colibri pattern model, which must have the extensions '.colibri.patternmodel', got " + modelfile + " instead")
         except:
-            raise Exception("Expected two models, the first a TIMBL instance base, and the second a colibri patternmodel, got " + str(len(self.models)) )
+            raise Exception("Expected one or two models, the first a TIMBL instance base, and the optional second a colibri patternmodel, got " + str(len(self.models)) )
 
     def gettimbloptions(self):
         return "-F Tabbed " + "-a " + str(self.settings['algorithm']) + " +D +vdb -G0"
@@ -128,19 +129,26 @@ class TIMBLLMModule(Module):
             self.hapaxer.load()
 
         self.log("Loading models...")
-        modelfile, lexiconfile = self.models
+        if len(self.models) == 2:
+            modelfile, lexiconfile = self.models
+        else:
+            modelfile = self.models[0]
+            lexiconfile = None
         if not os.path.exists(modelfile):
             raise IOError("Missing expected timbl model file: " + modelfile + ". Did you forget to train the system?")
-        if not os.path.exists(lexiconfile):
+        if lexiconfile and not os.path.exists(lexiconfile):
             raise IOError("Missing expected lexicon model file: " + lexiconfile + ". Did you forget to train the system?")
         self.log("Loading model file " + modelfile + "...")
         fileprefix = modelfile.replace(".ibase","") #has been verified earlier
-        self.classifier = TimblClassifier(fileprefix, self.gettimbloptions(),threading=True)
+        self.classifier = TimblClassifier(fileprefix, self.gettimbloptions(),threading=True) 
         self.classifier.load()
 
-        self.log("Loading colibri model file for lexicon " + lexiconfile)
-        self.classencoder = colibricore.ClassEncoder(lexiconfile + '.cls')
-        self.lexicon = colibricore.UnindexedPatternModel(lexiconfile)
+        if lexiconfile:
+            self.log("Loading colibri model file for lexicon " + lexiconfile)
+            self.classencoder = colibricore.ClassEncoder(lexiconfile + '.cls')
+            self.lexicon = colibricore.UnindexedPatternModel(lexiconfile)
+        else:
+            self.lexicon = None
 
     def train(self, sourcefile, modelfile, **parameters):
         if self.hapaxer:
