@@ -24,6 +24,8 @@ import psutil
 import json
 import traceback
 import random
+import importlib
+import inspect
 from collections import OrderedDict, defaultdict
 #from threading import Thread, Lock
 #from queue import Queue
@@ -1191,9 +1193,29 @@ def main():
         configfile = sys.argv[1]
         if configfile in ("-h","--help"):
             raise
+        elif configfile == "--helpmodules":
+            #Bit hacky, but it works
+            print("Gecco Modules and Parameters")
+            print("=================================")
+            import gecco.modules
+            for modulefile in glob(gecco.modules.__path__[0] + "/*.py"):
+                modulename = os.path.basename(modulefile).replace('.py','')
+                importlib.import_module('gecco.modules.' + modulename)
+                for C in dir(getattr(gecco.modules,modulename)):
+                    C = getattr(getattr(gecco.modules,modulename), C)
+                    if inspect.isclass(C) and issubclass(C, Module):
+                        print("gecco.modules." + modulename + "." + C.__name__)
+                        print("-----------------------------------------")
+                        try:
+                            print(C.__doc__)
+                        except:
+                            pass
+                        print()
+            sys.exit(0)
         sys.argv = [sys.argv[0]] + sys.argv[2:]
-    except:
+    except IndexError:
         print("Syntax: gecco [configfile.yml] (First specify a config file, for help then add -h)" ,file=sys.stderr)
+        print("To see all available modules and parameters: gecco --helpmodules" ,file=sys.stderr)
         sys.exit(2)
     corrector = Corrector(config=configfile)
     corrector.main()

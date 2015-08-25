@@ -335,3 +335,4 @@ class AspellModule(Module):
             return suggestions
         else:
             return []
+
