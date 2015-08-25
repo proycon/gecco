@@ -44,6 +44,10 @@ RESTful webservice, or through the web application (two interfaces).
         - Aspell is open-source lexicon-based software for spelling correction.
           This module enables aspell to be used from gecco. This is not a
           context-sensitive method.
+    - **Hunspell Module**
+        - Hunspell is open-source lexicon-based software for spelling correction.
+          This module enables aspell to be used from gecco. This is not a
+          context-sensitive method.
     - **Lexicon Module**
         - The lexicon module enables you to automatically generate a lexicon
           from corpus data and use it. This is not a context-sensitive method.
@@ -114,9 +118,10 @@ as a docker app, or as a compilation script setting up a Python virtual
 environment.
 
 Gecco uses memory-based technologies, and depending on the models you train,
-may take up considerable memory. For we recommend *at least* 16MB RAM. For
-various modules, model size may be reduced by increasing frequency thresholds,
-but this will come at the cost of reduced accuracy.
+may take up considerable memory. Therefore we recommend *at least* 16MB RAM,
+training may require even more. For various modules, model size may be reduced
+by increasing frequency thresholds, but this will come at the cost of reduced
+accuracy.
 
 Gecco will only run on POSIX-complaint operating systems (i.e. Linux, BSD, Mac OS X), not on Windows.
 
@@ -143,12 +148,9 @@ Example YAML configuration:
             - train.txt
           model: 
             - confusible.model
-          servers:
-              - host: blah
-                port: 12345
-              - host: blah2
-                port: 12345
           confusible: [then,than]
+
+To list all available modules and the parameters they may take, run ``gecco --helpmodules``.
 
 Alternatively, the configuration can be done in Python directly, in which case
 the script will be the tool that exposes all functionality:
@@ -171,6 +173,34 @@ It is recommended to adopt a file/directory structure as described below. If you
  - models/
 
 An example system spelling correction system for English is provided with Gecco and resides in the ``example/`` directory.
+
+ 
+
+----------------
+Server setup
+----------------
+
+`gecco <yourconfig.yml> run <input.folia.xml>` is executed to process a given
+FoLiA document or plaintext document, it starts a master process that will
+invoke all the modules, which may be distributed over multiple servers. If
+multiple server instances of the same module are available, the load will be
+distributed over them. Output will be delivered in the FoLiA XML format and
+will contain suggestions for correction.  
+
+To start module servers on a host, issue `gecco <yourconfig.yml> startservers`.
+You can optionally specify which servers you want to start, if you do not want
+to start all. You can start servers multiple times, either on the same or on
+multiple hosts. The master process will distribute the load amongst all
+servers. 
+
+To stop the servers, run `gecco <yourconfig.yml> stopservers` on each host that
+has servers running. A list of all running servers can be obtained by `gecco
+<yourconfig.yml> listservers`.
+
+Modules can also run locally within the master process rather than as servers,
+this is done by either by adding `local: true` in the configuration, or by
+adding the ``--local`` option when starting a run. But this will have a
+significant negative impact on performance and should therefore be avoided.
 
 ---------------------
 Command line usage
@@ -200,6 +230,7 @@ Syntax:
                             run on the current host. Issue once for each host.
         stopservers         Stops all the module servers that are configured to
                             run on the current host. Issue once for each host.
+        listservers         Lists all the module servers on all hosts
         startserver         Start one module's server on the specified port, use
                             'startservers' instead
         train               Train modules
@@ -208,23 +239,6 @@ Syntax:
         reset               Reset modules, deletes all trained models that have
                             sources. Issue prior to train if you want to start
                             anew.
- 
-
-----------------
-Server setup
----------------
-
-On each host that serves one or more modules, a `gecco myconfig.yml
-startservers` has to be issued. Modules not set up to run as a server will
-simply be started and invoked locally on request, which is something you want
-to prevent as this usually takes up too much time.
-
-`gecco run <input.folia.xml>` is executed to process a given FoLiA document or
-plaintext document, it starts a master process that will invoke all the
-modules, which may be distributed over multiple servers. If multiple server
-instances of the same module are available, the load will be distributed over
-them. Output will be delivered in the FoLiA XML format and will contain
-suggestions for correction.  
 
 ----------------------------------------
 Gecco as a webservice

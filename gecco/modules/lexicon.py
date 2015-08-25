@@ -23,8 +23,34 @@ from gecco.helpers.filters import hasalpha
 from gecco.helpers.common import stripsourceextensions
 import colibricore #pylint: disable=import-error
 import aspell #pylint: disable=import-error
+import hunspell #pylint: disable=import-error
+
 
 class LexiconModule(Module):
+    """Lexicon Module. Checks an input word against a lexicon and returns suggestions with a certain Levensthein distance. The lexicon may be automatically compiled from a corpus.
+
+    Settings:
+    * ``freqthreshold`` - All words occuring at least this many times in the source corpus will be included in the lexicon (default: 100), setting this value too low decreases performance and consumes a lot of memory.
+    * ``maxdistance``  - Maximum Levenshtein distance between a word and its correction (larger distances are pruned from suggestions)
+    * ``maxlength``  - Maximum length of words in characters, longer words are ignored (default: 25)
+    * ``minlength``  - Minimum length of words in characters, shorter words are ignored (default: 5)
+    * ``shortlength`` - Maximum length of words, in characters, that are considered short. Short words are measured against maxdistance_short rather than maxdistance  (default: 5)
+    * ``maxdistance_short``  - Maximum Levenshtein distance between a word and its correction (larger distances are pruned from suggestions), this threshold applies to short words only (use shortlength to define what a short word is)
+    * ``maxnrclosest`` -  Limit the returned suggestions to this many items (default: 5)
+    * ``freqfactor``   - If a word is correct according to the lexicon, only return suggestions that are more frequent (according to the source corpus) by this factor (default: 10000)
+
+    * ``delimiter``    - The delimiter between the frequency and the word in the model file, may be 'space', 'tab' (default), 'comma'.
+    * ``reversed``     - Set to true if the model has word,freq pairs rather than freq,word pairs (default: False)
+    * ``ordered``      - Indicates that the model file is ordered by frequency (descending) (default: True) -  Not using ordering decreases performance!
+
+    * ``suffixes``     - A list of suffixes that will be stripped from a word in case of a mismatch, after which the remainder is rematched against the lexicon 
+    * ``prefixes``     - A list of prefixes that will be stripped from a word in case of a mismatch, after which the remainder is rematched against the lexicon 
+
+    * ``class``        - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: contexterror) 
+
+    Sources and models:
+    * a plain-text corpus (tokenized)  [``.txt``]     ->    a lexicon [``.txt``]
+    """
     UNIT = folia.Word
     UNITFILTER = hasalpha
 
@@ -47,10 +73,14 @@ class LexiconModule(Module):
 
         if 'maxdistance' not in self.settings:
             self.settings['maxdistance'] = 2
+        if 'maxdistance_short' not in self.settings:
+            self.settings['maxdistance_short'] = 1
         if 'maxlength' not in self.settings:
-            self.settings['maxlength'] = 15 #longer words will be ignored
+            self.settings['maxlength'] = 25 #longer words will be ignored
         if 'minlength' not in self.settings:
             self.settings['minlength'] = 5 #shorter word will be ignored
+        if 'shortlength' not in self.settings:
+            self.settings['shortlength'] = self.settings['minlength']
         if 'minfreqthreshold' not in self.settings:
             self.settings['minfreqthreshold'] = 10000
         if 'freqfactor' not in self.settings:
@@ -68,7 +98,7 @@ class LexiconModule(Module):
             self.settings['prefixes'] = []
 
         if 'freqthreshold' not in self.settings:
-            self.settings['freqthreshold'] = 20
+            self.settings['freqthreshold'] = 100
 
 
     def train(self, sourcefile, modelfile, **parameters):
@@ -195,12 +225,19 @@ class LexiconModule(Module):
             #find closest matches *above threshold* by levenshtein distance
 
             results = []
+            isshort = (len(word) <= self.settings['shortlength'])
             for key, freq in self.filter(freq*self.settings['freqfactor']):
                 #ld = levenshtein(word, key, self.settings['maxdistance'])
-                if abs(l - len(key)) <= self.settings['maxdistance']:
-                    ld = Levenshtein.distance(word,key)
-                    if ld <= self.settings['maxdistance']:
-                        results.append( (key, ld) )
+                if isshort:
+                    if abs(l - len(key)) <= self.settings['maxdistance_short']:
+                        ld = Levenshtein.distance(word,key)
+                        if ld <= self.settings['maxdistance_short']:
+                            results.append( (key, ld) )
+                else:
+                    if abs(l - len(key)) <= self.settings['maxdistance']:
+                        ld = Levenshtein.distance(word,key)
+                        if ld <= self.settings['maxdistance']:
+                            results.append( (key, ld) )
 
             results.sort(key=lambda x: x[1])
             results = results[:self.settings['maxnrclosest']]
@@ -268,7 +305,58 @@ class ColibriLexiconModule(LexiconModule):
         model.write(modelfile)
 
 
+class HunspellModule(Module):
+    """Looks up the word in a HunSpell lexicon, and returns suggestions
+    
+    Settings:
+    * ``path``          - Path to hunspel (defaults to: /usr/share/hunspell/)
+    * ``language``      - The language (follows locale syntax, i.e. en_GB for British English)
+    * ``class``         - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: runonerror) 
+    """
+
+    UNIT = folia.Word
+    UNITFILTER = hasalpha
+
+    def verifysettings(self):
+        super().verifysettings()
+
+        if 'language' not in self.settings:
+            raise Exception("Mandatory argument to hunspell module missing: language")
+
+        if 'path' not in self.settings:
+            self.settings['path'] = '/usr/share/hunspell'
+
+        if 'class' not in self.settings:
+            self.settings['class'] = 'nonworderror'
+
+    def load(self):
+        self.log("Loading aspell dictionary")
+        self.speller = hunspell.Hunspell(self.settings['path'] + '/' + self.settings['language'] + '.dic', self.settings['path'] + '/' + self.settings['language'] + '.aff' )
+
+    def prepareinput(self,word,**parameters):
+        """Takes the specified FoLiA unit for the module, and returns a string that can be passed to process()"""
+        return str(word) 
+
+    def processoutput(self, output, inputdata, unit_id,**parameters):
+        if output:
+            return self.addsuggestions(unit_id, output )
+
+    def run(self, word):
+        """This methods gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
+        suggestions = [ w for w in self.speller.suggest(word) ]
+        if word not in suggestions:
+            return suggestions
+        else:
+            return []
+
 class AspellModule(Module):
+    """Looks up the word in an Aspell lexicon, and returns suggestions
+    
+    Settings:
+    * ``language``      - The language code (see http://aspell.net/man-html/Supported.html)
+    * ``class``         - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: runonerror) 
+    """
+
     UNIT = folia.Word
     UNITFILTER = hasalpha
 
@@ -277,6 +365,9 @@ class AspellModule(Module):
 
         if 'language' not in self.settings:
             raise Exception("Mandatory argument to aspell module missing: language")
+
+        if 'class' not in self.settings:
+            self.settings['class'] = 'nonworderror'
 
     def load(self):
         self.log("Loading aspell dictionary")
@@ -300,3 +391,4 @@ class AspellModule(Module):
             return suggestions
         else:
             return []
+

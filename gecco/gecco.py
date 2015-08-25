@@ -24,6 +24,8 @@ import psutil
 import json
 import traceback
 import random
+import importlib
+import inspect
 from collections import OrderedDict, defaultdict
 #from threading import Thread, Lock
 #from queue import Queue
@@ -225,32 +227,38 @@ class ProcessorThread(Process):
                                 module.log("[" + str(self.pid) + "]  (Running " + module.id + " on " + repr(inputdata) + " [remote]")
                             if module.id not in self.seqnr:
                                 self.seqnr[module.id] = self.random.randint(0,len(module.servers)) #start with a random sequence nr
-                            for server,port,load in module.getserver(self.seqnr[module.id]):  #get the server for this sequence nr, sequence numbers ensure rotation between servers
-                                self.seqnr[module.id] += 1 #increase sequence number for this module
-                                try:
-                                    if (server,port) not in self.clients:
-                                        self.clients[(server,port)] = module.CLIENT(server,port)
-                                    client = self.clients[(server,port)]
-                                    if self.debug:
-                                        module.log("[" + str(self.pid) + "] BEGIN (server=" + server + ", port=" + str(port) + ", client=" + str(client) + ", corrector=" + str(self.corrector) + ", module=" + str(module) + ", unit=" + unit_id + ")")
-                                    outputdata = module.runclient(client, unit_id, inputdata,  **self.parameters)
-                                    if self.debug:
-                                        module.log("[" + str(self.pid) + "] END (server=" + server + ", port=" + str(port) + ", client=" + str(client) + ", corrector=" + str(self.corrector) + ", module=" + str(module) + ", unit=" + unit_id + ")")
-                                    if outputdata is not None:
-                                        self.outputqueue.put( (module.id, unit_id, outputdata,inputdata) )
-                                    #will only be executed when connection succeeded:
-                                    connected = True
-                                    break
-                                except ConnectionRefusedError:
-                                    module.log("[" + str(self.pid) + "] Server " + server+":" + str(port) + ", module " + module.id + " refused connection, moving on...")
-                                    del self.clients[(server,port)]
-                                except Exception as e: 
-                                    module.log("[" + str(self.pid) + "] Server communication failed for server " + server +":" + str(port) + ", module " + module.id + ", passed unit " + unit_id + " (traceback follows in debug), moving on...")
-                                    if self.debug:
-                                        exc_type, exc_value, exc_traceback = sys.exc_info() 
-                                        formatted_lines = traceback.format_exc().splitlines() 
-                                        traceback.print_tb(exc_traceback, limit=50, file=sys.stderr)
-                                    del self.clients[(server,port)]
+                            try:
+                                startseqnr = self.seqnr[module.id] 
+                                while not connected:
+                                    server,port,load = module.getserver(self.seqnr[module.id])  #get the server for this sequence nr, sequence numbers ensure rotation between servers
+                                    self.seqnr[module.id] += 1 #increase sequence number for this module
+                                    if self.seqnr[module.id] >= startseqnr + (10 * len(module.servers)):
+                                        break #max 10 retries over all servers
+                                    try:
+                                        if (server,port) not in self.clients:
+                                            self.clients[(server,port)] = module.CLIENT(server,port)
+                                        client = self.clients[(server,port)]
+                                        if self.debug:
+                                            module.log("[" + str(self.pid) + "] BEGIN (server=" + server + ", port=" + str(port) + ", client=" + str(client) + ", corrector=" + str(self.corrector) + ", module=" + str(module) + ", unit=" + unit_id + ")")
+                                        outputdata = module.runclient(client, unit_id, inputdata,  **self.parameters)
+                                        if self.debug:
+                                            module.log("[" + str(self.pid) + "] END (server=" + server + ", port=" + str(port) + ", client=" + str(client) + ", corrector=" + str(self.corrector) + ", module=" + str(module) + ", unit=" + unit_id + ")")
+                                        if outputdata is not None:
+                                            self.outputqueue.put( (module.id, unit_id, outputdata,inputdata) )
+                                        #will only be executed when connection succeeded:
+                                        connected = True
+                                    except ConnectionRefusedError:
+                                        module.log("[" + str(self.pid) + "] Server " + server+":" + str(port) + ", module " + module.id + " refused connection, moving on...")
+                                        del self.clients[(server,port)]
+                                    except Exception as e: 
+                                        module.log("[" + str(self.pid) + "] Server communication failed for server " + server +":" + str(port) + ", module " + module.id + ", passed unit " + unit_id + " (traceback follows in debug), moving on...")
+                                        if self.debug:
+                                            exc_type, exc_value, exc_traceback = sys.exc_info() 
+                                            formatted_lines = traceback.format_exc().splitlines() 
+                                            traceback.print_tb(exc_traceback, limit=50, file=sys.stderr)
+                                        del self.clients[(server,port)]
+                            except IndexError:
+                                module.log("**ERROR** No servers started for " + module.id)
                             if not connected:
                                 module.log("**ERROR** Unable to connect client to server! All servers for module " + module.id + " are down, skipping!")
                                 fatalerrors = True
@@ -472,8 +480,6 @@ class Corrector:
                         module.train(sourcefile, modelfile, **parameters)
 
     def evaluate(self, args):
-        for module in self.modules.values():
-            module.local = True
         if args.parameters:
             parameters = dict(( tuple(p.split('=')) for p in args.parameters))
         else:
@@ -685,10 +691,11 @@ class Corrector:
         parser_run.add_argument('-p',dest='parameters', help="Custom parameters passed to the modules, specify as -p parameter=value. This option can be issued multiple times", required=False, action="append")
         parser_run.add_argument('-s',dest='settings', help="Setting overrides, specify as -s setting=value. This option can be issues multiple times.", required=False, action="append")
         parser_run.add_argument('--local', help="Run all modules locally, ignore remote servers", required=False, action='store_true',default=False)
-        parser_startservers = subparsers.add_parser('startservers', help="Starts all the module servers that are configured to run on the current host. Issue once for each host.")
+        parser_startservers = subparsers.add_parser('startservers', help="Starts all the module servers, or the modules explicitly specified, on the current host. Issue once for each host.")
         parser_startservers.add_argument('modules', help="Only start server for modules with the specified IDs (comma-separated list) (if omitted, all modules are run)", nargs='?',default="")
-        parser_stopservers = subparsers.add_parser('stopservers', help="Stops all the module servers that are configured to run on the current host. Issue once for each host.")
+        parser_stopservers = subparsers.add_parser('stopservers', help="Stops all the module servers, or the modules explicitly specified,  on the current host. Issue once for each host.")
         parser_stopservers.add_argument('modules', help="Only stop server for modules with the specified IDs (comma-separated list) (if omitted, all modules are run)", nargs='?',default="")
+        parser_listservers = subparsers.add_parser('listservers', help="Lists all the module servers on all hosts.")
         parser_startserver = subparsers.add_parser('startserver', help="Start one module's server on the specified port, use 'startservers' instead")
         parser_startserver.add_argument('module', help="Module ID")
         parser_startserver.add_argument('host', help="Host/IP to bind to")
@@ -733,7 +740,6 @@ class Corrector:
         modules = []
         if args.command == 'run':
             for module in self.modules.values():
-                module.local = True
                 module.forcelocal = args.local
             if args.parameters: parameters = dict(( tuple(p.split('=')) for p in args.parameters))
             if args.modules: modules = args.modules.split(',')
@@ -746,6 +752,13 @@ class Corrector:
             self.stopservers(modules)
         elif args.command == 'startserver':
             self.startserver(args.module, args.host, args.port)
+        elif args.command == 'listservers' or args.command == 'ls':
+            servers = self.findservers()
+            if not servers:
+                print("No servers are running", file=sys.stderr)
+            else:
+                for module, host, port, load in servers:
+                    print(module + "@" + host + ":" + str(port) + " (load " + str(load) + ")")
         elif args.command == 'train':
             if args.parameters: parameters = dict(( tuple(p.split('=')) for p in args.parameters))
             if args.modules: modules = args.modules.split(',')
@@ -963,7 +976,7 @@ class Module:
 
     def getserver(self, index):
         if not self.servers:
-            return []
+            raise IndexError("No servers")
         index = index % len(self.servers)
         return self.servers[index]
 
@@ -1174,15 +1187,45 @@ class Module:
         else:
             self.log(" ERROR: Unable to suggest insertion before " + str(pivotword.id) + ", item index not found")
 
+def helpmodules():
+    #Bit hacky, but it works
+    print("Gecco Modules and Settings")
+    print("=================================")
+    print()
+    import gecco.modules
+    for modulefile in sorted(glob(gecco.modules.__path__[0] + "/*.py")):
+        modulename = os.path.basename(modulefile).replace('.py','')
+        importlib.import_module('gecco.modules.' + modulename)
+        for C in dir(getattr(gecco.modules,modulename)):
+            C = getattr(getattr(gecco.modules,modulename), C)
+            if inspect.isclass(C) and issubclass(C, Module) and hasattr(C,'__doc__') and C.__doc__:
+                print("gecco.modules." + modulename + "." + C.__name__)
+                print("----------------------------------------------------------------------")
+                try:
+                    print(C.__doc__)
+                except:
+                    pass
+                print()
+    from gecco.helpers.hapaxing import Hapaxer
+    print("Hapaxing")
+    print("=================================")
+    print("The following settings can be added to any module that supports hapaxing:")
+    print(Hapaxer.__doc__)
+
+
 
 def main():
     try:
         configfile = sys.argv[1]
         if configfile in ("-h","--help"):
-            raise
+            raise IndexError
+        elif configfile == "--helpmodules":
+            helpmodules()
+            sys.exit(0)
         sys.argv = [sys.argv[0]] + sys.argv[2:]
-    except:
+    except IndexError:
         print("Syntax: gecco [configfile.yml] (First specify a config file, for help then add -h)" ,file=sys.stderr)
+        print("To see all available modules and parameters: gecco --helpmodules" ,file=sys.stderr)
         sys.exit(2)
     corrector = Corrector(config=configfile)
     corrector.main()

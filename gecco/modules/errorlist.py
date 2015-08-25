@@ -16,6 +16,18 @@ from pynlpl.formats import folia
 from gecco.gecco import Module
 
 class WordErrorListModule(Module):
+    """Lexicon Module. Checks an input word against a lexicon and returns suggestions with a certain Levensthein distance. The lexicon may be automatically compiled from a corpus.
+
+    Settings:
+
+    * ``delimiter``    - The delimiter between the frequency and the word in the model file, may be 'space', 'tab' (default), 'comma', 'tilde'
+    * ``reversedformat``     - Set to true if the model has correct->wrong pairs rather than wrong->correct pairs (default: False)
+
+    * ``class``        - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: nonworderror) 
+
+    Models:
+    * An error list   (manually compiled, not trainable from source)
+    """
     UNIT = folia.Word
 
     def verifysettings(self):
@@ -30,6 +42,11 @@ class WordErrorListModule(Module):
             self.settings['delimiter'] = "\t"
         elif self.settings['delimiter'].lower() == 'tilde':
             self.settings['delimiter'] = "~"
+        elif self.settings['delimiter'].lower() == 'comma':
+            self.settings['delimiter'] = ","
+
+        if 'class' not in self.settings:
+            self.settings['class'] = 'nonworderror'
 
         if 'reversedformat' not in self.settings: #reverse format has (correct,wrong) pairs rather than (wrong,correct) pairs
             self.settings['reversedformat'] = False

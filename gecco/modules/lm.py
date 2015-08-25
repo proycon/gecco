@@ -44,9 +44,11 @@ class TIMBLLMModule(Module):
     * ``probfactor``   - If the predicted word is in the target distribution, any suggestions must be more probable by this factor (default: 10)
     * ``algorithm``    - The Timbl algorithm to use (see -a parameter in timbl) (default: IGTree)
     * ``class``        - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: contexterror) 
+
     Sources and models:
     * a plain-text corpus (tokenized)  [``.txt``]     ->    a classifier instance base model [``.ibase``]
 
+    Hapaxer: This module supports hapaxing
     """
     UNIT = folia.Word
 
@@ -154,7 +156,11 @@ class TIMBLLMModule(Module):
                 for i, line in enumerate(f):
                     if i % 100000 == 0: print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + " - " + str(i),file=sys.stderr)
                     for ngram in Windower(line, n):
+                        if self.hapaxer:
+                            ngram = self.hapaxer(ngram)
                         focus = ngram[l]
+                        if self.hapaxer and focus == self.hapaxer.placeholder:
+                            continue
                         leftcontext = tuple(ngram[:l])
                         rightcontext = tuple(ngram[l+1:])
                         classifier.append( leftcontext + rightcontext , focus )
@@ -194,8 +200,8 @@ class TIMBLLMModule(Module):
             model = colibricore.UnindexedPatternModel()
             model.train(corpusfile, options)
 
-        self.log("Saving model " + modelfile)
-        model.write(modelfile)
+            self.log("Saving model " + modelfile)
+            model.write(modelfile)
 
 
     def getfeatures(self, word):
