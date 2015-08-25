@@ -39,6 +39,8 @@ class TIMBLWordConfusibleModule(Module):
 
     Sources and models:
     * a plain-text corpus (tokenized)  [``.txt``]     ->    a classifier instance base model [``.ibase``]
+
+    Hapaxer: This module supports hapaxing
     """
     UNIT = folia.Word
 
@@ -176,6 +178,7 @@ class TIMBLSuffixConfusibleModule(Module):
     * a plain-text corpus (tokenized)  [``.txt``]     ->    a list of confusibles [``.lst``]
     * a plain-text corpus (tokenized)  [``.txt``]     ->    a classifier instance base model [``.ibase``]
 
+    Hapaxer: This module supports hapaxing
     """
     UNIT = folia.Word
 

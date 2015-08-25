@@ -36,7 +36,17 @@ def gethapaxer(settings):
     return hapaxer
 
 class Hapaxer:
-    """The Hapaxer checks words against a lexicon and replaces low-frequency words with a dummy placeholder"""
+    """The Hapaxer checks words against a lexicon and replaces low-frequency words with a dummy placeholder.
+    
+    Settings:
+        * ``hapaxsource``        - The source corpus from which the hapax lexicon is derived
+        * ``hapaxmodel``         - The hapax model file (mandatory!)
+        * ``hapaxthreshold``     - The threshold below which words are considered hapaxes (default: 2)
+        * ``hapaxplaceholder``   - The placeholder symbol for all hapaxes (default: <hapax>)
+        * ``hapaxminlength``     - The minimum length, in characters, of allowed (i.e non-hapax) words (default: 0, unlimited)
+        * ``hapaxmaxlength``     - The maximum length, in characters, of allowed (i.e non-hapax) words (default: 0, unlimited)
+
+    """
 
     def __init__(self, sourcefile, modelfile, threshold, minlength=0,maxlength=0, placeholder="<hapax>"):
         self.sourcefile = sourcefile

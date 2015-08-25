@@ -1195,7 +1195,7 @@ def main():
             raise IndexError
         elif configfile == "--helpmodules":
             #Bit hacky, but it works
-            print("Gecco Modules and Parameters")
+            print("Gecco Modules and Settings")
             print("=================================")
             print()
             import gecco.modules
@@ -1212,6 +1212,11 @@ def main():
                         except:
                             pass
                         print()
+            from gecco.helpers.hapaxing import Hapaxer
+            print("Hapaxing")
+            print("=================================")
+            print("The following settings can be added to any module that supports hapaxing:")
+            print(Hapaxer.__doc__)
             sys.exit(0)
         sys.argv = [sys.argv[0]] + sys.argv[2:]
     except IndexError:
