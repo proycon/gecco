@@ -23,6 +23,8 @@ from gecco.helpers.filters import hasalpha
 from gecco.helpers.common import stripsourceextensions
 import colibricore #pylint: disable=import-error
 import aspell #pylint: disable=import-error
+import hunspell #pylint: disable=import-error
+
 
 class LexiconModule(Module):
     """Lexicon Module. Checks an input word against a lexicon and returns suggestions with a certain Levensthein distance. The lexicon may be automatically compiled from a corpus.
@@ -303,8 +305,52 @@ class ColibriLexiconModule(LexiconModule):
         model.write(modelfile)
 
 
+class HunspellModule(Module):
+    """Looks up the word in a HunSpell lexicon, and returns suggestions
+    
+    Settings:
+    * ``path``          - Path to hunspel (defaults to: /usr/share/hunspell/)
+    * ``language``      - The language (follows locale syntax, i.e. en_GB for British English)
+    * ``class``         - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: runonerror) 
+    """
+
+    UNIT = folia.Word
+    UNITFILTER = hasalpha
+
+    def verifysettings(self):
+        super().verifysettings()
+
+        if 'language' not in self.settings:
+            raise Exception("Mandatory argument to hunspell module missing: language")
+
+        if 'path' not in self.settings:
+            self.settings['path'] = '/usr/share/hunspell'
+
+        if 'class' not in self.settings:
+            self.settings['class'] = 'nonworderror'
+
+    def load(self):
+        self.log("Loading aspell dictionary")
+        self.speller = hunspell.Hunspell(self.settings['path'] + '/' + self.settings['language'] + '.dic', self.settings['path'] + '/' + self.settings['language'] + '.aff' )
+
+    def prepareinput(self,word,**parameters):
+        """Takes the specified FoLiA unit for the module, and returns a string that can be passed to process()"""
+        return str(word) 
+
+    def processoutput(self, output, inputdata, unit_id,**parameters):
+        if output:
+            return self.addsuggestions(unit_id, output )
+
+    def run(self, word):
+        """This methods gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
+        suggestions = [ w for w in self.speller.suggest(word) ]
+        if word not in suggestions:
+            return suggestions
+        else:
+            return []
+
 class AspellModule(Module):
-    """Looks up the word in an Aspell lexicon, and returns suggestionsi
+    """Looks up the word in an Aspell lexicon, and returns suggestions
     
     Settings:
     * ``language``      - The language code (see http://aspell.net/man-html/Supported.html)
