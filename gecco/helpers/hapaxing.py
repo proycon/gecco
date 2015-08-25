@@ -63,23 +63,23 @@ class Hapaxer:
             corpusfile = stripsourceextensions(self.sourcefile) +  ".dat"
 
             if not os.path.exists(classfile):
-                classencoder = colibricore.ClassEncoder(self.minlength,self.maxlength)
-                classencoder.build(self.sourcefile)
-                classencoder.save(classfile)
+                self.classencoder = colibricore.ClassEncoder(self.minlength,self.maxlength)
+                self.classencoder.build(self.sourcefile)
+                self.classencoder.save(classfile)
             else:
-                classencoder = colibricore.ClassEncoder(classfile, self.minlength, self.maxlength)
+                self.classencoder = colibricore.ClassEncoder(classfile, self.minlength, self.maxlength)
 
             if not os.path.exists(self.modelfile + '.cls'):
                 #make symlink to class file, using model name instead of source name
                 os.symlink(classfile, self.modelfile + '.cls')
 
             if not os.path.exists(corpusfile):
-                classencoder.encodefile( self.sourcefile, corpusfile)
+                self.classencoder.encodefile( self.sourcefile, corpusfile)
 
             options = colibricore.PatternModelOptions(mintokens=self.threshold,minlength=1,maxlength=1)
-            model = colibricore.UnindexedPatternModel()
-            model.train(corpusfile, options)
-            model.write(self.modelfile)
+            self.lexicon = colibricore.UnindexedPatternModel()
+            self.lexicon.train(corpusfile, options)
+            self.lexicon.write(self.modelfile)
 
     def load(self):
         if not os.path.exists(self.modelfile):
