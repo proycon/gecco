@@ -114,9 +114,10 @@ as a docker app, or as a compilation script setting up a Python virtual
 environment.
 
 Gecco uses memory-based technologies, and depending on the models you train,
-may take up considerable memory. For we recommend *at least* 16MB RAM. For
-various modules, model size may be reduced by increasing frequency thresholds,
-but this will come at the cost of reduced accuracy.
+may take up considerable memory. Therefore we recommend *at least* 16MB RAM,
+training may require even more. For various modules, model size may be reduced
+by increasing frequency thresholds, but this will come at the cost of reduced
+accuracy.
 
 Gecco will only run on POSIX-complaint operating systems (i.e. Linux, BSD, Mac OS X), not on Windows.
 
@@ -143,11 +144,6 @@ Example YAML configuration:
             - train.txt
           model: 
             - confusible.model
-          servers:
-              - host: blah
-                port: 12345
-              - host: blah2
-                port: 12345
           confusible: [then,than]
 
 Alternatively, the configuration can be done in Python directly, in which case
