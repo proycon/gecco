@@ -46,7 +46,7 @@ RESTful webservice, or through the web application (two interfaces).
           context-sensitive method.
     - **Hunspell Module**
         - Hunspell is open-source lexicon-based software for spelling correction.
-          This module enables aspell to be used from gecco. This is not a
+          This module enables hunspell to be used from gecco. This is not a
           context-sensitive method.
     - **Lexicon Module**
         - The lexicon module enables you to automatically generate a lexicon
