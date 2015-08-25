@@ -36,7 +36,7 @@ class TIMBLLMModule(Module):
 
     Settings:
     * ``threshold``    - Prediction confidence threshold, only when a prediction exceeds this threshold will it be recommended (default: 0.9, value must be higher than 0.5 by definition)
-    * ``freqthreshold`` - If all context words occur below this set threshold, then no classification will take place.
+    * ``freqthreshold`` - If the previous word occurs below this threshold, then no classification will take place. (default: 2)
     * ``leftcontext``  - Left context size (in words) for the feature vector
     * ``rightcontext`` - Right context size (in words) for the feature vector
     * ``maxdistance``  - Maximum Levenshtein distance between a word and its correction (larger distances are pruned from suggestions)
@@ -49,6 +49,7 @@ class TIMBLLMModule(Module):
     * a plain-text corpus (tokenized)  [``.txt``]     ->    a classifier instance base model [``.ibase``]
 
     Hapaxer: This module supports hapaxing
+    Caching: This module supports caching
     """
     UNIT = folia.Word
 
@@ -73,7 +74,7 @@ class TIMBLLMModule(Module):
             self.threshold = self.settings['threshold']
 
         if 'freqthreshold' not in self.settings:
-            self.freqthreshold = 25
+            self.freqthreshold = 2
         else:
             self.freqthreshold = self.settings['freqthreshold']
 
@@ -121,6 +122,10 @@ class TIMBLLMModule(Module):
 
         if not self.models:
             raise Exception("Specify one or more models to load!")
+
+        if self.hapaxer:
+            self.log("Loading hapaxer...")
+            self.hapaxer.load()
 
         self.log("Loading models...")
         modelfile, lexiconfile = self.models
@@ -219,7 +224,6 @@ class TIMBLLMModule(Module):
         wordstr = str(word) #will be reused in processoutput
         if len(wordstr) > self.minlength:
             features = self.getfeatures(word)
-            if self.hapaxer: features = self.hapaxer(features) #pylint: disable=not-callable
             return wordstr, features
 
     def processoutput(self, outputdata, inputdata, unit_id,**parameters):
@@ -231,12 +235,13 @@ class TIMBLLMModule(Module):
 
     def run(self, inputdata):
         """This method gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
-        wordstr = inputdata[0]
-        features = tuple(inputdata[1])
         if self.debug:
             begintime = time.time()
 
-                
+        wordstr = inputdata[0]
+        features = tuple(inputdata[1])
+        if self.hapaxer: 
+            features = self.hapaxer(features) #pylint: disable=not-callable
 
         if self.cache is not None:
             try:
@@ -264,6 +269,15 @@ class TIMBLLMModule(Module):
                 #        return None,None
                 #else:
                 #    return None,None
+        elif self.hapaxer:
+            previousword = features[self.settings['leftcontext'] - 1]
+            if previousword not in self.hapaxer:
+                if self.debug:
+                    duration = round(time.time() - begintime,4)
+                    self.log(" (Previous word not in hapaxer, returned in   " + str(duration) + "s)")
+                return None,None
+
+
 
         best,distribution,_ = self.classifier.classify(features,allowtopdistribution=False) 
         if self.debug:
