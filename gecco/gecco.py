@@ -965,6 +965,7 @@ class Module:
         if not self.servers:
             raise IndexError("No servers")
         index = index % len(self.servers)
+        print("DEBUG: returning ", repr(self.servers[index]),file=sys.stderr)
         return self.servers[index]
 
     def getsubmoduleclient(self, submodule):
