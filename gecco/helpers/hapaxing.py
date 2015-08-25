@@ -93,7 +93,10 @@ class Hapaxer:
         if pattern.unknown():
             return self.placeholder
 
-        count = self.lexicon[pattern]
+        try:
+            count = self.lexicon[pattern]
+        except KeyError:
+            return self.placeholder
         if count < self.threshold:
             return self.placeholder
         else:
