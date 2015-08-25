@@ -1197,6 +1197,7 @@ def main():
             #Bit hacky, but it works
             print("Gecco Modules and Parameters")
             print("=================================")
+            print()
             import gecco.modules
             for modulefile in glob(gecco.modules.__path__[0] + "/*.py"):
                 modulename = os.path.basename(modulefile).replace('.py','')
