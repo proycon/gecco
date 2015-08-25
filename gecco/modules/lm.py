@@ -138,6 +138,9 @@ class TIMBLLMModule(Module):
         self.lexicon = colibricore.UnindexedPatternModel(lexiconfile)
 
     def train(self, sourcefile, modelfile, **parameters):
+        if self.hapaxer:
+            self.log("Training hapaxer...")
+            self.hapaxer.train()
         if modelfile.endswith('.ibase'):
             l = self.settings['leftcontext']
             r = self.settings['rightcontext']
