@@ -69,6 +69,9 @@ class Hapaxer:
             else:
                 classencoder = colibricore.ClassEncoder(classfile, self.minlength, self.maxlength)
 
+            if not os.path.exists(self.modelfile + '.cls'):
+                #make symlink to class file, using model name instead of source name
+                os.symlink(classfile, self.modelfile + '.cls')
 
             if not os.path.exists(corpusfile):
                 classencoder.encodefile( self.sourcefile, corpusfile)
@@ -76,13 +79,13 @@ class Hapaxer:
             options = colibricore.PatternModelOptions(mintokens=self.threshold,minlength=1,maxlength=1)
             model = colibricore.UnindexedPatternModel()
             model.train(corpusfile, options)
-            model.save(self.modelfile)
+            model.write(self.modelfile)
 
     def load(self):
         if not os.path.exists(self.modelfile):
             raise IOError("Missing expected model file for hapaxer:" + self.modelfile)
         self.classencoder = colibricore.ClassEncoder(self.modelfile + '.cls')
-        self.classdecoder = colibricore.ClassDecoder(self.modelfile + '.cls')
+        #self.classdecoder = colibricore.ClassDecoder(self.modelfile + '.cls')
         self.lexicon = colibricore.UnindexedPatternModel(self.modelfile)
 
     def __getitem__(self, word):
