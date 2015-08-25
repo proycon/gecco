@@ -194,8 +194,8 @@ class TIMBLLMModule(Module):
             model = colibricore.UnindexedPatternModel()
             model.train(corpusfile, options)
 
-        self.log("Saving model " + modelfile)
-        model.write(modelfile)
+            self.log("Saving model " + modelfile)
+            model.write(modelfile)
 
 
     def getfeatures(self, word):
