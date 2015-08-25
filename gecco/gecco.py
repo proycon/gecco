@@ -1187,6 +1187,32 @@ class Module:
         else:
             self.log(" ERROR: Unable to suggest insertion before " + str(pivotword.id) + ", item index not found")
 
+def helpmodules():
+    #Bit hacky, but it works
+    print("Gecco Modules and Settings")
+    print("=================================")
+    print()
+    import gecco.modules
+    for modulefile in sorted(glob(gecco.modules.__path__[0] + "/*.py")):
+        modulename = os.path.basename(modulefile).replace('.py','')
+        importlib.import_module('gecco.modules.' + modulename)
+        for C in dir(getattr(gecco.modules,modulename)):
+            C = getattr(getattr(gecco.modules,modulename), C)
+            if inspect.isclass(C) and issubclass(C, Module) and hasattr(C,'__doc__') and C.__doc__:
+                print("gecco.modules." + modulename + "." + C.__name__)
+                print("----------------------------------------------------------------------")
+                try:
+                    print(C.__doc__)
+                except:
+                    pass
+                print()
+    from gecco.helpers.hapaxing import Hapaxer
+    print("Hapaxing")
+    print("=================================")
+    print("The following settings can be added to any module that supports hapaxing:")
+    print(Hapaxer.__doc__)
+
+
 
 def main():
     try:
@@ -1194,29 +1220,7 @@ def main():
         if configfile in ("-h","--help"):
             raise IndexError
         elif configfile == "--helpmodules":
-            #Bit hacky, but it works
-            print("Gecco Modules and Settings")
-            print("=================================")
-            print()
-            import gecco.modules
-            for modulefile in sorted(glob(gecco.modules.__path__[0] + "/*.py")):
-                modulename = os.path.basename(modulefile).replace('.py','')
-                importlib.import_module('gecco.modules.' + modulename)
-                for C in dir(getattr(gecco.modules,modulename)):
-                    C = getattr(getattr(gecco.modules,modulename), C)
-                    if inspect.isclass(C) and issubclass(C, Module) and hasattr(C,'__doc__') and C.__doc__:
-                        print("gecco.modules." + modulename + "." + C.__name__)
-                        print("----------------------------------------------------------------------")
-                        try:
-                            print(C.__doc__)
-                        except:
-                            pass
-                        print()
-            from gecco.helpers.hapaxing import Hapaxer
-            print("Hapaxing")
-            print("=================================")
-            print("The following settings can be added to any module that supports hapaxing:")
-            print(Hapaxer.__doc__)
+            helpmodules()
             sys.exit(0)
         sys.argv = [sys.argv[0]] + sys.argv[2:]
     except IndexError:
