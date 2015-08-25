@@ -689,10 +689,11 @@ class Corrector:
         parser_run.add_argument('-p',dest='parameters', help="Custom parameters passed to the modules, specify as -p parameter=value. This option can be issued multiple times", required=False, action="append")
         parser_run.add_argument('-s',dest='settings', help="Setting overrides, specify as -s setting=value. This option can be issues multiple times.", required=False, action="append")
         parser_run.add_argument('--local', help="Run all modules locally, ignore remote servers", required=False, action='store_true',default=False)
-        parser_startservers = subparsers.add_parser('startservers', help="Starts all the module servers that are configured to run on the current host. Issue once for each host.")
+        parser_startservers = subparsers.add_parser('startservers', help="Starts all the module servers, or the modules explicitly specified, on the current host. Issue once for each host.")
         parser_startservers.add_argument('modules', help="Only start server for modules with the specified IDs (comma-separated list) (if omitted, all modules are run)", nargs='?',default="")
-        parser_stopservers = subparsers.add_parser('stopservers', help="Stops all the module servers that are configured to run on the current host. Issue once for each host.")
+        parser_stopservers = subparsers.add_parser('stopservers', help="Stops all the module servers, or the modules explicitly specified,  on the current host. Issue once for each host.")
         parser_stopservers.add_argument('modules', help="Only stop server for modules with the specified IDs (comma-separated list) (if omitted, all modules are run)", nargs='?',default="")
+        parser_listservers = subparsers.add_parser('listservers', help="Lists all the module servers on all hosts.")
         parser_startserver = subparsers.add_parser('startserver', help="Start one module's server on the specified port, use 'startservers' instead")
         parser_startserver.add_argument('module', help="Module ID")
         parser_startserver.add_argument('host', help="Host/IP to bind to")
@@ -749,6 +750,10 @@ class Corrector:
             self.stopservers(modules)
         elif args.command == 'startserver':
             self.startserver(args.module, args.host, args.port)
+        elif args.command == 'listservers' or args.command == 'ls':
+            servers = self.findservers()
+            for module, host, port, load in servers:
+                self.log(module + "@" + host + ":" + str(port) + ", load " + str(load))
         elif args.command == 'train':
             if args.parameters: parameters = dict(( tuple(p.split('=')) for p in args.parameters))
             if args.modules: modules = args.modules.split(',')
