@@ -36,7 +36,7 @@ class TIMBLLMModule(Module):
 
     Settings:
     * ``threshold``    - Prediction confidence threshold, only when a prediction exceeds this threshold will it be recommended (default: 0.9, value must be higher than 0.5 by definition)
-    * ``freqthreshold`` - If the previous word occurs below this threshold, then no classification will take place. (default: 2)
+    * ``freqthreshold`` - If the previous word occurs below this threshold, then no classification will take place. Only has an effect when a lexicon is enabled (default: 2)
     * ``leftcontext``  - Left context size (in words) for the feature vector
     * ``rightcontext`` - Right context size (in words) for the feature vector
     * ``maxdistance``  - Maximum Levenshtein distance between a word and its correction (larger distances are pruned from suggestions)
@@ -47,6 +47,7 @@ class TIMBLLMModule(Module):
 
     Sources and models:
     * a plain-text corpus (tokenized)  [``.txt``]     ->    a classifier instance base model [``.ibase``]
+    * optional: a plain-text corpus (tokenized)  [``.txt``]     ->    a lexicon model [``.colibri.patternmodel``]
 
     Hapaxer: This module supports hapaxing
     Caching: This module supports caching

@@ -144,12 +144,12 @@ class TIMBLWordConfusibleModule(Module):
         wordstr = str(word) #will be reused in processoutput
         if wordstr in self.confusibles:
             features = self.getfeatures(word)
-            if self.hapaxer: features = self.hapaxer(features)
             return wordstr, features
 
     def run(self, inputdata):
         """This method gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
         _, features = inputdata
+        if self.hapaxer: features = self.hapaxer(features)
         best,distribution,_ = self.classifier.classify(features)
         return (best,distribution)
 

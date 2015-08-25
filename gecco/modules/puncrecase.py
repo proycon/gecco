@@ -234,11 +234,11 @@ class TIMBLPuncRecaseModule(Module):
         """Takes the specified FoLiA unit for the module, and returns a string that can be passed to process()"""
         self.wordstr = str(word) #will be reused in processoutput
         features = self.getfeatures(word)
-        if self.hapaxer: features = self.hapaxer(features)
         return features
 
     def run(self, features):
         """This method gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
+        if self.hapaxer: features = self.hapaxer(features)
         best,distribution,_ = self.classifier.classify(features)
         return [best,distribution]
 
