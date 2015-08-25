@@ -168,6 +168,34 @@ It is recommended to adopt a file/directory structure as described below. If you
 
 An example system spelling correction system for English is provided with Gecco and resides in the ``example/`` directory.
 
+ 
+
+----------------
+Server setup
+----------------
+
+`gecco <yourconfig.yml> run <input.folia.xml>` is executed to process a given
+FoLiA document or plaintext document, it starts a master process that will
+invoke all the modules, which may be distributed over multiple servers. If
+multiple server instances of the same module are available, the load will be
+distributed over them. Output will be delivered in the FoLiA XML format and
+will contain suggestions for correction.  
+
+To start module servers on a host, issue `gecco <yourconfig.yml> startservers`.
+You can optionally specify which servers you want to start, if you do not want
+to start all. You can start servers multiple times, either on the same or on
+multiple hosts. The master process will distribute the load amongst all
+servers. 
+
+To stop the servers, run `gecco <yourconfig.yml> stopservers` on each host that
+has servers running. A list of all running servers can be obtained by `gecco
+<yourconfig.yml> listservers`.
+
+Modules can also run locally within the master process rather than as servers,
+this is done by either by adding `local: true` in the configuration, or by
+adding the ``--local`` option when starting a run. But this will have a
+significant negative impact on performance and should therefore be avoided.
+
 ---------------------
 Command line usage
 ---------------------
@@ -196,6 +224,7 @@ Syntax:
                             run on the current host. Issue once for each host.
         stopservers         Stops all the module servers that are configured to
                             run on the current host. Issue once for each host.
+        listservers         Lists all the module servers on all hosts
         startserver         Start one module's server on the specified port, use
                             'startservers' instead
         train               Train modules
@@ -204,23 +233,6 @@ Syntax:
         reset               Reset modules, deletes all trained models that have
                             sources. Issue prior to train if you want to start
                             anew.
- 
-
-----------------
-Server setup
----------------
-
-On each host that serves one or more modules, a `gecco myconfig.yml
-startservers` has to be issued. Modules not set up to run as a server will
-simply be started and invoked locally on request, which is something you want
-to prevent as this usually takes up too much time.
-
-`gecco run <input.folia.xml>` is executed to process a given FoLiA document or
-plaintext document, it starts a master process that will invoke all the
-modules, which may be distributed over multiple servers. If multiple server
-instances of the same module are available, the load will be distributed over
-them. Output will be delivered in the FoLiA XML format and will contain
-suggestions for correction.  
 
 ----------------------------------------
 Gecco as a webservice
