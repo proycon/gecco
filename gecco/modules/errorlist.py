@@ -23,9 +23,6 @@ class WordErrorListModule(Module):
     * ``delimiter``    - The delimiter between the frequency and the word in the model file, may be 'space', 'tab' (default), 'comma', 'tilde'
     * ``reversedformat``     - Set to true if the model has correct->wrong pairs rather than wrong->correct pairs (default: False)
 
-    * ``suffixes``     - A list of suffixes that will be stripped from a word in case of a mismatch, after which the remainder is rematched against the lexicon 
-    * ``prefixes``     - A list of prefixes that will be stripped from a word in case of a mismatch, after which the remainder is rematched against the lexicon 
-
     * ``class``        - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: nonworderror) 
 
     Models:
