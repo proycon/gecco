@@ -148,7 +148,7 @@ Example YAML configuration:
             - train.txt
           model: 
             - confusible.model
-          confusible: [then,than]
+          confusibles: [then,than]
 
 To list all available modules and the parameters they may take, run ``gecco --helpmodules``.
 
