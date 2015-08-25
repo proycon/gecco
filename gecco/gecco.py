@@ -472,8 +472,6 @@ class Corrector:
                         module.train(sourcefile, modelfile, **parameters)
 
     def evaluate(self, args):
-        for module in self.modules.values():
-            module.local = True
         if args.parameters:
             parameters = dict(( tuple(p.split('=')) for p in args.parameters))
         else:
@@ -733,7 +731,6 @@ class Corrector:
         modules = []
         if args.command == 'run':
             for module in self.modules.values():
-                module.local = True
                 module.forcelocal = args.local
             if args.parameters: parameters = dict(( tuple(p.split('=')) for p in args.parameters))
             if args.modules: modules = args.modules.split(',')
