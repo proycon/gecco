@@ -20,7 +20,6 @@ from collections import OrderedDict
 from pynlpl.formats import folia
 from pynlpl.textprocessors import Windower
 from gecco.gecco import Module
-from gecco.modules.lexicon import LexiconModule
 from gecco.helpers.common import stripsourceextensions
 import colibricore #pylint: disable=import-error
 
@@ -30,7 +29,12 @@ def splits(s):
         yield (s[:i], s[i:])
 
 class RunOnModule(Module):
-    """Detects words that have been joined together but should be split"""
+    """Detects words that have been joined together but should be split. It uses a bigram model.
+    
+    Settings:
+    * ``freqthreshold`` - Frequency threshold for bigrams to make it into the model (default: 10) 
+    * ``class``         - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: runonerror) 
+    """
     UNIT = folia.Word
 
     def verifysettings(self):
@@ -127,7 +131,12 @@ class RunOnModule(Module):
 
 
 class SplitModule(Module):
-    """Detects words that have been split but should be merged together as one"""
+    """Detects words that have been split but should be merged together as one
+
+    Settings:
+    * ``freqthreshold`` - Frequency threshold for bigrams to make it into the model (default: 10) 
+    * ``class``         - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: runonerror) 
+    """
     UNIT = folia.Word
 
     def verifysettings(self):

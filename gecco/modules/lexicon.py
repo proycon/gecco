@@ -304,6 +304,13 @@ class ColibriLexiconModule(LexiconModule):
 
 
 class AspellModule(Module):
+    """Looks up the word in an Aspell lexicon, and returns suggestionsi
+    
+    Settings:
+    * ``language``      - The language code (see http://aspell.net/man-html/Supported.html)
+    * ``class``         - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: runonerror) 
+    """
+
     UNIT = folia.Word
     UNITFILTER = hasalpha
 
@@ -312,6 +319,9 @@ class AspellModule(Module):
 
         if 'language' not in self.settings:
             raise Exception("Mandatory argument to aspell module missing: language")
+
+        if 'class' not in self.settings:
+            self.settings['class'] = 'nonworderror'
 
     def load(self):
         self.log("Loading aspell dictionary")

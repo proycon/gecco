@@ -146,6 +146,8 @@ Example YAML configuration:
             - confusible.model
           confusible: [then,than]
 
+To list all available modules and the parameters they may take, run ``gecco --helpmodules``.
+
 Alternatively, the configuration can be done in Python directly, in which case
 the script will be the tool that exposes all functionality:
 
