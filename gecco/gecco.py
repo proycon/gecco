@@ -753,7 +753,7 @@ class Corrector:
         elif args.command == 'listservers' or args.command == 'ls':
             servers = self.findservers()
             for module, host, port, load in servers:
-                self.log(module + "@" + host + ":" + str(port) + ", load " + str(load))
+                print(module + "@" + host + ":" + str(port) + " (load " + str(load) + ")")
         elif args.command == 'train':
             if args.parameters: parameters = dict(( tuple(p.split('=')) for p in args.parameters))
             if args.modules: modules = args.modules.split(',')
