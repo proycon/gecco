@@ -1204,7 +1204,7 @@ def main():
                 importlib.import_module('gecco.modules.' + modulename)
                 for C in dir(getattr(gecco.modules,modulename)):
                     C = getattr(getattr(gecco.modules,modulename), C)
-                    if inspect.isclass(C) and issubclass(C, Module):
+                    if inspect.isclass(C) and issubclass(C, Module) and hasattr(C,'__doc__') and C.__doc__:
                         print("gecco.modules." + modulename + "." + C.__name__)
                         print("-----------------------------------------")
                         try:
