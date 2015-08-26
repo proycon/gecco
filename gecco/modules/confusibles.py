@@ -59,7 +59,7 @@ class TIMBLWordConfusibleModule(Module):
         if 'rightcontext' not in self.settings:
             self.settings['rightcontext'] = 3
 
-        self.hapaxer = gethapaxer(self.settings)
+        self.hapaxer = gethapaxer(self, self.settings)
 
         if 'confusibles' not in self.settings:
             raise Exception("No confusibles specified for " + self.id + "!")
@@ -197,7 +197,7 @@ class TIMBLSuffixConfusibleModule(Module):
         if 'rightcontext' not in self.settings:
             self.settings['rightcontext'] = 3
 
-        self.hapaxer = gethapaxer(self.settings)
+        self.hapaxer = gethapaxer(self, self.settings)
 
 
         if 'suffixes' not in self.settings:

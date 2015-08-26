@@ -15,12 +15,16 @@ import os.path
 
 from gecco.helpers.common import stripsourceextensions
 
-def gethapaxer(settings):
+def gethapaxer(module, settings):
     hapaxer = None
     if 'hapaxsource' not in settings:
-        settings['hapaxsource'] = ""
+        hapaxsource = ""
+    else:
+        hapaxsource = module.getfilename(settings['hapaxsource'])
     if 'hapaxmodel' not in settings:
-        settings['hapaxmodel'] = ""
+        hapaxmodel = ""
+    else:
+        hapaxmodel = module.getfilename(settings['hapaxmodel'])
     if 'hapaxthreshold' not in settings:
         settings['hapaxthreshold'] = 2
     if 'hapaxminlength' not in settings:
@@ -30,8 +34,9 @@ def gethapaxer(settings):
     if 'hapaxplaceholder' not in settings:
         settings['hapaxplaceholder'] = "<hapax>"
 
+
     if settings['hapaxmodel']:
-        hapaxer = Hapaxer(settings['hapaxsource'], settings['hapaxmodel'], settings['hapaxthreshold'], settings['hapaxminlength'], settings['hapaxmaxlength'], settings['hapaxplaceholder'] )
+        hapaxer = Hapaxer(hapaxsource, hapaxmodel, settings['hapaxthreshold'], settings['hapaxminlength'], settings['hapaxmaxlength'], settings['hapaxplaceholder'] )
 
     return hapaxer
 

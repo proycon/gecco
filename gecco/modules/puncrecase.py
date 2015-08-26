@@ -64,7 +64,7 @@ class TIMBLPuncRecaseModule(Module):
             self.settings['insertionthreshold'] = 0.5
 
 
-        self.hapaxer = gethapaxer(self.settings)
+        self.hapaxer = gethapaxer(self, self.settings)
 
 
         try:

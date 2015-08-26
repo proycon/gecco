@@ -100,7 +100,7 @@ class TIMBLLMModule(Module):
             self.debug = False
 
 
-        self.hapaxer = gethapaxer(self.settings)
+        self.hapaxer = gethapaxer(self, self.settings)
 
         self.cache = getcache(self.settings, 1000)
 
@@ -369,7 +369,7 @@ class ColibriLMModule(Module):
             self.debug = False
 
 
-        self.hapaxer = gethapaxer(self.settings)
+        self.hapaxer = gethapaxer(self, self.settings)
 
         self.cache = getcache(self.settings, 1000)
 
