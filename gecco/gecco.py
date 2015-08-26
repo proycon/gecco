@@ -32,7 +32,7 @@ from collections import OrderedDict, defaultdict
 from threading import Thread
 from multiprocessing import Process, JoinableQueue as Queue #pylint: disable=no-name-in-module
 from glob import glob
-from pynlpl.formats import folia, fql
+from pynlpl.formats import folia, fql #pylint: disable=import-error,no-name-in-module
 from ucto import Tokenizer #pylint: disable=import-error,no-name-in-module
 
 import gecco.helpers.evaluation
@@ -1164,9 +1164,9 @@ class Module:
     def suggestdeletion(self, word,merge=False, **kwargs):
         q = "SUBSTITUTE (AS CORRECTION OF " + self.settings['set'] + " WITH class \"" + self.settings['class'] + "\" annotator \"" + self.settings['annotator'] + "\" annotatortype \"auto\" datetime now"
         if merge:
-            q += " SUGGESTION MERGE (DELETE w) " #TODO: this is new FQL syntax, implement in FQL lib
+            q += " SUGGESTION MERGE DELETION " #TODO: this is new FQL syntax, implement in FQL lib
         else:
-            q += " SUGGESTION (DELETE w) " #TODO: this is new FQL syntax, implement in FQL lib
+            q += " SUGGESTION DELETION " #TODO: this is new FQL syntax, implement in FQL lib
         q += ") FOR SPAN ID \"" + word.id + "\""
         q += " RETURN nothing"
         return q
