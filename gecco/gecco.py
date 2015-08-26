@@ -1161,13 +1161,13 @@ class Module:
         q += " RETURN nothing"
         return q
 
-    def suggestdeletion(self, word,merge=False, **kwargs):
+    def suggestdeletion(self, word_id,merge=False, **kwargs):
         q = "SUBSTITUTE (AS CORRECTION OF " + self.settings['set'] + " WITH class \"" + self.settings['class'] + "\" annotator \"" + self.settings['annotator'] + "\" annotatortype \"auto\" datetime now"
         if merge:
             q += " SUGGESTION MERGE DELETION " #TODO: this is new FQL syntax, implement in FQL lib
         else:
             q += " SUGGESTION DELETION " #TODO: this is new FQL syntax, implement in FQL lib
-        q += ") FOR SPAN ID \"" + word.id + "\""
+        q += ") FOR SPAN ID \"" + word_id + "\""
         q += " RETURN nothing"
         return q
 

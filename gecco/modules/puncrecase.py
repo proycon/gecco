@@ -17,12 +17,14 @@ import io
 import bz2
 import gzip
 import datetime
-from pynlpl.formats import folia
-from pynlpl.textprocessors import Windower
+from pynlpl.formats import folia #pylint: disable=import-error
+from pynlpl.textprocessors import Windower #pylint: disable=import-error
 from timbl import TimblClassifier #pylint: disable=import-error
 from gecco.gecco import Module
 from gecco.helpers.hapaxing import gethapaxer
 
+
+EOSMARKERS = ('.','?','!')
 
 class TIMBLPuncRecaseModule(Module):
     """This is a memory-based classification module, implemented using Timbl, that predicts where punctuation needs to be inserted, deleted, and whether a word needs to be written with an initial capital. 
@@ -192,36 +194,8 @@ class TIMBLPuncRecaseModule(Module):
 
         return leftcontext + [word.text().lower()] + rightcontext
 
-    def processresult(self, word, lock, cls, distribution):
-        recase = False
-
-        if cls[-1] == 'C':
-            cls = cls[:-1]
-            recase = True
-
-        if cls == '-':
-            prevword = word.previous(folia.Word,None)
-            if prevword and distribution[cls] >= self.settings['deletionthreshold'] and all( not c.isalnum() for c in  prevword.text() ):
-                self.suggestdeletion(lock, prevword, cls='redundantpunctuation')
-        elif cls and cls in distribution:
-            #insertion of punctuation
-            if distribution[cls] >= self.settings['insertionthreshold']:
-                self.suggestinsertion(lock, word, cls)
-
-        if recase:
-            #recase word
-            t = word.text()
-            if recase:
-                t = t[0].upper() + t[1:]
-            self.addsuggestions(lock, word, [t], cls='capitalizationerror')
 
 
-    def run(self, word, lock, **parameters):
-        """This method gets invoked by the Corrector when it runs locally. word is a folia.Word instance"""
-        wordstr = str(word)
-        if wordstr.isalnum():
-            cls, distribution = self.classify(word)
-            self.processresult(word,lock,cls,distribution)
 
     def runclient(self, client, word, lock, **parameters):
         """This method gets invoked by the Corrector when it should connect to a remote server, the client instance is passed and already available (will connect on first communication). word is a folia.Word instance"""
@@ -230,15 +204,51 @@ class TIMBLPuncRecaseModule(Module):
             cls, distribution = json.loads(client.communicate(json.dumps(self.getfeatures(word))))
             self.processresult(word,lock,cls,distribution)
 
+
     def prepareinput(self,word,**parameters):
         """Takes the specified FoLiA unit for the module, and returns a string that can be passed to process()"""
-        self.wordstr = str(word) #will be reused in processoutput
+        wordstr = str(word) #will be reused in processoutput
+        prevword = word.previous(folia.Word,None)
+        if prevword:
+            prevwordstr = str(prevword)
+            prevword_id = prevword.id
+        else:
+            prevwordstr = ""
+            prevword_id = ""
         features = self.getfeatures(word)
-        return features
+        return wordstr, prevwordstr, prevword_id,features
 
-    def run(self, features):
+    def run(self, inputdata):
         """This method gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
+        wordstr,prevword,prevword_id, features = inputdata
         if self.hapaxer: features = self.hapaxer(features)
         best,distribution,_ = self.classifier.classify(features)
         return [best,distribution]
 
+    def processoutput(self, outputdata, inputdata, unit_id,**parameters):
+        queries = []
+        wordstr,prevword,prevword_id, _ = inputdata
+        cls, distribution = outputdata
+
+        recase = False
+
+        if cls[-1] == 'C':
+            cls = cls[:-1]
+            recase = True
+
+        if cls == '-':
+            if prevword and distribution[cls] >= self.settings['deletionthreshold'] and all( not c.isalnum() for c in  prevword ):
+                queries.append( self.suggestdeletion(prevword_id,(prevword in EOSMARKERS), cls='redundantpunctuation') )
+        elif cls and cls in distribution:
+            #insertion of punctuation
+            if distribution[cls] >= self.settings['insertionthreshold']:
+                queries.append( self.suggestinsertion(unit_id, cls, (cls in EOSMARKERS) ) )
+
+        if recase:
+            #recase word
+            t = wordstr
+            if recase:
+                t = t[0].upper() + t[1:]
+            queries.append( self.addsuggestions( unit_id, [t], cls='capitalizationerror') )
+
+        return queries
