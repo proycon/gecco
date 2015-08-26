@@ -35,7 +35,7 @@ def gethapaxer(module, settings):
         settings['hapaxplaceholder'] = "<hapax>"
 
 
-    if settings['hapaxmodel']:
+    if hapaxmodel:
         hapaxer = Hapaxer(hapaxsource, hapaxmodel, settings['hapaxthreshold'], settings['hapaxminlength'], settings['hapaxmaxlength'], settings['hapaxplaceholder'] )
 
     return hapaxer
