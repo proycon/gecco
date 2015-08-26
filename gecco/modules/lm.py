@@ -251,6 +251,12 @@ class TIMBLLMModule(Module):
         features = tuple(inputdata[1])
         if self.hapaxer: 
             features = self.hapaxer(features) #pylint: disable=not-callable
+            previousword = features[self.settings['leftcontext'] - 1]
+            if previousword == self.hapaxer.placeholder:
+                if self.debug:
+                    duration = round(time.time() - begintime,4)
+                    self.log(" (Previous word not in hapaxer, returned in   " + str(duration) + "s)")
+                return None,None
 
         if self.cache is not None:
             try:
@@ -278,13 +284,6 @@ class TIMBLLMModule(Module):
                 #        return None,None
                 #else:
                 #    return None,None
-        elif self.hapaxer:
-            previousword = features[self.settings['leftcontext'] - 1]
-            if previousword not in self.hapaxer:
-                if self.debug:
-                    duration = round(time.time() - begintime,4)
-                    self.log(" (Previous word not in hapaxer, returned in   " + str(duration) + "s)")
-                return None,None
 
 
 
