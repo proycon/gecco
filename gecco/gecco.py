@@ -149,16 +149,19 @@ class DataThread(Process):
                         self.infoqueue.put( module.id) 
                     except fql.SyntaxError as e:
                         self.corrector.log("***ERROR*** FQL Syntax error in " + module_id + ":" + str(e)) #not parallel, acts on same document anyway, should be fairly quick depending on module
+                        self.corrector.log(" query: " + query)
                         exc_type, exc_value, exc_traceback = sys.exc_info() 
                         formatted_lines = traceback.format_exc().splitlines() 
                         traceback.print_tb(exc_traceback, limit=50, file=sys.stderr)
                     except fql.QueryError as e:
                         self.corrector.log("***ERROR*** FQL Query error in " + module_id + ":" + str(e)) #not parallel, acts on same document anyway, should be fairly quick depending on module
+                        self.corrector.log(" query: " + query)
                         exc_type, exc_value, exc_traceback = sys.exc_info() 
                         formatted_lines = traceback.format_exc().splitlines() 
                         traceback.print_tb(exc_traceback, limit=50, file=sys.stderr)
                     except Exception as e:
                         self.corrector.log("***ERROR*** Error processing query for " + module_id + ":" + str(e)) #not parallel, acts on same document anyway, should be fairly quick depending on module
+                        self.corrector.log(" query: " + query)
                         exc_type, exc_value, exc_traceback = sys.exc_info() 
                         formatted_lines = traceback.format_exc().splitlines() 
                         traceback.print_tb(exc_traceback, limit=50, file=sys.stderr)
