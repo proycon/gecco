@@ -61,6 +61,9 @@ class Hapaxer:
         self.minlength = minlength
         self.maxlength = maxlength
 
+        self.classencoder = None
+        self.lexicon = None
+
 
     def train(self):
         if self.sourcefile and not os.path.exists(self.modelfile):
@@ -86,6 +89,7 @@ class Hapaxer:
             self.lexicon.train(corpusfile, options)
             self.lexicon.write(self.modelfile)
 
+
     def load(self):
         if not os.path.exists(self.modelfile):
             raise IOError("Missing expected model file for hapaxer:" + self.modelfile)
@@ -96,6 +100,7 @@ class Hapaxer:
     def __getitem__(self, word):
         if word in ('<begin>','<end>'): #EOS markers are never hapaxes
             return word
+        if self.lexicon is None: self.load()
         pattern = self.classencoder.buildpattern(word)
         if pattern.unknown():
             return self.placeholder
