@@ -94,6 +94,8 @@ class Hapaxer:
         self.lexicon = colibricore.UnindexedPatternModel(self.modelfile)
 
     def __getitem__(self, word):
+        if word in ('<begin>','<end>'): #EOS markers are never hapaxes
+            return word
         pattern = self.classencoder.buildpattern(word)
         if pattern.unknown():
             return self.placeholder
