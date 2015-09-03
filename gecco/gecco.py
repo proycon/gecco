@@ -255,10 +255,9 @@ class ProcessorThread(Process):
                                         del self.clients[(server,port)]
                                     except Exception as e: 
                                         module.log("[" + str(self.pid) + "] Server communication failed for server " + server +":" + str(port) + ", module " + module.id + ", passed unit " + unit_id + " (traceback follows in debug), moving on...")
-                                        if self.debug:
-                                            exc_type, exc_value, exc_traceback = sys.exc_info() 
-                                            formatted_lines = traceback.format_exc().splitlines() 
-                                            traceback.print_tb(exc_traceback, limit=50, file=sys.stderr)
+                                        exc_type, exc_value, exc_traceback = sys.exc_info() 
+                                        formatted_lines = traceback.format_exc().splitlines() 
+                                        traceback.print_tb(exc_traceback, limit=50, file=sys.stderr)
                                         del self.clients[(server,port)]
                             except IndexError:
                                 module.log("**ERROR** No servers started for " + module.id)
