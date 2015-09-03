@@ -250,7 +250,7 @@ class TIMBLLMModule(Module):
         wordstr = inputdata[0]
         features = tuple(inputdata[1])
         if self.debug: 
-            self.log(" (Processing word " + wordstr + ", features: " + features + ")")
+            self.log(" (Processing word " + wordstr + ", features: " + repr(features) + ")")
 
         if self.hapaxer: 
             features = self.hapaxer(features) #pylint: disable=not-callable
