@@ -141,7 +141,7 @@ class TIMBLLMModule(Module):
             raise IOError("Missing expected lexicon model file: " + lexiconfile + ". Did you forget to train the system?")
         self.log("Loading model file " + modelfile + "...")
         fileprefix = modelfile.replace(".ibase","") #has been verified earlier
-        self.classifier = TimblClassifier(fileprefix, self.gettimbloptions(),threading=True) 
+        self.classifier = TimblClassifier(fileprefix, self.gettimbloptions(),threading=True, debug=self.debug) 
         self.classifier.load()
 
         if lexiconfile:
