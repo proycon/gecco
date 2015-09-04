@@ -46,7 +46,7 @@ class TIMBLWordConfusibleModule(Module):
 
     def verifysettings(self):
         if 'class' not in self.settings:
-            self.settings['class'] = 'confusible'
+            self.settings['class'] = 'confusion'
 
         super().verifysettings()
 
@@ -184,7 +184,7 @@ class TIMBLSuffixConfusibleModule(Module):
 
     def verifysettings(self):
         if 'class' not in self.settings:
-            self.settings['class'] = 'confusible'
+            self.settings['class'] = 'confusion'
 
         super().verifysettings()
 
