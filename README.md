@@ -246,6 +246,11 @@ Syntax:
                             sources. Issue prior to train if you want to start
                             anew.
 
+
+Vital documentation regarding all modules and the settings they take can be obtained through:
+
+    $ gecco --helpmodules
+
 ----------------------------------------
 Gecco as a webservice
 ----------------------------------------
