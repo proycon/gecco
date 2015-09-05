@@ -206,9 +206,7 @@ significant negative impact on performance and should therefore be avoided.
 Architecture
 -----------------
 
-.. image:: https://raw.github.com/proycon/gecco/master/gecco_architecture.png
-    :alt: GECCO Architecture
-    :align: center
+![Gecco Architecture](https://raw.github.com/proycon/gecco/master/gecco_architecture.png "Gecco Architecture")
 
 ---------------------
 Command line usage
