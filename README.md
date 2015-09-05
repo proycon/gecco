@@ -202,6 +202,14 @@ this is done by either by adding `local: true` in the configuration, or by
 adding the ``--local`` option when starting a run. But this will have a
 significant negative impact on performance and should therefore be avoided.
 
+-----------------
+Architecture
+-----------------
+
+.. image:: https://raw.github.com/proycon/gecco/master/gecco_architecture.png
+    :alt: GECCO Architecture
+    :align: center
+
 ---------------------
 Command line usage
 ---------------------
