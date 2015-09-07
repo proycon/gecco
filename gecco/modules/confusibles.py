@@ -36,6 +36,8 @@ class TIMBLWordConfusibleModule(Module):
     * ``rightcontext`` - Right context size (in words) for the feature vector
     * ``algorithm``    - The Timbl algorithm to use (see -a parameter in timbl) (default: IGTree)
     * ``class``        - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: confusible)
+    * ``threshold``    - The probability threshold that classifier options must attain to be passed on as suggestions. (default: 0.8)
+    * ``minocc``       - The minimum number of occurrences (sum of all class weights) (default: 5)
 
     Sources and models:
     * a plain-text corpus (tokenized)  [``.txt``]     ->    a classifier instance base model [``.ibase``]
@@ -58,6 +60,12 @@ class TIMBLWordConfusibleModule(Module):
 
         if 'rightcontext' not in self.settings:
             self.settings['rightcontext'] = 3
+
+        if 'threshold' not in self.settings:
+            self.settings['threshold'] = 0.8
+
+        if 'minocc' not in self.settings:
+            self.settings['minocc'] = 5
 
         self.hapaxer = gethapaxer(self, self.settings)
 
@@ -91,7 +99,7 @@ class TIMBLWordConfusibleModule(Module):
             raise IOError("Missing expected model file: " + modelfile + ". Did you forget to train the system?")
         self.log("Loading model file " + modelfile + "...")
         fileprefix = modelfile.replace(".ibase","") #has been verified earlier
-        self.classifier = TimblClassifier(fileprefix, self.gettimbloptions()) #pylint: disable=attribute-defined-outside-init
+        self.classifier = TimblClassifier(fileprefix, self.gettimbloptions(), normalize=False) #pylint: disable=attribute-defined-outside-init
         self.classifier.load()
 
     def train(self, sourcefile, modelfile, **parameters):
@@ -138,6 +146,14 @@ class TIMBLWordConfusibleModule(Module):
         return leftcontext + rightcontext
 
 
+    def classify(self, features):
+        if self.hapaxer: features = self.hapaxer(features)
+        best,distribution,_ = self.classifier.classify(features)
+        sumweights = sum(distribution.values())
+        if sumweights < self.settings['minocc']:
+            return best, []
+        distribution = { sug: weight for sug,weight in distribution.items() if weight/sumweights >= self.settings['threshold'] }
+        return (best,distribution)
 
     def prepareinput(self,word,**parameters):
         """Takes the specified FoLiA unit for the module, and returns a string that can be passed to process()"""
@@ -149,14 +165,13 @@ class TIMBLWordConfusibleModule(Module):
     def run(self, inputdata):
         """This method gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
         _, features = inputdata
-        if self.hapaxer: features = self.hapaxer(features)
-        best,distribution,_ = self.classifier.classify(features)
+        best, distribution = self.classify(features)
         return (best,distribution)
 
     def processoutput(self, output, inputdata, unit_id,**parameters):
         wordstr, _  = inputdata
         best,distribution = output
-        if best != wordstr:
+        if best and best != wordstr and distribution:
             return self.addsuggestions(unit_id, list(distribution.items()))
 
 
@@ -196,6 +211,11 @@ class TIMBLSuffixConfusibleModule(Module):
 
         if 'rightcontext' not in self.settings:
             self.settings['rightcontext'] = 3
+
+        if 'threshold' not in self.settings:
+            self.settings['threshold'] = 0.8
+        if 'minocc' not in self.settings:
+            self.settings['minocc'] = 5
 
         self.hapaxer = gethapaxer(self, self.settings)
 
@@ -256,7 +276,7 @@ class TIMBLSuffixConfusibleModule(Module):
             raise IOError("Missing expected model file: " + self.modelfile + ". Did you forget to train the system?")
         self.log("Loading Timbl model file " + self.modelfile + "...")
         fileprefix = self.modelfile.replace(".ibase","") #has been verified earlier
-        self.classifier = TimblClassifier(fileprefix, self.gettimbloptions()) #pylint: disable=attribute-defined-outside-init
+        self.classifier = TimblClassifier(fileprefix, self.gettimbloptions(), normalize=False) #pylint: disable=attribute-defined-outside-init
         self.classifier.load()
 
     def clientload(self):
@@ -387,12 +407,14 @@ class TIMBLSuffixConfusibleModule(Module):
 
 
 
-    def classify(self, word):
-        features = self.getfeatures(word)
+    def classify(self, features):
         if self.hapaxer: features = self.hapaxer(features)
-        best, distribution,_ = self.classifier.classify(features)
-        return best, distribution
-
+        best,distribution,_ = self.classifier.classify(features)
+        sumweights = sum(distribution.values())
+        if sumweights < self.settings['freqthreshold']:
+            return best, []
+        distribution = { sug: weight for sug,weight in distribution.items() if weight/sumweights >= self.settings['threshold'] }
+        return (best,distribution)
 
     def getfeatures(self, word):
         """Get features at testing time, crosses sentence boundaries"""
@@ -407,13 +429,12 @@ class TIMBLSuffixConfusibleModule(Module):
         wordstr = str(word)
         if wordstr in self.confusibles:
             features = self.getfeatures(word)
-            if self.hapaxer: features = self.hapaxer(features)
             return wordstr, features
 
     def run(self, inputdata):
         """This method gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
         _,features = inputdata
-        best,distribution,_ = self.classifier.classify(features)
+        best,distribution,_ = self.classify(features)
         return (best,distribution)
 
     def processoutput(self, output, inputdata, unit_id,**parameters):
