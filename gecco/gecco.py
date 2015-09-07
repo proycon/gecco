@@ -135,36 +135,39 @@ class DataThread(Process):
             elif outputdata:
                 module = self.corrector.modules[module_id]
                 try:
-                    query = module.processoutput(outputdata, inputdata, unit_id,**self.parameters)
+                    queries = module.processoutput(outputdata, inputdata, unit_id,**self.parameters)
                 except Exception as e: #pylint: disable=broad-except
                     self.corrector.log("***ERROR*** Exception processing output of " + module_id + ": " + str(e)) #not parallel, acts on same document anyway, should be fairly quick depending on module
                     exc_type, exc_value, exc_traceback = sys.exc_info() 
                     formatted_lines = traceback.format_exc().splitlines() 
                     traceback.print_tb(exc_traceback, limit=50, file=sys.stderr)
-                    query = None
-                if query is not None:
-                    try:
-                        q = fql.Query(query)
-                        q(self.foliadoc)
-                        self.infoqueue.put( module.id) 
-                    except fql.SyntaxError as e:
-                        self.corrector.log("***ERROR*** FQL Syntax error in " + module_id + ":" + str(e)) #not parallel, acts on same document anyway, should be fairly quick depending on module
-                        self.corrector.log(" query: " + query)
-                        exc_type, exc_value, exc_traceback = sys.exc_info() 
-                        formatted_lines = traceback.format_exc().splitlines() 
-                        traceback.print_tb(exc_traceback, limit=50, file=sys.stderr)
-                    except fql.QueryError as e:
-                        self.corrector.log("***ERROR*** FQL Query error in " + module_id + ":" + str(e)) #not parallel, acts on same document anyway, should be fairly quick depending on module
-                        self.corrector.log(" query: " + query)
-                        exc_type, exc_value, exc_traceback = sys.exc_info() 
-                        formatted_lines = traceback.format_exc().splitlines() 
-                        traceback.print_tb(exc_traceback, limit=50, file=sys.stderr)
-                    except Exception as e:
-                        self.corrector.log("***ERROR*** Error processing query for " + module_id + ":" + str(e)) #not parallel, acts on same document anyway, should be fairly quick depending on module
-                        self.corrector.log(" query: " + query)
-                        exc_type, exc_value, exc_traceback = sys.exc_info() 
-                        formatted_lines = traceback.format_exc().splitlines() 
-                        traceback.print_tb(exc_traceback, limit=50, file=sys.stderr)
+                    queries = None
+                if queries is not None:
+                    if isinstance(queries, str):
+                        queries = (queries,)
+                    for query in queries:
+                        try:
+                            q = fql.Query(query)
+                            q(self.foliadoc)
+                            self.infoqueue.put( module.id) 
+                        except fql.SyntaxError as e:
+                            self.corrector.log("***ERROR*** FQL Syntax error in " + module_id + ":" + str(e)) #not parallel, acts on same document anyway, should be fairly quick depending on module
+                            self.corrector.log(" query: " + query)
+                            exc_type, exc_value, exc_traceback = sys.exc_info() 
+                            formatted_lines = traceback.format_exc().splitlines() 
+                            traceback.print_tb(exc_traceback, limit=50, file=sys.stderr)
+                        except fql.QueryError as e:
+                            self.corrector.log("***ERROR*** FQL Query error in " + module_id + ":" + str(e)) #not parallel, acts on same document anyway, should be fairly quick depending on module
+                            self.corrector.log(" query: " + query)
+                            exc_type, exc_value, exc_traceback = sys.exc_info() 
+                            formatted_lines = traceback.format_exc().splitlines() 
+                            traceback.print_tb(exc_traceback, limit=50, file=sys.stderr)
+                        except Exception as e:
+                            self.corrector.log("***ERROR*** Error processing query for " + module_id + ":" + str(e)) #not parallel, acts on same document anyway, should be fairly quick depending on module
+                            self.corrector.log(" query: " + query)
+                            exc_type, exc_value, exc_traceback = sys.exc_info() 
+                            formatted_lines = traceback.format_exc().splitlines() 
+                            traceback.print_tb(exc_traceback, limit=50, file=sys.stderr)
 
         self.infoqueue.put(None) #signals end
 
