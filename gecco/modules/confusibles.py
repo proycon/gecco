@@ -156,8 +156,10 @@ class TIMBLWordConfusibleModule(Module):
         sumweights = sum(distribution.values())
         if self.debug: self.log("(Classified " + repr(features) + ", best=" + best + ", sumweights=" + str(sumweights) + ", distribution=" + repr(distribution) + ")")
         if sumweights < self.settings['minocc']:
+            if self.debug: self.log("(Not passing minocc threshold)")
             return best, []
-        distribution = { sug: weight for sug,weight in distribution.items() if weight/sumweights >= self.settings['threshold'] }
+        distribution = { sug: weight/sumweights for sug,weight in distribution.items() if weight/sumweights >= self.settings['threshold'] }
+        if self.debug: self.log("(Returning " + str(len(distribution)) + " suggestions after filtering)")
         return (best,distribution)
 
     def prepareinput(self,word,**parameters):
@@ -420,7 +422,8 @@ class TIMBLSuffixConfusibleModule(Module):
         sumweights = sum(distribution.values())
         if sumweights < self.settings['minocc']:
             return best, []
-        distribution = { sug: weight for sug,weight in distribution.items() if weight/sumweights >= self.settings['threshold'] }
+        distribution = { sug: weight/sumweights for sug,weight in distribution.items() if weight/sumweights >= self.settings['threshold'] }
+        if self.debug: self.log("(Returning " + str(len(distribution)) + " suggestions after filtering)")
         return (best,distribution)
 
     def getfeatures(self, word):
