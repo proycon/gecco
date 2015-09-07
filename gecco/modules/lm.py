@@ -43,7 +43,7 @@ class TIMBLLMModule(Module):
     * ``minlength``    - Minimum length (in characters) for a word to be considered by the LM module
     * ``probfactor``   - If the predicted word is in the target distribution, any suggestions must be more probable by this factor (default: 10)
     * ``algorithm``    - The Timbl algorithm to use (see -a parameter in timbl) (default: IGTree)
-    * ``class``        - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: contexterror) 
+    * ``class``        - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: confusion) 
 
     Sources and models:
     * a plain-text corpus (tokenized)  [``.txt``]     ->    a classifier instance base model [``.ibase``]
@@ -56,7 +56,7 @@ class TIMBLLMModule(Module):
 
     def verifysettings(self):
         if 'class' not in self.settings:
-            self.settings['class'] = 'contexterror'
+            self.settings['class'] = 'confusion'
 
         super().verifysettings()
 
@@ -331,7 +331,7 @@ class ColibriLMModule(Module):
     * ``leftcontext``  - Maximum left context size (in words) 
     * ``rightcontext``  - Maximum right context size (in words) 
     * ``maxdistance``  - Maximum Levenshtein distance between a word and its correction (larger distances are pruned from suggestions)
-    * ``class``        - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: contexterror) 
+    * ``class``        - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: confusion) 
     Sources and models:
     * a plain-text corpus (tokenized)  [``.txt``]     ->    a colibri indexed pattern model 
 
@@ -341,7 +341,7 @@ class ColibriLMModule(Module):
 
     def verifysettings(self):
         if 'class' not in self.settings:
-            self.settings['class'] = 'contexterror'
+            self.settings['class'] = 'confusion'
 
         super().verifysettings()
 
