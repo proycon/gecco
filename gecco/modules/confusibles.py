@@ -436,7 +436,7 @@ class TIMBLSuffixConfusibleModule(Module):
     def run(self, inputdata):
         """This method gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
         _,features = inputdata
-        best,distribution,_ = self.classify(features)
+        best,distribution = self.classify(features)
         return (best,distribution)
 
     def processoutput(self, output, inputdata, unit_id,**parameters):
