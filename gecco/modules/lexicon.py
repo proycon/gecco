@@ -474,7 +474,7 @@ class HunspellModule(ExternalSpellModule):
 
     def load(self):
         self.log("Loading aspell dictionary")
-        self.speller = hunspell.Hunspell(self.settings['path'] + '/' + self.settings['language'] + '.dic', self.settings['path'] + '/' + self.settings['language'] + '.aff' )
+        self.speller = hunspell.HunSpell(self.settings['path'] + '/' + self.settings['language'] + '.dic', self.settings['path'] + '/' + self.settings['language'] + '.aff' )
 
     def __getitem__(self, word):
         return list(self.speller.suggest(word))
