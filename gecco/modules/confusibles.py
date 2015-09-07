@@ -73,6 +73,10 @@ class TIMBLWordConfusibleModule(Module):
             raise Exception("No confusibles specified for " + self.id + "!")
         self.confusibles = self.settings['confusibles']
 
+        if 'debug' in self.settings:
+            self.debug = bool(self.settings['debug'])
+        else:
+            self.debug = False
 
         try:
             modelfile = self.models[0]
@@ -150,6 +154,7 @@ class TIMBLWordConfusibleModule(Module):
         if self.hapaxer: features = self.hapaxer(features)
         best,distribution,_ = self.classifier.classify(features)
         sumweights = sum(distribution.values())
+        if self.debug: self.log("(Classified " + repr(features) + ", best=" + best + ", sumweights=" + str(sumweights) + ", distribution=" + repr(distribution) + ")")
         if sumweights < self.settings['minocc']:
             return best, []
         distribution = { sug: weight for sug,weight in distribution.items() if weight/sumweights >= self.settings['threshold'] }
@@ -413,7 +418,7 @@ class TIMBLSuffixConfusibleModule(Module):
         if self.hapaxer: features = self.hapaxer(features)
         best,distribution,_ = self.classifier.classify(features)
         sumweights = sum(distribution.values())
-        if sumweights < self.settings['freqthreshold']:
+        if sumweights < self.settings['minocc']:
             return best, []
         distribution = { sug: weight for sug,weight in distribution.items() if weight/sumweights >= self.settings['threshold'] }
         return (best,distribution)
