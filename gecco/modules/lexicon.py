@@ -318,6 +318,8 @@ class ExternalSpellModule(Module):
 
         if 'class' not in self.settings:
             self.settings['class'] = 'nonworderror'
+        if 'runonclass' not in self.settings:
+            self.settings['runonclass'] = 'runonerror'
 
         if 'maxdistance' not in self.settings:
             self.settings['maxdistance'] = 2
@@ -350,8 +352,15 @@ class ExternalSpellModule(Module):
             return wordstr 
 
     def processoutput(self, output, inputdata, unit_id,**parameters):
+        queries = []
         if output:
-            return self.addsuggestions(unit_id, output )
+            queries += self.addsuggestions(unit_id, [ (word,confidence) for word,confidence in output if ' ' not in word])
+            if self.settings['runonclass']:
+                cls = self.settings['class'] #bit of an ugly cheat since we don't really support dual classes
+                self.settings['class'] =self.settings['runonclass']
+                queries += self.splitcorrection(unit_id,[ (word.split(' '),confidence) for word,confidence in output if ' ' in  word ]) 
+                self.settings['class'] = cls
+            return queries
 
 
     def run(self, word):
@@ -414,7 +423,7 @@ class AspellModule(ExternalSpellModule):
     
     Settings:
     * ``language``      - The language code (see http://aspell.net/man-html/Supported.html)
-    * ``class``         - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: runonerror) 
+    * ``class``         - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: nonworderror) 
     * ``maxdistance``  - Maximum Levenshtein distance between a word and its correction (larger distances are pruned from suggestions)
     * ``maxlength``  - Maximum length of words in characters, longer words are ignored (default: 25)
     * ``minlength``  - Minimum length of words in characters, shorter words are ignored (default: 5)
@@ -449,7 +458,8 @@ class HunspellModule(ExternalSpellModule):
     Settings:
     * ``path``          - Path to hunspel (defaults to: /usr/share/hunspell/)
     * ``language``      - The language (follows locale syntax, i.e. en_GB for British English)
-    * ``class``         - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: runonerror) 
+    * ``class``         - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: nonworderror) 
+    * ``runonclass``    - Runon errors found by this module will be assigned the specified class in the resulting FoLiA output (default: runonerror) 
     * ``maxdistance``  - Maximum Levenshtein distance between a word and its correction (larger distances are pruned from suggestions)
     * ``maxlength``  - Maximum length of words in characters, longer words are ignored (default: 25)
     * ``minlength``  - Minimum length of words in characters, shorter words are ignored (default: 5)
@@ -477,4 +487,4 @@ class HunspellModule(ExternalSpellModule):
         self.speller = hunspell.HunSpell(self.settings['path'] + '/' + self.settings['language'] + '.dic', self.settings['path'] + '/' + self.settings['language'] + '.aff' )
 
     def __getitem__(self, word):
-        return list(self.speller.suggest(word))
+        return [ str(w,'utf-8') for w in self.speller.suggest(word) ] 
