@@ -315,11 +315,28 @@ class ExternalSpellModule(Module):
     def verifysettings(self):
         super().verifysettings()
 
-        if 'language' not in self.settings:
-            raise Exception("Mandatory argument to spell module missing: language")
 
         if 'class' not in self.settings:
             self.settings['class'] = 'nonworderror'
+
+        if 'maxdistance' not in self.settings:
+            self.settings['maxdistance'] = 2
+        if 'maxdistance_short' not in self.settings:
+            self.settings['maxdistance_short'] = 1
+        if 'maxlength' not in self.settings:
+            self.settings['maxlength'] = 25 #longer words will be ignored
+        if 'minlength' not in self.settings:
+            self.settings['minlength'] = 5 #shorter word will be ignored
+        if 'shortlength' not in self.settings:
+            self.settings['shortlength'] = self.settings['minlength']
+        if 'maxnrclosest' not in self.settings:
+            self.settings['maxnrclosest'] = 5
+
+
+        if 'suffixes' not in self.settings:
+            self.settings['suffixes'] = []
+        if 'prefixes' not in self.settings:
+            self.settings['prefixes'] = []
 
         self.cache = getcache(self.settings, 1000) #2nd arg is default cache size
 
