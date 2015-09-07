@@ -32,9 +32,9 @@ class TIMBLWordConfusibleModule(Module):
 
     Settings:
     * ``confusibles``  - List of words (strings) that form a single set of confusibles.
-    * ``leftcontext``  - Left context size (in words) for the feature vector
-    * ``rightcontext`` - Right context size (in words) for the feature vector
-    * ``algorithm``    - The Timbl algorithm to use (see -a parameter in timbl) (default: IGTree)
+    * ``leftcontext``  - Left context size (in words) for the feature vector (changing this requires retraining)
+    * ``rightcontext`` - Right context size (in words) for the feature vector (changing this requires retraining)
+    * ``algorithm``    - The Timbl algorithm to use (see -a parameter in timbl) (default: IGTree, changing this requires retraining)
     * ``class``        - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: confusible)
     * ``threshold``    - The probability threshold that classifier options must attain to be passed on as suggestions. (default: 0.8)
     * ``minocc``       - The minimum number of occurrences (sum of all class weights) (default: 5)
@@ -179,15 +179,17 @@ class TIMBLSuffixConfusibleModule(Module):
     """The Suffix Confusible module is capable of disambiguating suffixes on words. The suffixes are passes to the ``suffixes`` settings (a list of string). All words using these suffixes above a certain threshold (``freqthtreshold``) will be found at training time and disambiguated using context. The module is implemented using Timbl.
 
     Settings:
-    * ``suffixes``     - List of suffixes (strings) that form a single set of confusibles.
-    * ``freqthreshold``- Only consider words with a suffix that occur at least this many times
-    * ``maxratio``     - Maximum ratio expressing the maximally allowed frequency difference between the confusibles (value > 1, 0 = no limit)
-    * ``minlength``    - Only consider words with a suffix that are at least this long (in characters)
-    * ``maxlength``    - Only consider words with a suffix that are at most this long (in characters)
-    * ``leftcontext``  - Left context size (in words) for the feature vector
-    * ``rightcontext`` - Right context size (in words) for the feature vector
-    * ``algorithm``    - The Timbl algorithm to use (see -a parameter in timbl) (default: IGTree)
+    * ``suffixes``     - List of suffixes (strings) that form a single set of confusibles. (changing this requires retraining)
+    * ``freqthreshold``- Only consider words with a suffix that occur at least this many times (changing this requires retraining)
+    * ``maxratio``     - Maximum ratio expressing the maximally allowed frequency difference between the confusibles (value > 1, 0 = no limit) (changing this requires retraining)
+    * ``minlength``    - Only consider words with a suffix that are at least this long (in characters) (changing this requires retraining)
+    * ``maxlength``    - Only consider words with a suffix that are at most this long (in characters) (changing this requires retraining)
+    * ``leftcontext``  - Left context size (in words) for the feature vector (changing this requires retraining)
+    * ``rightcontext`` - Right context size (in words) for the feature vector (changing this requires retraining)
+    * ``algorithm``    - The Timbl algorithm to use (see -a parameter in timbl) (default: IGTree) (changing this requires retraining)
     * ``class``        - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: confusible)
+    * ``threshold``    - The probability threshold that classifier options must attain to be passed on as suggestions. (default: 0.8)
+    * ``minocc``       - The minimum number of occurrences (sum of all class weights) (default: 5)
 
     Sources and models:
     * a plain-text corpus (tokenized)  [``.txt``]     ->    a list of confusibles [``.lst``]
