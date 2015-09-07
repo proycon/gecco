@@ -160,7 +160,7 @@ class TIMBLWordConfusibleModule(Module):
             return best, []
         distribution = { sug: weight/sumweights for sug,weight in distribution.items() if weight/sumweights >= self.settings['threshold'] }
         if self.debug: self.log("(Returning " + str(len(distribution)) + " suggestions after filtering)")
-        return (best,distribution)
+        return best,distribution
 
     def prepareinput(self,word,**parameters):
         """Takes the specified FoLiA unit for the module, and returns a string that can be passed to process()"""
@@ -242,6 +242,11 @@ class TIMBLSuffixConfusibleModule(Module):
             self.settings['minlength'] = 3 #shorter word will be ignored
         if 'maxratio' not in self.settings:
             self.settings['maxratio'] = 0 #no limit
+
+        if 'debug' in self.settings:
+            self.debug = bool(self.settings['debug'])
+        else:
+            self.debug = False
 
 
         ibasefound = lstfound = False
