@@ -356,10 +356,12 @@ class ExternalSpellModule(Module):
         if output:
             queries.append( self.addsuggestions(unit_id, [ (word,confidence) for word,confidence in output if ' ' not in word]) )
             if self.settings['runonclass']:
-                cls = self.settings['class'] #bit of an ugly cheat since we don't really support dual classes
-                self.settings['class'] =self.settings['runonclass']
-                queries.append( self.splitcorrection(unit_id,[ (word.split(' '),confidence) for word,confidence in output if ' ' in  word ]) )
-                self.settings['class'] = cls
+                runonsuggestions = [ (word.split(' '),confidence) for word,confidence in output if ' ' in  word ]
+                if runonsuggestions:
+                    cls = self.settings['class'] #bit of an ugly cheat since we don't really support dual classes
+                    self.settings['class'] =self.settings['runonclass']
+                    queries.append( self.splitcorrection(unit_id,runonsuggestions) )
+                    self.settings['class'] = cls
             return queries
 
 
