@@ -318,8 +318,11 @@ class ExternalSpellModule(Module):
 
         if 'class' not in self.settings:
             self.settings['class'] = 'nonworderror'
+
         if 'runonclass' not in self.settings:
             self.settings['runonclass'] = 'runonerror'
+        if 'runon' not in self.settings:
+            self.settings['runon'] = True
 
         if 'maxdistance' not in self.settings:
             self.settings['maxdistance'] = 2
@@ -355,7 +358,7 @@ class ExternalSpellModule(Module):
         queries = []
         if output:
             queries.append( self.addsuggestions(unit_id, [ (word,confidence) for word,confidence in output if ' ' not in word]) )
-            if self.settings['runonclass']:
+            if self.settings['runon']:
                 runonsuggestions = [ (word.split(' '),confidence) for word,confidence in output if ' ' in  word ]
                 if runonsuggestions:
                     cls = self.settings['class'] #bit of an ugly cheat since we don't really support dual classes
@@ -461,6 +464,7 @@ class HunspellModule(ExternalSpellModule):
     * ``path``          - Path to hunspel (defaults to: /usr/share/hunspell/)
     * ``language``      - The language (follows locale syntax, i.e. en_GB for British English)
     * ``class``         - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: nonworderror) 
+    * ``runon``         - Boolean, handle runons as well? (default: True)
     * ``runonclass``    - Runon errors found by this module will be assigned the specified class in the resulting FoLiA output (default: runonerror) 
     * ``maxdistance``  - Maximum Levenshtein distance between a word and its correction (larger distances are pruned from suggestions)
     * ``maxlength``  - Maximum length of words in characters, longer words are ignored (default: 25)

@@ -90,7 +90,7 @@ class Evaldata():
             print("PER-MODULE RESULTS")
             print("====================")
             for module in sorted(self.modtp):
-                print("Precision for " + module + " : ", str(round(self.modtp[module] / (self.modtp[module]+self.modfp[module]),2)) + "     (" + str(self.modtp[module]) +'/'+ str(self.modtp[module]+self.modtp[module]) + ")" )
+                print("Precision for " + module + " : ", str(round(self.modtp[module] / (self.modtp[module]+self.modfp[module]),2)) + "     (" + str(self.modtp[module]) +'/'+ str(self.modtp[module]+self.modfp[module]) + ")" )
             print("")
         if self.clstp:
             print("")
