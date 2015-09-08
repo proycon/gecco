@@ -509,28 +509,47 @@ class Corrector:
             raise Exception("Reference file not found", args.referencefilename)
 
         inputfiles = []
-        if os.path.isdir(args.inputfilename):
-            for root, _, files in os.walk(args.inputfilename):
-                for name in files:
-                    inputfiles.append(os.path.join(root,name))
-                    if outputdir:
-                        outputfiles.append(os.path.join(outputdir,name))
+        if args.inputfilename != '-':
+            if os.path.isdir(args.inputfilename):
+                for root, _, files in os.walk(args.inputfilename):
+                    for name in files:
+                        inputfiles.append(os.path.join(root,name))
+                        if outputdir:
+                            outputfiles.append(os.path.join(outputdir,name))
 
-        elif os.path.isfile(args.inputfilename):
-            inputfiles = [args.inputfilename]
-        else:
-            raise Exception("Input file not found", args.inputfilename)
-
-
-
-        evaldata = gecco.helpers.evaluation.Evaldata()
-        for inputfilename, outputfilename in zip(inputfiles, outputfiles):
-            self.run(inputfilename,modules,outputfilename, **parameters)
-            if refdir:
-                referencefilename = os.path.join(refdir, os.path.basename(outputfilename))
+            elif os.path.isfile(args.inputfilename):
+                inputfiles = [args.inputfilename]
             else:
-                referencefilename = args.referencefilename
-            gecco.helpers.evaluation.processfile(outputfilename, referencefilename, evaldata)
+                raise Exception("Input file not found", args.inputfilename)
+        else:
+            if os.path.isdir(args.outputfilename):
+                for root, _, files in os.walk(args.outputfilename):
+                    for name in files:
+                        outputfiles.append(os.path.join(root,name))
+            elif os.path.isfile(args.outputfilename):
+                outputfiles = [args.outputfilename]
+
+
+
+        
+        evaldata = gecco.helpers.evaluation.Evaldata()
+        if inputfiles:
+            for inputfilename, outputfilename in zip(inputfiles, outputfiles):
+                self.run(inputfilename,modules,outputfilename, **parameters)
+                if refdir:
+                    referencefilename = os.path.join(refdir, os.path.basename(outputfilename))
+                else:
+                    referencefilename = args.referencefilename
+                gecco.helpers.evaluation.processfile(outputfilename, referencefilename, evaldata)
+        else:
+            if not outputfiles:
+                raise Exception("No output files found and no input files specified")
+            for outputfilename in outputfiles:
+                if refdir:
+                    referencefilename = os.path.join(refdir, os.path.basename(outputfilename))
+                else:
+                    referencefilename = args.referencefilename
+                gecco.helpers.evaluation.processfile(outputfilename, referencefilename, evaldata)
 
         evaldata.output()
 
@@ -712,7 +731,7 @@ class Corrector:
         parser_eval.add_argument('--local', help="Run all modules locally, ignore remote servers", required=False, action='store_true',default=False)
         parser_eval.add_argument('-s',dest='settings', help="Setting overrides, specify as -s setting=value. This option can be issues multiple times.", required=False, action="append")
         parser_eval.add_argument('-p',dest='parameters', help="Custom parameters passed to the modules, specify as -p parameter=value. This option can be issued multiple times", required=False, action="append")
-        parser_eval.add_argument('inputfilename', help="File or directory containing the input (plain text or FoLiA XML)")
+        parser_eval.add_argument('inputfilename', help="File or directory containing the input (plain text or FoLiA XML). Set to - if the output is already produced and you merely want to evaluate.")
         parser_eval.add_argument('outputfilename', help="File or directory to store the output (FoLiA XML)")
         parser_eval.add_argument('referencefilename', help="File or directory that holds the reference data (FoLiA XML)")
         parser_eval.add_argument('modules', help="Only train for modules with the specified IDs (comma-separated list) (if omitted, all modules are tested)", nargs='?',default="")
