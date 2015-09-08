@@ -521,6 +521,13 @@ class Corrector:
                 inputfiles = [args.inputfilename]
             else:
                 raise Exception("Input file not found", args.inputfilename)
+        else:
+            if os.path.isdir(args.outputfilename):
+                for root, _, files in os.walk(args.outputfilename):
+                    for name in files:
+                        outputfiles.append(os.path.join(root,name))
+            elif os.path.isfile(args.outputfilename):
+                outputfiles = [args.outputfilename]
 
 
 
@@ -535,6 +542,8 @@ class Corrector:
                     referencefilename = args.referencefilename
                 gecco.helpers.evaluation.processfile(outputfilename, referencefilename, evaldata)
         else:
+            if not outputfiles:
+                raise Exception("No output files found and no input files specified")
             for outputfilename in outputfiles:
                 if refdir:
                     referencefilename = os.path.join(refdir, os.path.basename(outputfilename))
