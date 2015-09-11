@@ -32,7 +32,8 @@ class RunOnModule(Module):
     """Detects words that have been joined together but should be split. It uses a bigram model.
     
     Settings:
-    * ``freqthreshold`` - Frequency threshold for bigrams to make it into the model (default: 10) 
+    * ``freqthreshold`` - Frequency threshold for unigrams and bigrams to make it into the model (default: 10)  (you need to retrain the model if you change this value)
+    * ``partthreshold`` - Each of the parts must occur over this threshold (default: 10), should be >= freqthreshold
     * ``class``         - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: runonerror) 
     """
     UNIT = folia.Word
@@ -46,6 +47,8 @@ class RunOnModule(Module):
         if 'freqthreshold' not in self.settings:
             self.settings['freqthreshold'] = 10
 
+        if 'partthreshold' not in self.settings:
+            self.settings['partthreshold'] = 10
 
     def train(self, sourcefile, modelfile, **parameters):
         self.log("Preparing to generate bigram model")
@@ -111,6 +114,8 @@ class RunOnModule(Module):
                     freq = self.patternmodel[pattern]
                 except KeyError:
                     freq = 0
+            if freq < self.settings['partthreshold']:
+                continue
             if freq > freq_joined:
                 if freq > maxfreq:
                     maxfreq = freq
@@ -134,7 +139,8 @@ class SplitModule(Module):
     """Detects words that have been split but should be merged together as one
 
     Settings:
-    * ``freqthreshold`` - Frequency threshold for bigrams to make it into the model (default: 10) 
+    * ``freqthreshold`` - Frequency threshold for bigrams to make it into the model (default: 10)  (you need to retrain the model if you change this value)
+    * ``freqratio``     - The bigram's frequency must be larger than any of the unigram frequencies by this factor (default: 0.5)
     * ``class``         - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: runonerror) 
     """
     UNIT = folia.Word
@@ -148,6 +154,8 @@ class SplitModule(Module):
         if 'freqthreshold' not in self.settings:
             self.settings['freqthreshold'] = 10
 
+        if 'freqratio' not in self.settings:
+            self.settings['freqratio'] = 0.5 
 
     def train(self, sourcefile, modelfile, **parameters):
         self.log("Preparing to generate bigram model")
@@ -214,7 +222,7 @@ class SplitModule(Module):
                     freq = self.patternmodel[pattern]
                 except KeyError:
                     freq = 0
-            if freq_joined > freq:
+            if freq_joined > freq * self.settings['freqratio']:
                 return word+nextword
 
 
