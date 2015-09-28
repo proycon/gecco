@@ -1198,42 +1198,42 @@ class Module:
         return q
 
         #----------- OLD (TODO: REMOVE) -----------
-        parent = word.parent
-        index = parent.getindex(word,False)
-        if 'cls' in kwargs:
-            cls = kwargs['cls']
-        else:
-            cls = self.settings['class']
-        if index != -1:
-            self.log(" Suggesting deletion of " + str(word.id))
-            sugkwargs = {}
-            if merge:
-                sugkwargs['merge'] = word.ancestor(folia.StructureElement).id
-            parent.data[index] = folia.Correction(word.doc, folia.Suggestion(word.doc, **sugkwargs), folia.Current(word.doc, word), set=self.settings['set'],cls=cls, annotator=self.settings['annotator'],annotatortype=folia.AnnotatorType.AUTO, datetime=datetime.datetime.now())
-        else:
-            self.log(" ERROR: Unable to suggest deletion of " + str(word.id) + ", item index not found")
+        #parent = word.parent
+        #index = parent.getindex(word,False)
+        #if 'cls' in kwargs:
+        #    cls = kwargs['cls']
+        #else:
+        #    cls = self.settings['class']
+        #if index != -1:
+        #    self.log(" Suggesting deletion of " + str(word.id))
+        #    sugkwargs = {}
+        #    if merge:
+        #        sugkwargs['merge'] = word.ancestor(folia.StructureElement).id
+        #    parent.data[index] = folia.Correction(word.doc, folia.Suggestion(word.doc, **sugkwargs), folia.Current(word.doc, word), set=self.settings['set'],cls=cls, annotator=self.settings['annotator'],annotatortype=folia.AnnotatorType.AUTO, datetime=datetime.datetime.now())
+        #else:
+        #   self.log(" ERROR: Unable to suggest deletion of " + str(word.id) + ", item index not found")
 
-    def suggestinsertion(self,pivotword, text,split=False):
+    def suggestinsertion(self,pivotword_id, text,split=False):
         q = "PREPEND (AS CORRECTION OF " + self.settings['set'] + " WITH class \"" + self.settings['class'] + "\" annotator \"" + self.settings['annotator'] + "\" annotatortype \"auto\" datetime now"
         if split:
             q += " SUGGESTION SPLIT (ADD w WITH text \"" + text + "\") " #TODO: this is new FQL syntax, implement in FQL lib
         else:
             q += " SUGGESTION (ADD w WITH text \"" + text + "\") " #TODO: this is new FQL syntax, implement in FQL lib
-        q += ") FOR ID \"" + pivotword.id + "\""
+        q += ") FOR ID \"" + pivotword_id + "\""
         q += " RETURN nothing"
         return q
 
         #----------- OLD (TODO: REMOVE) -----------
-        index = pivotword.parent.getindex(pivotword)
-        if index != -1:
-            self.log(" Suggesting insertion before " + str(pivotword.id))
-            sugkwargs = {}
-            if split:
-                sugkwargs['split'] = pivotword.ancestor(folia.StructureElement).id
-            doc = pivotword.doc
-            pivotword.parent.insert(index,folia.Correction(doc, folia.Suggestion(doc, folia.Word(doc,text,generate_id_in=pivotword.parent)), folia.Current(doc), set=self.settings['set'],cls=self.settings['class'], annotator=self.settings['annotator'],annotatortype=folia.AnnotatorType.AUTO, datetime=datetime.datetime.now(), generate_id_in=pivotword.parent))
-        else:
-            self.log(" ERROR: Unable to suggest insertion before " + str(pivotword.id) + ", item index not found")
+        #index = pivotword.parent.getindex(pivotword)
+        #if index != -1:
+        #    self.log(" Suggesting insertion before " + str(pivotword.id))
+        #    sugkwargs = {}
+        #    if split:
+        #        sugkwargs['split'] = pivotword.ancestor(folia.StructureElement).id
+        #    doc = pivotword.doc
+        #    pivotword.parent.insert(index,folia.Correction(doc, folia.Suggestion(doc, folia.Word(doc,text,generate_id_in=pivotword.parent)), folia.Current(doc), set=self.settings['set'],cls=self.settings['class'], annotator=self.settings['annotator'],annotatortype=folia.AnnotatorType.AUTO, datetime=datetime.datetime.now(), generate_id_in=pivotword.parent))
+        #else:
+        #    self.log(" ERROR: Unable to suggest insertion before " + str(pivotword.id) + ", item index not found")
 
 def helpmodules():
     #Bit hacky, but it works
