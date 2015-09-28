@@ -205,6 +205,9 @@ class TIMBLPuncRecaseModule(Module):
     def prepareinput(self,word,**parameters):
         """Takes the specified FoLiA unit for the module, and returns a string that can be passed to process()"""
         wordstr = str(word) #will be reused in processoutput
+        if not any( c.isalnum() for c in wordstr):
+            #this is punctuation, skip
+            return None
         prevword = word.previous(folia.Word,None)
         if prevword:
             prevwordstr = str(prevword)
