@@ -1144,7 +1144,7 @@ class Module:
                 suggestion, confidence = suggestion
             else:
                 confidence = None
-            q += " SUGGESTION text \"" + suggestion + "\""
+            q += " SUGGESTION text \"" + suggestion.replace('"','\\"') + "\""
             if confidence is not None:
                 q += " WITH confidence " + str(confidence)
 
@@ -1167,7 +1167,7 @@ class Module:
             q += " SUGGESTION ("
             for i, newword in enumerate(suggestion):
                 if i > 0: q += " "
-                q += "SUBSTITUTE w WITH text \"" + newword + "\""
+                q += "SUBSTITUTE w WITH text \"" + newword.replace('"','\\"') + "\""
             q += ") WITH confidence " + str(confidence)
         q += ") FOR SPAN ID \"" + word_id + "\""
         q += " RETURN nothing"
@@ -1178,7 +1178,7 @@ class Module:
 
         q = "SUBSTITUTE (AS CORRECTION OF " + self.settings['set'] + " WITH class \"" + self.settings['class'] + "\" annotator \"" + self.settings['annotator'] + "\" annotatortype \"auto\" datetime now"
         q += " SUGGESTION"
-        q += " (SUBSTITUTE w WITH text \"" + newword + "\")"
+        q += " (SUBSTITUTE w WITH text \"" + newword.replace('"','\\"') + "\")"
         #q += " WITH confidence " + str(confidence)
         q += ") FOR SPAN"
         for i, ow in enumerate(originalwords):
