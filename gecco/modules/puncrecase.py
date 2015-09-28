@@ -240,12 +240,12 @@ class TIMBLPuncRecaseModule(Module):
         recase = False
 
         if cls[-1] == 'C':
-            cls = cls[:-1]
             if wordstr[0] == wordstr[0].lower():
                 if distribution[cls] >= self.settings['capitalizationthreshold']:
                     recase = True
                 elif self.debug:
                     self.log(" (Capitalization threshold not reached: " + str(distribution[cls]) + ")")
+            cls = cls[:-1]
 
 
         if cls == '-':
