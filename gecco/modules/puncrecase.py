@@ -233,7 +233,7 @@ class TIMBLPuncRecaseModule(Module):
 
         recase = False
 
-        if cls[-1] == 'C':
+        if cls[-1] == 'C' and wordstr[0] == wordstr[0].lower():
             cls = cls[:-1]
             recase = True
 
