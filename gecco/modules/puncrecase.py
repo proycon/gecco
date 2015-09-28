@@ -136,7 +136,8 @@ class TIMBLPuncRecaseModule(Module):
             iomodule = io
 
         prevword = ""
-        buffer = [("<begin>",False,'')] * l
+        #buffer = [("<begin>",False,'')] * l
+        buffer = []
         with iomodule.open(sourcefile,mode='rt',encoding='utf-8',errors='ignore') as f:
             for i, line in enumerate(f):
                 if i % 100000 == 0: print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + " - " + str(i),file=sys.stderr)
@@ -148,10 +149,10 @@ class TIMBLPuncRecaseModule(Module):
                     if len(buffer) == l + r + 1:
                         buffer = self.addtraininstance(classifier, buffer,l,r)
                     prevword = word
-        for i in range(0,r):
-            buffer.append( ("<end>",False,'') )
-            if len(buffer) == l + r + 1:
-                buffer = self.addtraininstance(classifier, buffer,l,r)
+        #for i in range(0,r):
+        #    buffer.append( ("<end>",False,'') )
+        #    if len(buffer) == l + r + 1:
+        #        buffer = self.addtraininstance(classifier, buffer,l,r)
 
         self.log("Training classifier...")
         classifier.train()
