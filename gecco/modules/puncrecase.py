@@ -223,7 +223,7 @@ class TIMBLPuncRecaseModule(Module):
         if self.hapaxer: features = self.hapaxer(features)
         best,distribution,_ = self.classifier.classify(features)
         if self.debug:
-            self.log(" (Distribution: "  + repr(distribution) + ")")
+            self.log(" (Best: "  + best + ")")
         return [best,distribution]
 
     def processoutput(self, outputdata, inputdata, unit_id,**parameters):
@@ -244,6 +244,8 @@ class TIMBLPuncRecaseModule(Module):
             #insertion of punctuation
             if distribution[cls] >= self.settings['insertionthreshold']:
                 queries.append( self.suggestinsertion(unit_id, cls, (cls in EOSMARKERS) ) )
+            elif self.debug:
+                self.log(" (Insertion threshold not reached: " + str(distribution[cls]) + ")")
 
         if recase:
             #recase word
