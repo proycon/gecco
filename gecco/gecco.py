@@ -57,6 +57,10 @@ class DataThread(Process):
         self.module_ids = module_ids
         self.outputfile = outputfile
         self.parameters = parameters
+        if 'debug' in self.parameters and self.parameters['debug']:
+            self.debug = True
+        else:
+            self.debug = False
         self._stop = False
 
         #Load FoLiA document
@@ -147,6 +151,8 @@ class DataThread(Process):
                         queries = (queries,)
                     for query in queries:
                         try:
+                            if self.debug:
+                                self.corrector.log("Processing FQL query " + query)
                             q = fql.Query(query)
                             q(self.foliadoc)
                             self.infoqueue.put( module.id) 
