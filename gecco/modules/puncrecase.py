@@ -64,6 +64,11 @@ class TIMBLPuncRecaseModule(Module):
             self.settings['insertionthreshold'] = 0.5
 
 
+        if 'debug' in self.settings:
+            self.debug = bool(self.settings['debug'])
+        else:
+            self.debug = False
+
         self.hapaxer = gethapaxer(self, self.settings)
 
 
@@ -221,8 +226,12 @@ class TIMBLPuncRecaseModule(Module):
     def run(self, inputdata):
         """This method gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
         wordstr,prevword,prevword_id, features = inputdata
+        if self.debug:
+            self.log(" (Processing word " + wordstr + ", features: " + repr(features) + ")")
         if self.hapaxer: features = self.hapaxer(features)
         best,distribution,_ = self.classifier.classify(features)
+        if self.debug:
+            self.log(" (Distribution: "  + repr(distribution) + ")")
         return [best,distribution]
 
     def processoutput(self, outputdata, inputdata, unit_id,**parameters):

@@ -194,7 +194,7 @@ class TIMBLLMModule(Module):
 
             if not os.path.exists(classfile):
                 self.log("Building class file")
-                classencoder = colibricore.ClassEncoder() 
+                classencoder = colibricore.ClassEncoder()
                 classencoder.build(sourcefile)
                 classencoder.save(classfile)
             else:
