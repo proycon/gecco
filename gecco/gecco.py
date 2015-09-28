@@ -1190,9 +1190,9 @@ class Module:
     def suggestdeletion(self, word_id,merge=False, **kwargs):
         q = "SUBSTITUTE (AS CORRECTION OF " + self.settings['set'] + " WITH class \"" + self.settings['class'] + "\" annotator \"" + self.settings['annotator'] + "\" annotatortype \"auto\" datetime now"
         if merge:
-            q += " SUGGESTION MERGE DELETION " #TODO: this is new FQL syntax, implement in FQL lib
+            q += " SUGGESTION MERGE DELETION "
         else:
-            q += " SUGGESTION DELETION " #TODO: this is new FQL syntax, implement in FQL lib
+            q += " SUGGESTION DELETION "
         q += ") FOR SPAN ID \"" + word_id + "\""
         q += " RETURN nothing"
         return q
@@ -1216,9 +1216,9 @@ class Module:
     def suggestinsertion(self,pivotword_id, text,split=False):
         q = "PREPEND (AS CORRECTION OF " + self.settings['set'] + " WITH class \"" + self.settings['class'] + "\" annotator \"" + self.settings['annotator'] + "\" annotatortype \"auto\" datetime now"
         if split:
-            q += " SUGGESTION SPLIT (ADD w WITH text \"" + text + "\") " #TODO: this is new FQL syntax, implement in FQL lib
+            q += " SUGGESTION SPLIT (ADD w WITH text \"" + text.replace('"','\\"') + "\") "
         else:
-            q += " SUGGESTION (ADD w WITH text \"" + text + "\") " #TODO: this is new FQL syntax, implement in FQL lib
+            q += " SUGGESTION (ADD w WITH text \"" + text.replace('"','\\"') + "\") "
         q += ") FOR ID \"" + pivotword_id + "\""
         q += " RETURN nothing"
         return q
