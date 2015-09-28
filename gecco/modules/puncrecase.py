@@ -63,6 +63,8 @@ class TIMBLPuncRecaseModule(Module):
         if 'insertionthreshold' not in self.settings:
             self.settings['insertionthreshold'] = 0.5
 
+        if 'capitalizationthreshold' not in self.settings:
+            self.settings['capitalizationthreshold'] = 0.5
 
         if 'debug' in self.settings:
             self.debug = bool(self.settings['debug'])
@@ -239,7 +241,10 @@ class TIMBLPuncRecaseModule(Module):
 
         if cls[-1] == 'C' and wordstr[0] == wordstr[0].lower():
             cls = cls[:-1]
-            recase = True
+            if distribution[cls] >= self.settings['capitalizationthreshold']:
+                recase = True
+            elif self.debug:
+                self.log(" (Capitalization threshold not reached: " + str(distribution[cls]) + ")")
 
         if cls == '-':
             if prevword and distribution[cls] >= self.settings['deletionthreshold'] and all( not c.isalnum() for c in  prevword ):
