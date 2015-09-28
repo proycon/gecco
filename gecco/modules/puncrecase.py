@@ -135,20 +135,19 @@ class TIMBLPuncRecaseModule(Module):
         else:
             iomodule = io
 
+        prevword = ""
         buffer = [("<begin>",False,'')] * l
         with iomodule.open(sourcefile,mode='rt',encoding='utf-8',errors='ignore') as f:
             for i, line in enumerate(f):
                 if i % 100000 == 0: print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + " - " + str(i),file=sys.stderr)
                 words = [ x.strip() for x in line.split(' ') if x ]
                 for i, word in enumerate(words):
-                    if i == 0 or any([ c.isalnum() for c in words[i-1]]):
-                        punc = ''
-                    else:
-                        punc = words[i-1]
+                    punc = prevword and all([ not c.isalnum() for c in prevword])
                     if any( [ x.isalnum() for x in word ] ):
-                        buffer.append( (word, word == word[0].upper() + word[1:].lower(), punc ) )
+                        buffer.append( (word, word == word[0].upper() + word[1:].lower(), prevword if punc else "" ) )
                     if len(buffer) == l + r + 1:
                         buffer = self.addtraininstance(classifier, buffer,l,r)
+                    prevword = word
         for i in range(0,r):
             buffer.append( ("<end>",False,'') )
             if len(buffer) == l + r + 1:
