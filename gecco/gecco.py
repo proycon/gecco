@@ -1188,7 +1188,11 @@ class Module:
         return q
 
     def suggestdeletion(self, word_id,merge=False, **kwargs):
-        q = "SUBSTITUTE (AS CORRECTION OF " + self.settings['set'] + " WITH class \"" + self.settings['class'] + "\" annotator \"" + self.settings['annotator'] + "\" annotatortype \"auto\" datetime now"
+        if 'cls' in kwargs:
+            cls = kwargs['cls']
+        else:
+            cls = self.settings['class']
+        q = "SUBSTITUTE (AS CORRECTION OF " + self.settings['set'] + " WITH class \"" + cls + "\" annotator \"" + self.settings['annotator'] + "\" annotatortype \"auto\" datetime now"
         if merge:
             q += " SUGGESTION MERGE DELETION "
         else:

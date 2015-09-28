@@ -243,10 +243,14 @@ class TIMBLPuncRecaseModule(Module):
 
         if cls == '-':
             if prevword and distribution[cls] >= self.settings['deletionthreshold'] and all( not c.isalnum() for c in  prevword ):
+                if self.debug:
+                    self.log(" (Redundant punctuation " + cls + " with threshold " + str(distribution[cls]) + ")")
                 queries.append( self.suggestdeletion(prevword_id,(prevword in EOSMARKERS), cls='redundantpunctuation') )
         elif cls and cls in distribution:
             #insertion of punctuation
             if distribution[cls] >= self.settings['insertionthreshold']:
+                if self.debug:
+                    self.log(" (Insertion " + cls + " with threshold " + str(distribution[cls]) + ")")
                 queries.append( self.suggestinsertion(unit_id, cls, (cls in EOSMARKERS) ) )
             elif self.debug:
                 self.log(" (Insertion threshold not reached: " + str(distribution[cls]) + ")")
@@ -256,6 +260,8 @@ class TIMBLPuncRecaseModule(Module):
             t = wordstr
             if recase:
                 t = t[0].upper() + t[1:]
+            if self.debug:
+                self.log(" (Correcting capitalization for " + wordstr + ")")
             queries.append( self.addsuggestions( unit_id, [t], cls='capitalizationerror') )
 
         return queries
