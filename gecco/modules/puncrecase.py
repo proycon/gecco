@@ -201,13 +201,6 @@ class TIMBLPuncRecaseModule(Module):
 
 
 
-    def runclient(self, client, word, lock, **parameters):
-        """This method gets invoked by the Corrector when it should connect to a remote server, the client instance is passed and already available (will connect on first communication). word is a folia.Word instance"""
-        wordstr = str(word)
-        if wordstr.isalnum():
-            cls, distribution = json.loads(client.communicate(json.dumps(self.getfeatures(word))))
-            self.processresult(word,lock,cls,distribution)
-
 
     def prepareinput(self,word,**parameters):
         """Takes the specified FoLiA unit for the module, and returns a string that can be passed to process()"""
