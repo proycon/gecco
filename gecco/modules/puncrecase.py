@@ -256,9 +256,16 @@ class TIMBLPuncRecaseModule(Module):
         elif cls and cls in distribution:
             #insertion of punctuation
             if distribution[cls] >= self.settings['insertionthreshold']:
-                if self.debug:
-                    self.log(" (Insertion " + cls + " with threshold " + str(distribution[cls]) + ")")
-                queries.append( self.suggestinsertion(unit_id, cls, (cls in EOSMARKERS) ) )
+                if all(not c.isalnum() for c in prevword):
+                    #previous word is punctuation already
+                    if prevword != cls:
+                        self.log(" (Found punctuation confusion)")
+                        queries.append( self.addsuggestions(prevword_id,cls, cls='confusion') )
+                    elif self.debug:
+                        self.log(" (Predicted punctuation already there, good, ignoring)")
+                else:
+                    if self.debug: self.log(" (Insertion " + cls + " with threshold " + str(distribution[cls]) + ")")
+                    queries.append( self.suggestinsertion(unit_id, cls, (cls in EOSMARKERS) ) )
             elif self.debug:
                 self.log(" (Insertion threshold not reached: " + str(distribution[cls]) + ")")
 
