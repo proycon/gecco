@@ -264,10 +264,12 @@ class TIMBLPuncRecaseModule(Module):
                     elif self.debug:
                         self.log(" (Predicted punctuation already there, good, ignoring)")
                 else:
+                    recase = False #no punctuation insertion? then no recasing either
                     if self.debug: self.log(" (Insertion " + cls + " with threshold " + str(distribution[cls]) + ")")
                     queries.append( self.suggestinsertion(unit_id, cls, (cls in EOSMARKERS) ) )
-            elif self.debug:
-                self.log(" (Insertion threshold not reached: " + str(distribution[cls]) + ")")
+            else:
+                recase = False #no punctuation insertion? then no recasing either
+                if self.debug: self.log(" (Insertion threshold not reached: " + str(distribution[cls]) + ")")
 
         if recase and wordstr[0].isalpha():
             #recase word
