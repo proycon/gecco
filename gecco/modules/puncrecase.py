@@ -146,8 +146,8 @@ class TIMBLPuncRecaseModule(Module):
                 if i % 100000 == 0: print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + " - " + str(i),file=sys.stderr)
                 words = [ w.strip() for w in line.split(' ') if w.strip() ]
                 for i, word in enumerate(words):
-                    if prevword:
-                        punc = prevword in PUNCTUATION
+                    if prevword in PUNCTUATION:
+                        punc = prevword
                     else:
                         punc = ""
                     if any(  c.isalpha() for c in word  ):
