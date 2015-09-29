@@ -105,7 +105,7 @@ class TIMBLPuncRecaseModule(Module):
 
     def addtraininstance(self,classifier, buffer,l,r):
         """Helper function"""
-        focusword, cased, punc = buffer[l+1]
+        focusword, cased, punc = buffer[l]
         cls = punc
         if cased:
             cls += 'C'
@@ -146,7 +146,7 @@ class TIMBLPuncRecaseModule(Module):
                 words = [ w.strip() for w in line.split(' ') if w.strip() ]
                 for i, word in enumerate(words):
                     punc = prevword and all([ not c.isalpha() for c in prevword])
-                    if any( [ c.isalpha() for c in word ] ):
+                    if any(  c.isalpha() for c in word  ):
                         buffer.append( (word, word == word[0].upper() + word[1:].lower(), prevword if punc else "" ) )
                     if len(buffer) == l + r + 1:
                         buffer = self.addtraininstance(classifier, buffer,l,r)
