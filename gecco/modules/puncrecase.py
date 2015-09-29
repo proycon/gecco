@@ -25,6 +25,7 @@ from gecco.helpers.hapaxing import gethapaxer
 
 
 EOSMARKERS = ('.','?','!')
+PUNCTUATION = EOSMARKERS + (',',';',':')
 
 class TIMBLPuncRecaseModule(Module):
     """This is a memory-based classification module, implemented using Timbl, that predicts where punctuation needs to be inserted, deleted, and whether a word needs to be written with an initial capital. 
@@ -145,9 +146,12 @@ class TIMBLPuncRecaseModule(Module):
                 if i % 100000 == 0: print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + " - " + str(i),file=sys.stderr)
                 words = [ w.strip() for w in line.split(' ') if w.strip() ]
                 for i, word in enumerate(words):
-                    punc = prevword and all([ not c.isalpha() for c in prevword])
+                    if prevword:
+                        punc = prevword in PUNCTUATION
+                    else:
+                        punc = ""
                     if any(  c.isalpha() for c in word  ):
-                        buffer.append( (word, word == word[0].upper() + word[1:].lower(), prevword if punc else "" ) )
+                        buffer.append( (word, word == word[0].upper() + word[1:].lower(), punc ) )
                     if len(buffer) == l + r + 1:
                         buffer = self.addtraininstance(classifier, buffer,l,r)
                     prevword = word
@@ -261,10 +265,10 @@ class TIMBLPuncRecaseModule(Module):
                     if prevword != cls:
                         self.log(" (Found punctuation confusion)")
                         queries.append( self.addsuggestions(prevword_id,cls, cls='confusion') )
-                    elif self.debug:
-                        self.log(" (Predicted punctuation already there, good, ignoring)")
+                    else:
+                        recase = False #no punctuation insertion? then no recasing either
+                        if self.debug: self.log(" (Predicted punctuation already there, good, ignoring)")
                 else:
-                    recase = False #no punctuation insertion? then no recasing either
                     if self.debug: self.log(" (Insertion " + cls + " with threshold " + str(distribution[cls]) + ")")
                     queries.append( self.suggestinsertion(unit_id, cls, (cls in EOSMARKERS) ) )
             else:
