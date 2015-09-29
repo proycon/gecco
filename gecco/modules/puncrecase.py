@@ -269,7 +269,7 @@ class TIMBLPuncRecaseModule(Module):
             elif self.debug:
                 self.log(" (Insertion threshold not reached: " + str(distribution[cls]) + ")")
 
-        if recase:
+        if recase and wordstr[0].isalpha():
             #recase word
             t = wordstr
             if recase:
