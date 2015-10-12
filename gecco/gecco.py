@@ -36,6 +36,7 @@ from pynlpl.formats import folia, fql #pylint: disable=import-error,no-name-in-m
 from ucto import Tokenizer #pylint: disable=import-error,no-name-in-module
 
 import gecco.helpers.evaluation
+from gecco.helpers.common import folia2json
 
 
 import argparse
@@ -47,7 +48,7 @@ if 'VIRTUAL_ENV' in os.environ:
 VERSION = 0.1
 
 class DataThread(Process):
-    def __init__(self, corrector, foliadoc, module_ids, outputfile,  inputqueue, outputqueue, infoqueue,**parameters):
+    def __init__(self, corrector, foliadoc, module_ids, outputfile,  inputqueue, outputqueue, infoqueue,dumpxml, dumpjson,**parameters):
         super().__init__()
 
         self.corrector = corrector
@@ -57,6 +58,8 @@ class DataThread(Process):
         self.module_ids = module_ids
         self.outputfile = outputfile
         self.parameters = parameters
+        self.dumpxml = dumpxml
+        self.dumpjson = dumpjson
         if 'debug' in self.parameters and self.parameters['debug']:
             self.debug = True
         else:
@@ -144,8 +147,8 @@ class DataThread(Process):
                     queries = module.processoutput(outputdata, inputdata, unit_id,**self.parameters)
                 except Exception as e: #pylint: disable=broad-except
                     self.corrector.log("***ERROR*** Exception processing output of " + module_id + ": " + str(e)) #not parallel, acts on same document anyway, should be fairly quick depending on module
-                    exc_type, exc_value, exc_traceback = sys.exc_info() 
-                    formatted_lines = traceback.format_exc().splitlines() 
+                    exc_type, exc_value, exc_traceback = sys.exc_info()
+                    formatted_lines = traceback.format_exc().splitlines()
                     traceback.print_tb(exc_traceback, limit=50, file=sys.stderr)
                     queries = None
                 if queries is not None:
@@ -157,24 +160,24 @@ class DataThread(Process):
                                 self.corrector.log("Processing FQL query " + query)
                             q = fql.Query(query)
                             q(self.foliadoc)
-                            self.infoqueue.put( module.id) 
+                            self.infoqueue.put( module.id)
                         except fql.SyntaxError as e:
                             self.corrector.log("***ERROR*** FQL Syntax error in " + module_id + ":" + str(e)) #not parallel, acts on same document anyway, should be fairly quick depending on module
                             self.corrector.log(" query: " + query)
-                            exc_type, exc_value, exc_traceback = sys.exc_info() 
-                            formatted_lines = traceback.format_exc().splitlines() 
+                            exc_type, exc_value, exc_traceback = sys.exc_info()
+                            formatted_lines = traceback.format_exc().splitlines()
                             traceback.print_tb(exc_traceback, limit=50, file=sys.stderr)
                         except fql.QueryError as e:
                             self.corrector.log("***ERROR*** FQL Query error in " + module_id + ":" + str(e)) #not parallel, acts on same document anyway, should be fairly quick depending on module
                             self.corrector.log(" query: " + query)
-                            exc_type, exc_value, exc_traceback = sys.exc_info() 
-                            formatted_lines = traceback.format_exc().splitlines() 
+                            exc_type, exc_value, exc_traceback = sys.exc_info()
+                            formatted_lines = traceback.format_exc().splitlines()
                             traceback.print_tb(exc_traceback, limit=50, file=sys.stderr)
                         except Exception as e:
                             self.corrector.log("***ERROR*** Error processing query for " + module_id + ": " + e.__class__.__name__ + " -- " +  str(e)) #not parallel, acts on same document anyway, should be fairly quick depending on module
                             self.corrector.log(" query: " + query)
-                            exc_type, exc_value, exc_traceback = sys.exc_info() 
-                            formatted_lines = traceback.format_exc().splitlines() 
+                            exc_type, exc_value, exc_traceback = sys.exc_info()
+                            formatted_lines = traceback.format_exc().splitlines()
                             traceback.print_tb(exc_traceback, limit=50, file=sys.stderr)
 
         self.infoqueue.put(None) #signals end
@@ -184,13 +187,21 @@ class DataThread(Process):
             if not self.module_ids or module.id in self.module_ids:
                 module.finish(self.foliadoc)
 
+
+
         #Store FoLiA document
         if self.outputfile:
             self.corrector.log("Saving document " + self.outputfile + "....")
             self.foliadoc.save(self.outputfile)
-        else:
+        elif not self.dumpxml and not self.dumpjson:
             self.corrector.log("Saving document " + self.foliadoc.filename + "....")
             self.foliadoc.save()
+
+        if self.dumpxml:
+            print(self.foliadoc)
+        if self.dumpjson:
+            json.dumps(folia2json(self.foliadoc))
+
 
     def stop(self):
         self._stop = True
@@ -242,7 +253,7 @@ class ProcessorThread(Process):
                             if module.id not in self.seqnr:
                                 self.seqnr[module.id] = self.random.randint(0,len(module.servers)) #start with a random sequence nr
                             try:
-                                startseqnr = self.seqnr[module.id] 
+                                startseqnr = self.seqnr[module.id]
                                 while not connected:
                                     server,port,load = module.getserver(self.seqnr[module.id])  #get the server for this sequence nr, sequence numbers ensure rotation between servers
                                     self.seqnr[module.id] += 1 #increase sequence number for this module
@@ -264,10 +275,10 @@ class ProcessorThread(Process):
                                     except ConnectionRefusedError:
                                         module.log("[" + str(self.pid) + "] Server " + server+":" + str(port) + ", module " + module.id + " refused connection, moving on...")
                                         del self.clients[(server,port)]
-                                    except Exception as e: 
+                                    except Exception as e:
                                         module.log("[" + str(self.pid) + "] Server communication failed for server " + server +":" + str(port) + ", module " + module.id + ", passed unit " + unit_id + " (traceback follows in debug), moving on...")
-                                        exc_type, exc_value, exc_traceback = sys.exc_info() 
-                                        formatted_lines = traceback.format_exc().splitlines() 
+                                        exc_type, exc_value, exc_traceback = sys.exc_info()
+                                        formatted_lines = traceback.format_exc().splitlines()
                                         traceback.print_tb(exc_traceback, limit=50, file=sys.stderr)
                                         del self.clients[(server,port)]
                             except IndexError:
@@ -401,13 +412,13 @@ class Corrector:
             self.append(module)
 
 
-    def run(self,filename,modules,outputfile,**parameters):
+    def run(self,filename,modules,outputfile,dumpxml,dumpjson,**parameters):
         self.load()
         inputqueue = Queue()
         outputqueue = Queue()
         timequeue = Queue()
         infoqueue = Queue()
-        datathread = DataThread(self,filename,modules, outputfile, inputqueue, outputqueue, infoqueue,**parameters)
+        datathread = DataThread(self,filename,modules, outputfile, inputqueue, outputqueue, infoqueue,dumpxml,dumpjson,**parameters)
         datathread.start()
 
         begintime = time.time()
@@ -446,7 +457,7 @@ class Corrector:
                 virtualdurationpermod[modid] += x
                 callspermod[modid] += 1
                 virtualduration += x
-        for modid, d in sorted(virtualdurationpermod.items(),key=lambda x: x[1] * -1): 
+        for modid, d in sorted(virtualdurationpermod.items(),key=lambda x: x[1] * -1):
             print("\t"+modid + "\t" + str(round(d,4)) + "s\t" + str(callspermod[modid]) + " calls\t" + str(infopermod[modid]) + " corrections",file=sys.stderr)
         self.log("Processing done (real total " + str(round(duration,2)) + "s , virtual output " + str(virtualduration) + "s, real input " + str(inputduration) + "s)")
 
@@ -497,7 +508,7 @@ class Corrector:
             parameters = dict(( tuple(p.split('=')) for p in args.parameters))
         else:
             parameters = {}
-        if args.modules: 
+        if args.modules:
             modules = args.modules.split(',')
         else:
             modules = []
@@ -539,7 +550,7 @@ class Corrector:
 
 
 
-        
+
         evaldata = gecco.helpers.evaluation.Evaldata()
         if inputfiles:
             for inputfilename, outputfilename in zip(inputfiles, outputfiles):
@@ -622,7 +633,7 @@ class Corrector:
                         cmd = sys.argv[0] + " "
                     cmd += "startserver " + module.id + " " + host + " " + str(port)
                     self.log("Starting server " + module.id + "@" + host + ":" + str(port)  + " ...")
-                    process = subprocess.Popen(cmd.split(' '),close_fds=True) 
+                    process = subprocess.Popen(cmd.split(' '),close_fds=True)
                     with open(self.root + "/run/" + module.id + "." + host + "." + str(port) + ".pid",'w') as f:
                         f.write(str(process.pid))
                     processes.append(process)
@@ -641,7 +652,7 @@ class Corrector:
         runpath = self.root + "/run/"
         if not os.path.isdir(runpath):
             os.mkdir(runpath)
-       
+
         self.findservers()
 
         for module in self.modules.values():
@@ -661,7 +672,7 @@ class Corrector:
 
     def findservers(self):
         """find all running servers and get the load, will be called by Corrector.load() once before a run"""
-        
+
         #reset servers for modules
         for module in self.modules.values():
             module.servers = []
@@ -718,6 +729,8 @@ class Corrector:
         subparsers = parser.add_subparsers(dest='command',title='Commands')
         parser_run = subparsers.add_parser('run', help="Run the spelling corrector on the specified input file")
         parser_run.add_argument('-o',dest="outputfile", help="Output filename (if not specified, the input file will be edited in-place",required=False,default="")
+        parser_run.add_argument('-O',dest="dumpxml", help="Print result document to stdout as FoLiA XML", required=False)
+        parser_run.add_argument('--json',dest="dumpjson", help="Print result document to stdout as JSON", required=False)
         parser_run.add_argument('filename', help="The file to correct, can be either a FoLiA XML file or a plain-text file which will be automatically tokenised and converted on-the-fly. The XML file will also be the output file. The XML file is edited in place, it will also be the output file unless -o is specified")
         parser_run.add_argument('modules', help="Only run the modules with the specified IDs (comma-separated list) (if omitted, all modules are run)", nargs='?',default="")
         parser_run.add_argument('-p',dest='parameters', help="Custom parameters passed to the modules, specify as -p parameter=value. This option can be issued multiple times", required=False, action="append")
@@ -777,7 +790,7 @@ class Corrector:
             if args.parameters: parameters = dict(( tuple(p.split('=')) for p in args.parameters))
             if args.metadata: parameters['metadata'] = dict(( tuple(p.split('=')) for p in args.parameters))
             if args.modules: modules = args.modules.split(',')
-            self.run(args.filename,modules,args.outputfile,**parameters)
+            self.run(args.filename,modules,args.outputfile,args.dumpxml, args.dumpjson,**parameters)
         elif args.command == 'startservers':
             if args.modules: modules = args.modules.split(',')
             self.startservers(modules)
@@ -900,8 +913,8 @@ class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
 
     def handle_error(self,request,client_address):
         print("An error occurred in the server for module " + self.module.id, file=sys.stderr)
-        exc_type, exc_value, exc_traceback = sys.exc_info() 
-        formatted_lines = traceback.format_exc().splitlines() 
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        formatted_lines = traceback.format_exc().splitlines()
         print(exc_type, exc_value,file=sys.stderr)
         traceback.print_tb(exc_traceback, limit=50, file=sys.stderr)
 
