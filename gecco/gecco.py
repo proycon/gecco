@@ -91,7 +91,9 @@ class DataThread(Process):
         else:
             self.foliadoc = foliadoc
 
-
+        if 'metadata' in parameters:
+            for k, v in parameters['metadata'].items():
+                self.foliadoc.metadata[k] = v
 
         begintime = time.time()
         self.corrector.log("Initialising modules on document") #not parellel, acts on same document anyway, should be very quick
@@ -719,6 +721,7 @@ class Corrector:
         parser_run.add_argument('filename', help="The file to correct, can be either a FoLiA XML file or a plain-text file which will be automatically tokenised and converted on-the-fly. The XML file will also be the output file. The XML file is edited in place, it will also be the output file unless -o is specified")
         parser_run.add_argument('modules', help="Only run the modules with the specified IDs (comma-separated list) (if omitted, all modules are run)", nargs='?',default="")
         parser_run.add_argument('-p',dest='parameters', help="Custom parameters passed to the modules, specify as -p parameter=value. This option can be issued multiple times", required=False, action="append")
+        parser_run.add_argument('-m',dest='metadata', help="Set extra metadata to be included in the resulting FoLiA document, specify as -m key=value. This options can be issued multiple times ", required=False, action="append")
         parser_run.add_argument('-s',dest='settings', help="Setting overrides, specify as -s setting=value. This option can be issues multiple times.", required=False, action="append")
         parser_run.add_argument('--local', help="Run all modules locally, ignore remote servers", required=False, action='store_true',default=False)
         parser_startservers = subparsers.add_parser('startservers', help="Starts all the module servers, or the modules explicitly specified, on the current host. Issue once for each host.")
@@ -772,6 +775,7 @@ class Corrector:
             for module in self.modules.values():
                 module.forcelocal = args.local
             if args.parameters: parameters = dict(( tuple(p.split('=')) for p in args.parameters))
+            if args.metadata: parameters['metadata'] = dict(( tuple(p.split('=')) for p in args.parameters))
             if args.modules: modules = args.modules.split(',')
             self.run(args.filename,modules,args.outputfile,**parameters)
         elif args.command == 'startservers':
