@@ -788,7 +788,7 @@ class Corrector:
             for module in self.modules.values():
                 module.forcelocal = args.local
             if args.parameters: parameters = dict(( tuple(p.split('=')) for p in args.parameters))
-            if args.metadata: parameters['metadata'] = dict(( tuple(p.split('=')) for p in args.parameters))
+            if args.metadata: parameters['metadata'] = dict(( tuple(p.split('=')) for p in args.metadata))
             if args.modules: modules = args.modules.split(',')
             self.run(args.filename,modules,args.outputfile,args.dumpxml, args.dumpjson,**parameters)
         elif args.command == 'startservers':
