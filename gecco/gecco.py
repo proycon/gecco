@@ -920,7 +920,6 @@ class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
 
 
 class Module:
-
     UNIT = folia.Document #Specifies on type of input tbe module gets. An entire FoLiA document is the default, any smaller structure element can be assigned, such as folia.Sentence or folia.Word . More fine-grained levels usually increase efficiency.
     UNITFILTER = None #Can be a function that takes a unit and return True if it has to be processed
     CLIENT = LineByLineClient

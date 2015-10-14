@@ -21,6 +21,7 @@ from pynlpl.formats import folia
 from pynlpl.textprocessors import Windower
 from gecco.gecco import Module
 from gecco.helpers.common import stripsourceextensions
+from gecco.helpers.filters import hasalpha
 import colibricore #pylint: disable=import-error
 
 
@@ -37,6 +38,7 @@ class RunOnModule(Module):
     * ``class``         - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: runonerror) 
     """
     UNIT = folia.Word
+    UNITFILTER = hasalpha
 
     def verifysettings(self):
         if 'class' not in self.settings:
@@ -144,6 +146,7 @@ class SplitModule(Module):
     * ``class``         - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: runonerror) 
     """
     UNIT = folia.Word
+    UNITFILTER = hasalpha
 
     def verifysettings(self):
         if 'class' not in self.settings:

@@ -24,6 +24,7 @@ import colibricore #pylint: disable=import-error
 from gecco.gecco import Module
 from gecco.helpers.hapaxing import gethapaxer
 from gecco.helpers.common import stripsourceextensions
+from gecco.helpers.filters import nonumbers
 
 
 class TIMBLWordConfusibleModule(Module):
@@ -45,6 +46,7 @@ class TIMBLWordConfusibleModule(Module):
     Hapaxer: This module supports hapaxing
     """
     UNIT = folia.Word
+    UNITFILTER = nonumbers
 
     def verifysettings(self):
         if 'class' not in self.settings:
@@ -205,6 +207,7 @@ class TIMBLSuffixConfusibleModule(Module):
     Hapaxer: This module supports hapaxing
     """
     UNIT = folia.Word
+    UNITFILTER = nonumbers
 
     def verifysettings(self):
         if 'class' not in self.settings:

@@ -22,6 +22,7 @@ from pynlpl.textprocessors import Windower #pylint: disable=import-error
 from timbl import TimblClassifier #pylint: disable=import-error
 from gecco.gecco import Module
 from gecco.helpers.hapaxing import gethapaxer
+from gecco.helpers.filters import nonumbers
 
 
 EOSMARKERS = ('.','?','!')
@@ -42,6 +43,7 @@ class TIMBLPuncRecaseModule(Module):
     """
 
     UNIT = folia.Word
+    UNITFILTER = nonumbers
 
     def verifysettings(self):
         if 'class' not in self.settings:

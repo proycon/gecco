@@ -14,6 +14,7 @@ import sys
 import os
 from pynlpl.formats import folia
 from gecco.gecco import Module
+from gecco.helpers.filters import hasalpha
 
 class WordErrorListModule(Module):
     """Lexicon Module. Checks an input word against a lexicon and returns suggestions with a certain Levensthein distance. The lexicon may be automatically compiled from a corpus.
@@ -29,6 +30,7 @@ class WordErrorListModule(Module):
     * An error list   (manually compiled, not trainable from source)
     """
     UNIT = folia.Word
+    UNITFILTER = hasalpha
 
     def verifysettings(self):
         super().verifysettings()

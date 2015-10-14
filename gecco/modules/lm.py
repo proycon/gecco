@@ -27,6 +27,7 @@ from gecco.gecco import Module
 from gecco.helpers.hapaxing import gethapaxer
 from gecco.helpers.caching import getcache
 from gecco.helpers.common import stripsourceextensions
+from gecco.helpers.filters import nonumbers
 import colibricore #pylint: disable=import-error
 import Levenshtein #pylint: disable=import-error
 
@@ -53,6 +54,7 @@ class TIMBLLMModule(Module):
     Caching: This module supports caching
     """
     UNIT = folia.Word
+    UNITFILTER = nonumbers
 
     def verifysettings(self):
         if 'class' not in self.settings:
