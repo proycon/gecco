@@ -11,7 +11,7 @@ Gecco is a generic modular and distributed framework for spelling correction. Ai
 build complete context-aware spelling correction system given your own data
 set.  Most modules will be language-independent and trainable from a source
 corpus. Training is explicitly included in the framework. The framework aims to
-easily extendible, modules can be written in Python 3.  Moreover, the framework
+easily extendible, modules can be written in Python 3. Moreover, the framework
 is scalable and distributable over multiple servers. 
 
 Given an input text, Gecco will add various suggestions for correction. 
@@ -118,7 +118,7 @@ as a docker app, or as a compilation script setting up a Python virtual
 environment.
 
 Gecco uses memory-based technologies, and depending on the models you train,
-may take up considerable memory. Therefore we recommend *at least* 16MB RAM,
+may take up considerable memory. Therefore we recommend *at least* 16GB RAM,
 training may require even more. For various modules, model size may be reduced
 by increasing frequency thresholds, but this will come at the cost of reduced
 accuracy.
@@ -255,7 +255,10 @@ Vital documentation regarding all modules and the settings they take can be obta
 Gecco as a webservice
 ----------------------------------------
 
-RESTUL webservice access will be available through CLAM. This, however, is currently not implemented yet.
+RESTUL webservice access will be available through CLAM. We are still working
+on better integration of this in Gecco. FOr now, an example implementation of
+this can be seen here:
+https://github.com/proycon/valkuil-gecco/tree/master/valkuilwebservice
 
 ------------------------------
 Gecco as a web-application
