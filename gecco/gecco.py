@@ -561,7 +561,7 @@ class Corrector:
         evaldata = gecco.helpers.evaluation.Evaldata()
         if inputfiles:
             for inputfilename, outputfilename in zip(inputfiles, outputfiles):
-                self.run(inputfilename,modules,outputfilename, **parameters)
+                self.run(inputfilename,modules,outputfilename, False,False,**parameters)
                 if refdir:
                     referencefilename = os.path.join(refdir, os.path.basename(outputfilename))
                 else:
