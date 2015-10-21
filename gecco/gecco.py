@@ -397,6 +397,8 @@ class Corrector:
         self.verifysettings()
 
         for modulespec in modulespecs:
+            if 'enabled' in modulespec and not modulespec['enabled'] or 'disabled' in modulespec and modulespec['disabled']:
+                continue
             #import modules:
             pymodule = '.'.join(modulespec['module'].split('.')[:-1])
             moduleclass = modulespec['module'].split('.')[-1]
