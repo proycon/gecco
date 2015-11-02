@@ -348,13 +348,18 @@ class Corrector:
         if 'id' not in self.settings:
             raise Exception("No ID specified")
 
-        if 'root' not in self.settings:
-            self.root = self.settings['root'] = os.path.abspath('.')
+        self.root = None
+        if 'root' in self.settings:
+            for d in self.settings['root'].split(':'):
+                if os.path.isdir(os.path.abspath(d)):
+                    self.root = os.path.abspath(d)
+                    break
+            if self.root is None:
+                raise Exception("Root directory not found: " + self.settings['root']) 
         else:
-            self.root = os.path.abspath(self.settings['root'])
+            self.root = self.settings['root'] = os.path.abspath('.')
 
         if self.root[-1] != '/': self.root += '/'
-
 
 
         if not 'ucto' in self.settings:
