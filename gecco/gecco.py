@@ -41,7 +41,7 @@ from gecco.helpers.common import folia2json
 
 import argparse
 
-UCTOSEARCHDIRS = ('/usr/local/etc/ucto','/etc/ucto/',os.environ['VIRTUAL_ENV'] + '/etc/ucto/','.')
+UCTOSEARCHDIRS = ('/usr/local/etc/ucto','/etc/ucto/','.')
 if 'VIRTUAL_ENV' in os.environ:
     UCTOSEARCHDIRS = (os.environ['VIRTUAL_ENV'] + '/etc/ucto/',) + UCTOSEARCHDIRS
 
@@ -732,7 +732,10 @@ class Corrector:
         self.log("Loading module")
         module.load()
         self.log("Running server " + module_id+"@"+host+":"+str(port) + " ...")
-        module.runserver(host,port) #blocking
+        try:
+            module.runserver(host,port) #blocking
+        except OSError:
+            self.log("Server " + module_id+"@"+host+":"+str(port) + " failed, address already in use.")
         self.log("Server " + module_id+"@"+host+":"+str(port) + " ended.")
 
     def main(self):
