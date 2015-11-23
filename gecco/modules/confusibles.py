@@ -374,6 +374,17 @@ class TIMBLSuffixConfusibleModule(Module):
                     f.write(confusible + "\n")
 
         elif modelfile == self.modelfile:
+            try:
+                self.confusibles
+            except AttributeError:
+                self.confusibles = []
+                self.log("Loading confusiblefile")
+                with open(self.confusiblefile,'r',encoding='utf-8') as f:
+                    for line in f:
+                        line = line.strip()
+                        if line:
+                            self.confusibles.append(line)
+
             if self.hapaxer:
                 self.log("Training hapaxer...")
                 self.hapaxer.train()
