@@ -236,7 +236,7 @@ class SplitModule(Module):
 
             bigrampattern = self.classencoder.buildpattern(word + " " + nextword)
             if bigrampattern.unknown():
-                freq = 0
+                bigramfreq = 0
             else:
                 try:
                     bigramfreq = self.patternmodel[bigrampattern]
