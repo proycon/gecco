@@ -35,6 +35,7 @@ class RunOnModule(Module):
     Settings:
     * ``freqthreshold`` - Frequency threshold for unigrams and bigrams to make it into the model (default: 10)  (you need to retrain the model if you change this value)
     * ``partthreshold`` - Each of the parts must occur over this threshold (default: 10), should be >= freqthreshold
+    * ``freqratio``     - The bigram frequency must be larger than the joined unigram frequency by this factor (default: 10)
     * ``class``         - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: runonerror) 
     """
     UNIT = folia.Word
@@ -51,6 +52,9 @@ class RunOnModule(Module):
 
         if 'partthreshold' not in self.settings:
             self.settings['partthreshold'] = 10
+
+        if 'freqratio' not in self.settings:
+            self.settings['freqratio'] = 10
 
     def train(self, sourcefile, modelfile, **parameters):
         self.log("Preparing to generate bigram model")
@@ -108,18 +112,32 @@ class RunOnModule(Module):
         suggestions = []
         maxfreq = 0
         for parts in splits(word):
-            pattern = self.classencoder.buildpattern(" ".join(parts))
-            if pattern.unknown():
+
+            bigrampattern = self.classencoder.buildpattern(" ".join(parts))
+            if bigrampattern.unknown():
                 freq = 0
             else:
                 try:
-                    freq = self.patternmodel[pattern]
+                    bigramfreq = self.patternmodel[bigrampattern]
                 except KeyError:
-                    freq = 0
-            if freq < self.settings['partthreshold']:
+                    bigramfreq = 0
+            if bigramfreq < self.settings['partthreshold']:
                 continue
-            if freq > freq_joined:
-                if freq > maxfreq:
+
+            skip = False
+            for part in parts:
+                partpattern = self.classencoder.buildpattern(part)
+                try:
+                    if self.patternmodel[partpattern] < self.settings['partthreshold']:
+                        skip = True
+                except KeyError:
+                    skip = True
+
+            if skip:
+                continue
+
+            if bigramfreq > freq_joined * self.settings['freqratio']:
+                if bigramfreq > maxfreq:
                     maxfreq = freq
                 suggestions.append( (parts, freq) )
 
@@ -142,7 +160,7 @@ class SplitModule(Module):
 
     Settings:
     * ``freqthreshold`` - Frequency threshold for bigrams to make it into the model (default: 10)  (you need to retrain the model if you change this value)
-    * ``freqratio``     - The bigram's frequency must be larger than any of the unigram frequencies by this factor (default: 0.5)
+    * ``freqratio``     - The unigram frequency must be higher than the bigram frequency by this factor (default: 10)
     * ``class``         - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: runonerror) 
     """
     UNIT = folia.Word
@@ -158,7 +176,7 @@ class SplitModule(Module):
             self.settings['freqthreshold'] = 10
 
         if 'freqratio' not in self.settings:
-            self.settings['freqratio'] = 0.5 
+            self.settings['freqratio'] = 10 
 
     def train(self, sourcefile, modelfile, **parameters):
         self.log("Preparing to generate bigram model")
@@ -216,16 +234,15 @@ class SplitModule(Module):
                 except KeyError:
                     freq_joined = 0
 
-            maxfreq = 0
-            pattern = self.classencoder.buildpattern(word + " " + nextword)
-            if pattern.unknown():
+            bigrampattern = self.classencoder.buildpattern(word + " " + nextword)
+            if bigrampattern.unknown():
                 freq = 0
             else:
                 try:
-                    freq = self.patternmodel[pattern]
+                    bigramfreq = self.patternmodel[bigrampattern]
                 except KeyError:
-                    freq = 0
-            if freq_joined > freq * self.settings['freqratio']:
+                    bigramfreq = 0
+            if freq_joined > bigramfreq * self.settings['freqratio']:
                 return word+nextword
 
 
