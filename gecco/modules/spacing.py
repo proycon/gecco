@@ -115,7 +115,7 @@ class RunOnModule(Module):
 
             bigrampattern = self.classencoder.buildpattern(" ".join(parts))
             if bigrampattern.unknown():
-                freq = 0
+                bigramfreq = 0
             else:
                 try:
                     bigramfreq = self.patternmodel[bigrampattern]
