@@ -138,8 +138,8 @@ class RunOnModule(Module):
 
             if bigramfreq > freq_joined * self.settings['freqratio']:
                 if bigramfreq > maxfreq:
-                    maxfreq = freq
-                suggestions.append( (parts, freq) )
+                    maxfreq = bigramfreq
+                suggestions.append( (parts, bigramfreq) )
 
         return [ (parts, freq / maxfreq) for parts, freq in suggestions ] #normalise confidence score (highest option = 1)
 
