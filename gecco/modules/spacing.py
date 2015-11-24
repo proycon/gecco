@@ -160,6 +160,7 @@ class SplitModule(Module):
 
     Settings:
     * ``freqthreshold`` - Frequency threshold for bigrams to make it into the model (default: 10)  (you need to retrain the model if you change this value)
+    * ``partthreshold`` - Each of the parts must occur over this threshold (default: 10), should be >= freqthreshold
     * ``freqratio``     - The unigram frequency must be higher than the bigram frequency by this factor (default: 10)
     * ``class``         - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: runonerror) 
     """
@@ -174,6 +175,9 @@ class SplitModule(Module):
 
         if 'freqthreshold' not in self.settings:
             self.settings['freqthreshold'] = 10
+
+        if 'partthreshold' not in self.settings:
+            self.settings['partthreshold'] = 10
 
         if 'freqratio' not in self.settings:
             self.settings['freqratio'] = 10 
@@ -223,6 +227,15 @@ class SplitModule(Module):
 
 
     def getmergesuggestion(self, word, nextword):
+        for part in (self.classencoder.buildpattern(word), self.classencoder.buildpattern(nextword)):
+            if part.unknown():
+                return None
+            try:
+                if self.patternmodel[part] < self.settings['partthreshold']:
+                    return None
+            except KeyError:
+                return None
+
         suggestions = []
         if nextword:
             pattern_joined = self.classencoder.buildpattern(word+nextword)
