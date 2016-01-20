@@ -467,6 +467,12 @@ class Corrector:
         for modid, d in sorted(virtualdurationpermod.items(),key=lambda x: x[1] * -1):
             print("\t"+modid + "\t" + str(round(d,4)) + "s\t" + str(callspermod[modid]) + " calls\t" + str(infopermod[modid]) + " corrections",file=sys.stderr)
         self.log("Processing done (real total " + str(round(duration,2)) + "s , virtual output " + str(virtualduration) + "s, real input " + str(inputduration) + "s)")
+
+
+        for q in (inputqueue, outputqueue, timequeue, infoqueue):
+            q.cancel_join_thread()
+            q.close()
+
         for thread in threads:
             thread.stop()
         for thread in threads:
@@ -804,6 +810,7 @@ class Corrector:
                 module.forcelocal = args.local
             if args.parameters: parameters = dict(( tuple(p.split('=')) for p in args.parameters))
             if args.metadata: parameters['metadata'] = dict(( tuple(p.split('=')) for p in args.metadata))
+            parameters['exit'] = True #force exit from run(), prevent stale processes
             if args.modules: modules = args.modules.split(',')
             self.run(args.filename,modules,args.outputfile,args.dumpxml, args.dumpjson,**parameters)
         elif args.command == 'startservers':
