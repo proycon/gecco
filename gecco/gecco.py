@@ -137,9 +137,9 @@ class DataThread(Process):
     def run(self):
         self.corrector.log("Processing output...") #not parallel, acts on same document anyway, should be fairly quick depending on module
         while not self._stop:
-            module_id, unit_id, outputdata, inputdata = self.outputqueue.get()
+            module_id, unit_id, outputdata, inputdata = self.outputqueue.get(True,self.corrector.settings['timeout'])
             self.outputqueue.task_done()
-            if module_id is None: #signals the end of the queue
+            if module_id is None and unit_id is None and outputdata is None and inputdata is None: #signals the end of the queue
                 self._stop = True
             elif outputdata:
                 module = self.corrector.modules[module_id]
@@ -225,7 +225,7 @@ class ProcessorThread(Process):
     def run(self):
         fatalerror = False
         while not self._stop:
-            module_id, unit_id, inputdata = self.inputqueue.get()
+            module_id, unit_id, inputdata = self.inputqueue.get(True,self.corrector.settings['timeout'])
             self.inputqueue.task_done()
             if module_id is None: #signals the last item (there will be one for each thread)
                 if self.debug: self.corrector.log(" (end of input queue)")
@@ -446,7 +446,7 @@ class Corrector:
         datathread.join()
         infopermod = defaultdict(int)
         while True:
-            module_id = infoqueue.get()
+            module_id = infoqueue.get(True, self.settings['timeout'])
             if module_id is None:
                 break
             infopermod[module_id] += 1
@@ -457,7 +457,7 @@ class Corrector:
 
         virtualduration = 0.0
         while True:
-            modid, x = timequeue.get()
+            modid, x = timequeue.get(True, self.settings['timeout'])
             if modid is None:
                 break
             else:
@@ -1034,6 +1034,10 @@ class Module:
         else:
             self.submodule = bool(self.settings['submodule'])
 
+        if 'timeout' in self.settings:
+            self.settings['timeout'] = int(self.settings['timeout'])
+        else:
+            self.settings['timeout'] = 120
 
         if not 'local' in self.settings:
             self.local = False
