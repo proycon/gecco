@@ -382,6 +382,11 @@ class Corrector:
         self.log = self.settings['logfunction']
 
 
+        if 'timeout' in self.settings:
+            self.settings['timeout'] = int(self.settings['timeout'])
+        else:
+            self.settings['timeout'] = 120
+
         if not 'threads' in self.settings:
             self.settings['threads'] = 1
 
@@ -1034,10 +1039,6 @@ class Module:
         else:
             self.submodule = bool(self.settings['submodule'])
 
-        if 'timeout' in self.settings:
-            self.settings['timeout'] = int(self.settings['timeout'])
-        else:
-            self.settings['timeout'] = 120
 
         if not 'local' in self.settings:
             self.local = False
