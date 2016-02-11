@@ -99,7 +99,7 @@ class DataThread(Process):
                 self.foliadoc.metadata[k] = v
 
         begintime = time.time()
-        self.corrector.log("Initialising modules on document") #not parellel, acts on same document anyway, should be very quick
+        self.corrector.log("Initialising modules on document") #not parallel, acts on same document anyway, should be very quick
         for module in self.corrector:
             if not module_ids or module.id in module_ids:
                 self.corrector.log("\tInitialising module " + module.id)
@@ -430,8 +430,8 @@ class Corrector:
         outputqueue = Queue()
         timequeue = Queue()
         infoqueue = Queue()
-        datathread = DataThread(self,filename,modules, outputfile, inputqueue, outputqueue, infoqueue,dumpxml,dumpjson,**parameters)
-        datathread.start()
+        datathread = DataThread(self,filename,modules, outputfile, inputqueue, outputqueue, infoqueue,dumpxml,dumpjson,**parameters) #fills inputqueue
+        datathread.start() #processes outputqueue
 
         begintime = time.time()
         self.log("Processing modules")
@@ -439,10 +439,14 @@ class Corrector:
         threads = []
         for _ in range(self.settings['threads']):
             thread = ProcessorThread(self, inputqueue, outputqueue, timequeue,**parameters)
-            thread.start()
             threads.append(thread)
-
         self.log(str(len(threads)) + " threads ready.")
+
+        for thread in threads:
+            thread.start()
+
+        self.log(str(len(threads)) + " threads started.")
+
 
         inputqueue.join()
         inputduration = time.time() - begintime
