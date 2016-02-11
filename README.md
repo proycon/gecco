@@ -1,3 +1,5 @@
+![Language Machines Badge](http://applejack.science.ru.nl/lamabadge.php/gecco)
+
 ========================================================================
 GECCO - Generic Environment for Context-Aware Correction of Orthography
 =======================================================================
