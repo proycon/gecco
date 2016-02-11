@@ -1,4 +1,4 @@
-![Language Machines Badge](http://applejack.science.ru.nl/lamabadge.php/gecco)
+[![Language Machines Badge](http://applejack.science.ru.nl/lamabadge.php/gecco)](http://applejack.science.ru.nl/languagemachines/)
 
 ========================================================================
 GECCO - Generic Environment for Context-Aware Correction of Orthography
