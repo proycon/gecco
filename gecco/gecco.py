@@ -45,7 +45,7 @@ UCTOSEARCHDIRS = ('/usr/local/etc/ucto','/etc/ucto/','.')
 if 'VIRTUAL_ENV' in os.environ:
     UCTOSEARCHDIRS = (os.environ['VIRTUAL_ENV'] + '/etc/ucto/',) + UCTOSEARCHDIRS
 
-VERSION = 0.1
+VERSION = '0.2'
 
 class DataThread(Process):
     def __init__(self, corrector, foliadoc, module_ids, outputfile,  inputqueue, outputqueue, infoqueue,dumpxml, dumpjson,**parameters):
@@ -305,10 +305,6 @@ class Corrector:
         self.modules = OrderedDict()
         self.verifysettings()
 
-        if 'notokenizer' in self.settings and self.settings['notokenizer']:
-            self.tokenizer = None
-        else:
-            self.tokenizer = Tokenizer(self.settings['ucto'])
 
         #Gather servers
         #self.servers = set( [m.settings['servers'] for m in self if not m.local ] )
@@ -814,6 +810,7 @@ class Corrector:
 
         parameters = {}
         modules = []
+        self.log("GECCO v" + VERSION + " using " + self.settings['id'])
         if args.command == 'run':
             for module in self.modules.values():
                 module.forcelocal = args.local

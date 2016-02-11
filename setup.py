@@ -19,7 +19,7 @@ def read(fname):
 
 setup(
     name = "Gecco",
-    version = "0.1",
+    version = "0.2",
     author = "Maarten van Gompel, Wessel Stoop",
     author_email = "proycon@anaproy.nl",
     description = ("Generic Environment for Context-Aware Correction of Orthography"),
@@ -29,7 +29,7 @@ setup(
     packages=['gecco','gecco.modules','gecco.helpers'],
     long_description=read('README.md'),
     classifiers=[
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 4 - Beta",
         "Topic :: Text Processing :: Linguistic",
         "Programming Language :: Python :: 3.2",
         "Programming Language :: Python :: 3.3",
