@@ -30,7 +30,7 @@ from collections import OrderedDict, defaultdict
 #from threading import Thread, Lock
 #from queue import Queue
 from threading import Thread
-from multiprocessing import Process, JoinableQueue as Queue #pylint: disable=no-name-in-module
+from multiprocessing import Process, Lock, JoinableQueue as Queue #pylint: disable=no-name-in-module
 from glob import glob
 from pynlpl.formats import folia, fql #pylint: disable=import-error,no-name-in-module
 from ucto import Tokenizer #pylint: disable=import-error,no-name-in-module
@@ -48,7 +48,7 @@ if 'VIRTUAL_ENV' in os.environ:
 VERSION = '0.2'
 
 class DataThread(Process):
-    def __init__(self, corrector, foliadoc, module_ids, outputfile,  inputqueue, outputqueue, infoqueue,dumpxml, dumpjson,**parameters):
+    def __init__(self, corrector, foliadoc, module_ids, outputfile,  inputqueue, outputqueue, infoqueue,waitforprocessors,dumpxml, dumpjson,**parameters):
         super().__init__()
 
         self.corrector = corrector
@@ -60,6 +60,7 @@ class DataThread(Process):
         self.parameters = parameters
         self.dumpxml = dumpxml
         self.dumpjson = dumpjson
+        self.waitforprocessors = waitforprocessors
         if 'debug' in self.parameters and self.parameters['debug']:
             self.debug = True
         else:
@@ -135,6 +136,8 @@ class DataThread(Process):
         self.corrector.log("Input ready (" + str(duration) + "s)")
 
     def run(self):
+        self.corrector.log("Waiting for processors to be ready...") #not parallel, acts on same document anyway, should be fairly quick depending on module
+        self.waitforprocessors.acquire(True,self.corrector.settings['timeout'])
         self.corrector.log("Processing output...") #not parallel, acts on same document anyway, should be fairly quick depending on module
         while not self._stop:
             module_id, unit_id, outputdata, inputdata = self.outputqueue.get(True,self.corrector.settings['timeout'])
@@ -426,7 +429,9 @@ class Corrector:
         outputqueue = Queue()
         timequeue = Queue()
         infoqueue = Queue()
-        datathread = DataThread(self,filename,modules, outputfile, inputqueue, outputqueue, infoqueue,dumpxml,dumpjson,**parameters) #fills inputqueue
+        waitforprocessors = Lock()
+        waitforprocessors.acquire(False)
+        datathread = DataThread(self,filename,modules, outputfile, inputqueue, outputqueue, infoqueue,,waitforprocessors,dumpxml,dumpjson,**parameters) #fills inputqueue
         datathread.start() #processes outputqueue
 
         begintime = time.time()
@@ -443,8 +448,9 @@ class Corrector:
 
         self.log(str(len(threads)) + " threads started.")
 
-
+        waitforprocessors.release()
         inputqueue.join()
+
         inputduration = time.time() - begintime
         self.log("Input queue processed (" + str(inputduration) + "s)")
         outputqueue.put( (None,None,None,None) ) #signals the end of the queue
@@ -474,12 +480,8 @@ class Corrector:
         self.log("Processing done (real total " + str(round(duration,2)) + "s , virtual output " + str(virtualduration) + "s, real input " + str(inputduration) + "s)")
 
 
-        for q in (inputqueue, outputqueue, timequeue, infoqueue):
-            q.cancel_join_thread()
-            q.close()
-
         for thread in threads:
-            thread.stop()
+            thread.stop() #custom
         for thread in threads:
             thread.terminate()
             del thread
