@@ -431,7 +431,7 @@ class Corrector:
         infoqueue = Queue()
         waitforprocessors = Lock()
         waitforprocessors.acquire(False)
-        datathread = DataThread(self,filename,modules, outputfile, inputqueue, outputqueue, infoqueue,,waitforprocessors,dumpxml,dumpjson,**parameters) #fills inputqueue
+        datathread = DataThread(self,filename,modules, outputfile, inputqueue, outputqueue, infoqueue,waitforprocessors,dumpxml,dumpjson,**parameters) #fills inputqueue
         datathread.start() #processes outputqueue
 
         begintime = time.time()
