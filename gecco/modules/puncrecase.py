@@ -19,17 +19,108 @@ import gzip
 import datetime
 from pynlpl.formats import folia #pylint: disable=import-error
 from pynlpl.textprocessors import Windower #pylint: disable=import-error
+import colibricore
 from timbl import TimblClassifier #pylint: disable=import-error
 from gecco.gecco import Module
 from gecco.helpers.hapaxing import gethapaxer
 from gecco.helpers.filters import nonumbers
+from gecco.helpers.common import stripsourceextensions
 
 
-EOSMARKERS = ('.','?','!')
-PUNCTUATION = EOSMARKERS + (',',';',':')
+
+class ColibriPuncRecaseModule(Module):
+    """This is punctuation and recase module implemented using Colibri Core, it predicts where punctuation needs to be inserted, deleted, and whether a word needs to be written with an initial capital. 
+
+    Settings:
+    * ``deletionthreshold`` - If no punctuation insertion is predicted and this confidence threshold is reached, then a deletion will be predicted (should be a high number), default: 0.95
+    * ``insertionthreshold`` - Necessary confidence threshold to predict an insertion of punctuation (default: 0.5)
+
+    * ``freqthreshold`` - Minimum frequency threshold for bigrams and trigrams to be included in the model
+
+    Sources and models: 
+    * a plain-text corpus (tokenized)  [``.txt``]     ->    a classifier instance base model [``.ibase``]
+    """
+
+    UNIT = folia.Word
+    UNITFILTER = nonumbers
+
+    EOSMARKERS = ('.','?','!')
+    PUNCTUATION = EOSMARKERS + (',',';',':')
+
+    def verifysettings(self):
+        if 'class' not in self.settings:
+            self.settings['class'] = 'missingpunctuation' #will be overriden later again
+
+        super().verifysettings()
+
+        if 'deletionthreshold' not in self.settings:
+            self.settings['deletionthreshold'] = 0.95
+
+        if 'insertionthreshold' not in self.settings:
+            self.settings['insertionthreshold'] = 0.5
+
+        if 'capitalizationthreshold' not in self.settings:
+            self.settings['capitalizationthreshold'] = 0.5
+
+        if 'freqthreshold' not in self.settings:
+            self.settings['freqthreshold'] = 2
+
+        if 'debug' in self.settings:
+            self.debug = bool(self.settings['debug'])
+        else:
+            self.debug = False
+
+
+    def train(self, sourcefile, modelfile, **parameters):
+        self.log("Preparing to generate bigram model")
+        classfile = stripsourceextensions(sourcefile) +  ".cls"
+        corpusfile = stripsourceextensions(sourcefile) +  ".dat"
+
+        if not os.path.exists(classfile):
+            self.log("Building class file")
+            classencoder = colibricore.ClassEncoder() #character length constraints
+            classencoder.build(sourcefile)
+            classencoder.save(classfile)
+        else:
+            classencoder = colibricore.ClassEncoder(classfile)
+
+        if not os.path.exists(modelfile+'.cls'):
+            #make symlink to class file, using model name instead of source name
+            os.symlink(classfile, modelfile + '.cls')
+
+        if not os.path.exists(corpusfile):
+            self.log("Encoding corpus")
+            classencoder.encodefile( sourcefile, corpusfile)
+
+        self.log("Generating bigram frequency list")
+        options = colibricore.PatternModelOptions(mintokens=self.settings['freqthreshold'],minlength=2,maxlength=2) #bigrams
+        model = colibricore.UnindexedPatternModel()
+        model.train(corpusfile, options)
+
+        self.log("Saving model")
+        model.write(modelfile)
+        del model
+
+
+        filterpatterns = colibricore.PatternSet()
+        for punc in ColibriPuncRecaseModule.PUNCTUATION:
+            filterpattern = classencoder.build('{?} ' + punc + ' {?}')
+            if not filterpattern.unknown():
+                filterpatterns.add(filterpattern)
+
+        self.log("Generating filtered trigram frequency list")
+        options = colibricore.PatternModelOptions(mintokens=self.settings['freqthreshold'],minlength=3,maxlength=3) #trigrams
+        model = colibricore.UnindexedPatternModel()
+        model.train_filtered(corpusfile, options, filterpatterns)
+
+        self.log("Saving model")
+        model.write(modelfile + '.3')
+
+
 
 class TIMBLPuncRecaseModule(Module):
     """This is a memory-based classification module, implemented using Timbl, that predicts where punctuation needs to be inserted, deleted, and whether a word needs to be written with an initial capital. 
+    NOTE: This module performs badly!!
 
     Settings:
     * ``leftcontext``  - Left context size (in words) for the feature vector
@@ -44,6 +135,9 @@ class TIMBLPuncRecaseModule(Module):
 
     UNIT = folia.Word
     UNITFILTER = nonumbers
+
+    EOSMARKERS = ('.','?','!')
+    PUNCTUATION = EOSMARKERS + (',',';',':')
 
     def verifysettings(self):
         if 'class' not in self.settings:
@@ -148,7 +242,7 @@ class TIMBLPuncRecaseModule(Module):
                 if i % 100000 == 0: print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + " - " + str(i),file=sys.stderr)
                 words = [ w.strip() for w in line.split(' ') if w.strip() ]
                 for i, word in enumerate(words):
-                    if prevword in PUNCTUATION:
+                    if prevword in TIMBLPuncRecaseModule.PUNCTUATION:
                         punc = prevword
                     else:
                         punc = ""
@@ -258,7 +352,7 @@ class TIMBLPuncRecaseModule(Module):
             if prevword and distribution[cls] >= self.settings['deletionthreshold'] and all( not c.isalpha() for c in  prevword ):
                 if self.debug:
                     self.log(" (Redundant punctuation " + cls + " with threshold " + str(distribution[cls]) + ")")
-                queries.append( self.suggestdeletion(prevword_id,(prevword in EOSMARKERS), cls='redundantpunctuation') )
+                queries.append( self.suggestdeletion(prevword_id,(prevword in TIMBLPuncRecaseModule.EOSMARKERS), cls='redundantpunctuation') )
         elif cls and cls in distribution:
             #insertion of punctuation
             if distribution[cls] >= self.settings['insertionthreshold']:
@@ -272,7 +366,7 @@ class TIMBLPuncRecaseModule(Module):
                         if self.debug: self.log(" (Predicted punctuation already there, good, ignoring)")
                 else:
                     if self.debug: self.log(" (Insertion " + cls + " with threshold " + str(distribution[cls]) + ")")
-                    queries.append( self.suggestinsertion(unit_id, cls, (cls in EOSMARKERS) ) )
+                    queries.append( self.suggestinsertion(unit_id, cls, (cls in TIMBLPuncRecaseModule.EOSMARKERS) ) )
             else:
                 recase = False #no punctuation insertion? then no recasing either
                 if self.debug: self.log(" (Insertion threshold not reached: " + str(distribution[cls]) + ")")
