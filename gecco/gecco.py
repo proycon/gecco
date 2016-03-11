@@ -393,21 +393,34 @@ class Corrector:
             self.settings['minpollinterval'] = 60 #60 sec
 
 
-    def parseconfig(self,configfile):
+    def parseconfig(self,configfile, verify=True):
         self.configfile = configfile
         config = yaml.load(open(configfile,'r',encoding='utf-8').read())
+
+        if 'inherit' in config:
+            self.parseconfig(config['inherit'], False)
+        else:
+            self.settings = {}
 
         if 'modules' not in config:
             raise Exception("No Modules specified")
 
         modulespecs = config['modules']
         del config['modules']
-        self.settings = config
-        self.verifysettings()
+        self.settings.update(config)
+        if verify:
+            self.verifysettings()
 
         for modulespec in modulespecs:
             if 'enabled' in modulespec and not modulespec['enabled'] or 'disabled' in modulespec and modulespec['disabled']:
                 continue
+            if not 'id' in modulespec:
+                raise Exception("Mising ID in module specification")
+
+            if modulespec['id'] in self.modules:
+                #module redefined, remove old one
+                del self.modules[modulespec['id']]
+
             #import modules:
             pymodule = '.'.join(modulespec['module'].split('.')[:-1])
             moduleclass = modulespec['module'].split('.')[-1]
