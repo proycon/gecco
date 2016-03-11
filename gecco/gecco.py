@@ -398,7 +398,9 @@ class Corrector:
         config = yaml.load(open(configfile,'r',encoding='utf-8').read())
 
         if 'inherit' in config:
-            self.parseconfig(config['inherit'], False)
+            baseconfig = yaml.load(open(config['inherit'],'r',encoding='utf-8').read())
+            baseconfig.update(config)
+            config = baseconfig
         else:
             self.settings = {}
 
@@ -416,10 +418,6 @@ class Corrector:
                 continue
             if not 'id' in modulespec:
                 raise Exception("Mising ID in module specification")
-
-            if modulespec['id'] in self.modules:
-                #module redefined, remove old one
-                del self.modules[modulespec['id']]
 
             #import modules:
             pymodule = '.'.join(modulespec['module'].split('.')[:-1])
