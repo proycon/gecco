@@ -393,7 +393,7 @@ class Corrector:
             self.settings['minpollinterval'] = 60 #60 sec
 
 
-    def parseconfig(self,configfile, verify=True):
+    def parseconfig(self,configfile):
         self.configfile = configfile
         config = yaml.load(open(configfile,'r',encoding='utf-8').read())
 
@@ -401,17 +401,14 @@ class Corrector:
             baseconfig = yaml.load(open(config['inherit'],'r',encoding='utf-8').read())
             baseconfig.update(config)
             config = baseconfig
-        else:
-            self.settings = {}
 
         if 'modules' not in config:
             raise Exception("No Modules specified")
 
         modulespecs = config['modules']
         del config['modules']
-        self.settings.update(config)
-        if verify:
-            self.verifysettings()
+        self.settings = config
+        self.verifysettings()
 
         for modulespec in modulespecs:
             if 'enabled' in modulespec and not modulespec['enabled'] or 'disabled' in modulespec and modulespec['disabled']:
