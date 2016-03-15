@@ -10,15 +10,11 @@
 #
 #=======================================================================
 
-import sys
+#pylint: disable=too-many-nested-blocks,attribute-defined-outside-init
+
 import os
 import json
-import io
-import bz2
-import gzip
-from collections import OrderedDict
 from pynlpl.formats import folia
-from pynlpl.textprocessors import Windower
 from gecco.gecco import Module
 from gecco.helpers.common import stripsourceextensions
 from gecco.helpers.filters import hasalpha
@@ -31,12 +27,12 @@ def splits(s):
 
 class RunOnModule(Module):
     """Detects words that have been joined together but should be split. It uses a bigram model.
-    
+
     Settings:
     * ``freqthreshold`` - Frequency threshold for unigrams and bigrams to make it into the model (default: 10)  (you need to retrain the model if you change this value)
     * ``partthreshold`` - Each of the parts must occur over this threshold (default: 10), should be >= freqthreshold
     * ``freqratio``     - The bigram frequency must be larger than the joined unigram frequency by this factor (default: 10)
-    * ``class``         - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: runonerror) 
+    * ``class``         - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: runonerror)
     """
     UNIT = folia.Word
     UNITFILTER = hasalpha
@@ -146,7 +142,7 @@ class RunOnModule(Module):
 
     def prepareinput(self,word,**parameters):
         """Takes the specified FoLiA unit for the module, and returns a string that can be passed to process()"""
-        return str(word) 
+        return str(word)
 
     def processoutput(self, suggestions, inputdata, unit_id,**parameters):
         return self.splitcorrection(unit_id, suggestions)
@@ -161,7 +157,7 @@ class SplitModule(Module):
     Settings:
     * ``freqthreshold`` - Frequency threshold for bigrams to make it into the model (default: 10)  (you need to retrain the model if you change this value)
     * ``freqratio``     - The unigram frequency must be higher than the bigram frequency by this factor (default: 10)
-    * ``class``         - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: runonerror) 
+    * ``class``         - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: runonerror)
     """
     UNIT = folia.Word
     UNITFILTER = hasalpha
@@ -176,7 +172,7 @@ class SplitModule(Module):
             self.settings['freqthreshold'] = 10
 
         if 'freqratio' not in self.settings:
-            self.settings['freqratio'] = 10 
+            self.settings['freqratio'] = 10
 
     def train(self, sourcefile, modelfile, **parameters):
         self.log("Preparing to generate bigram model")
@@ -223,7 +219,6 @@ class SplitModule(Module):
 
 
     def getmergesuggestion(self, word, nextword):
-        suggestions = []
         if nextword:
             pattern_joined = self.classencoder.buildpattern(word+nextword)
             if pattern_joined.unknown():
@@ -246,9 +241,9 @@ class SplitModule(Module):
                 return word+nextword
 
 
-    def server_handler(self, input):
+    def server_handler(self, inputdata):
         """This methods gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
-        word, nextword = input.split("\t")
+        word, nextword = inputdata.split("\t")
         return json.dumps(self.getmergesuggestion(word, nextword))
 
     def prepareinput(self,word,**parameters):
@@ -261,7 +256,7 @@ class SplitModule(Module):
         _,_,next_id = inputdata
         return self.mergecorrection(suggestions, (unit_id, next_id))
 
-    def run(self, input):
-        word, nextword, _ = input
+    def run(self, inputdata):
+        word, nextword, _ = inputdata
         return self.getmergesuggestion(word, nextword)
 

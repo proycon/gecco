@@ -57,7 +57,7 @@ class FoLiAOutput(unittest.TestCase):
         self.assertEqual(correction.cls,'spliterror',"Checking class")
         self.assertEqual( correction.current().text(), 'mis takes')
         self.assertEqual( correction.suggestions(0).text(), 'mistakes')
-        
+
 
 if __name__ == '__main__':
     try:
@@ -65,7 +65,7 @@ if __name__ == '__main__':
         if not os.path.isdir(TESTDIR):
             print("Test directory does not exist",file=sys.stderr)
             sys.exit(2)
-    except:
+    except IndexError:
         print("Expected one argument: test directory",file=sys.stderr)
         sys.exit(2)
 

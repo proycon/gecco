@@ -10,8 +10,9 @@
 #
 #=======================================================================
 
+#pylint: disable=too-many-nested-blocks
+
 import os
-import json
 import io
 import bz2
 import gzip

@@ -19,8 +19,8 @@ import sys
 import os
 import glob
 import random
-from pynlpl.formats import folia
 from collections import defaultdict
+from pynlpl.formats import folia
 
 
 def getrandomid(doc,prefix="C"):
@@ -127,7 +127,7 @@ def processfile(outfile, reffile, evaldata):
 
     try:
         outdoc = folia.Document(file=outfile)
-    except Exception as e:
+    except Exception as e: #pylint: disable=broad-except
         print("Unable to read " + outfile + ": " + str(e),file=sys.stderr)
         if settings.ignoreerrors:
             return
@@ -136,7 +136,7 @@ def processfile(outfile, reffile, evaldata):
 
     try:
         refdoc = folia.Document(file=reffile)
-    except Exception as e:
+    except Exception as e: #pylint: disable=broad-except
         print("Unable to read " + reffile + ": " + str(e),file=sys.stderr)
         if settings.ignoreerrors:
             return
@@ -270,7 +270,7 @@ def processfile(outfile, reffile, evaldata):
 
             if nonematch:
                 evaldata.aggrfn += 1
-            
+
 
         evaldata.refclsdistr[correction_ref.cls] += 1
         if correction_ref.hasoriginal() and correction_ref.original().hastext(None,strict=False):

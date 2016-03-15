@@ -10,10 +10,9 @@
 #
 #=======================================================================
 
-import sys
+#pylint: disable=too-many-nested-blocks,attribute-defined-outside-init
+
 import os
-import json
-from collections import OrderedDict
 from pynlpl.formats import folia
 #from pynlpl.statistics import levenshtein
 import Levenshtein #pylint: disable=import-error
@@ -43,10 +42,10 @@ class LexiconModule(Module):
     * ``reversed``     - Set to true if the model has word,freq pairs rather than freq,word pairs (default: False)
     * ``ordered``      - Indicates that the model file is ordered by frequency (descending) (default: True) -  Not using ordering decreases performance!
 
-    * ``suffixes``     - A list of suffixes that will be stripped from a word in case of a mismatch, after which the remainder is rematched against the lexicon 
-    * ``prefixes``     - A list of prefixes that will be stripped from a word in case of a mismatch, after which the remainder is rematched against the lexicon 
+    * ``suffixes``     - A list of suffixes that will be stripped from a word in case of a mismatch, after which the remainder is rematched against the lexicon
+    * ``prefixes``     - A list of prefixes that will be stripped from a word in case of a mismatch, after which the remainder is rematched against the lexicon
 
-    * ``class``        - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: contexterror) 
+    * ``class``        - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: contexterror)
 
     Sources and models:
     * a plain-text corpus (tokenized)  [``.txt``]     ->    a lexicon [``.txt``]
@@ -152,7 +151,7 @@ class LexiconModule(Module):
 
     def load(self):
         """Load the requested modules from self.models"""
-        self.lexicon = {}
+        self.lexicon = {} #pylint: disable=attribute-defined-outside-init
 
         if not self.models:
             raise Exception("Specify one or more models to load!")
@@ -255,11 +254,11 @@ class LexiconModule(Module):
     def processoutput(self, output,inputdata, unit_id,**parameters):
         return self.addsuggestions(unit_id, [ result for result,distance in output ] )
 
-    def run(self, input):
+    def run(self, inputdata):
         """This methods gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
-        if input:
-            command = input[0]
-            word = input[1:]
+        if inputdata:
+            command = inputdata[0]
+            word = inputdata[1:]
             if command == '!': #find closest suggestions
                 return self.findclosest(word)
             elif command == '?':
@@ -352,7 +351,7 @@ class ExternalSpellModule(Module):
         if l < self.settings['minlength'] or l > self.settings['maxlength']:
             return None
         else:
-            return wordstr 
+            return wordstr
 
     def processoutput(self, output, inputdata, unit_id,**parameters):
         queries = []
@@ -425,18 +424,18 @@ class ExternalSpellModule(Module):
 
 class AspellModule(ExternalSpellModule):
     """Looks up the word in an Aspell lexicon, and returns suggestions
-    
+
     Settings:
     * ``language``      - The language code (see http://aspell.net/man-html/Supported.html)
-    * ``class``         - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: nonworderror) 
+    * ``class``         - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: nonworderror)
     * ``maxdistance``  - Maximum Levenshtein distance between a word and its correction (larger distances are pruned from suggestions)
     * ``maxlength``  - Maximum length of words in characters, longer words are ignored (default: 25)
     * ``minlength``  - Minimum length of words in characters, shorter words are ignored (default: 5)
     * ``shortlength`` - Maximum length of words, in characters, that are considered short. Short words are measured against maxdistance_short rather than maxdistance  (default: 5)
     * ``maxdistance_short``  - Maximum Levenshtein distance between a word and its correction (larger distances are pruned from suggestions), this threshold applies to short words only (use shortlength to define what a short word is)
     * ``maxnrclosest`` -  Limit the returned suggestions to this many items (default: 5)
-    * ``suffixes``     - A list of suffixes that will be stripped from a word in case of a mismatch, after which the remainder is rematched against the lexicon 
-    * ``prefixes``     - A list of prefixes that will be stripped from a word in case of a mismatch, after which the remainder is rematched against the lexicon 
+    * ``suffixes``     - A list of suffixes that will be stripped from a word in case of a mismatch, after which the remainder is rematched against the lexicon
+    * ``prefixes``     - A list of prefixes that will be stripped from a word in case of a mismatch, after which the remainder is rematched against the lexicon
     """
     UNIT = folia.Word
     UNITFILTER = hasalpha
@@ -459,21 +458,21 @@ class AspellModule(ExternalSpellModule):
 
 class HunspellModule(ExternalSpellModule):
     """Looks up the word in a HunSpell lexicon, and returns suggestions
-    
+
     Settings:
     * ``path``          - Path to hunspel (defaults to: /usr/share/hunspell/)
     * ``language``      - The language (follows locale syntax, i.e. en_GB for British English)
-    * ``class``         - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: nonworderror) 
+    * ``class``         - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: nonworderror)
     * ``runon``         - Boolean, handle runons as well? (default: True)
-    * ``runonclass``    - Runon errors found by this module will be assigned the specified class in the resulting FoLiA output (default: runonerror) 
+    * ``runonclass``    - Runon errors found by this module will be assigned the specified class in the resulting FoLiA output (default: runonerror)
     * ``maxdistance``  - Maximum Levenshtein distance between a word and its correction (larger distances are pruned from suggestions)
     * ``maxlength``  - Maximum length of words in characters, longer words are ignored (default: 25)
     * ``minlength``  - Minimum length of words in characters, shorter words are ignored (default: 5)
     * ``shortlength`` - Maximum length of words, in characters, that are considered short. Short words are measured against maxdistance_short rather than maxdistance  (default: 5)
     * ``maxdistance_short``  - Maximum Levenshtein distance between a word and its correction (larger distances are pruned from suggestions), this threshold applies to short words only (use shortlength to define what a short word is)
     * ``maxnrclosest`` -  Limit the returned suggestions to this many items (default: 5)
-    * ``suffixes``     - A list of suffixes that will be stripped from a word in case of a mismatch, after which the remainder is rematched against the lexicon 
-    * ``prefixes``     - A list of prefixes that will be stripped from a word in case of a mismatch, after which the remainder is rematched against the lexicon 
+    * ``suffixes``     - A list of suffixes that will be stripped from a word in case of a mismatch, after which the remainder is rematched against the lexicon
+    * ``prefixes``     - A list of prefixes that will be stripped from a word in case of a mismatch, after which the remainder is rematched against the lexicon
     """
 
     UNIT = folia.Word
@@ -496,4 +495,4 @@ class HunspellModule(ExternalSpellModule):
         if self.speller.spell(word):
             return [word]
         else:
-            return [ str(w,'utf-8') for w in self.speller.suggest(word) ] 
+            return [ str(w,'utf-8') for w in self.speller.suggest(word) ]
