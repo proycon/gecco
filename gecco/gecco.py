@@ -11,16 +11,15 @@
 #
 #=======================================================================
 
+#pylint: disable=too-many-nested-blocks
 
 import sys
 import os
 import socket
 import socketserver
-import yaml
 import datetime
 import time
 import subprocess
-import psutil
 import json
 import traceback
 import random
@@ -32,6 +31,9 @@ from collections import OrderedDict, defaultdict
 from threading import Thread
 from multiprocessing import Process, Lock, JoinableQueue as Queue #pylint: disable=no-name-in-module
 from glob import glob
+import argparse
+import psutil
+import yaml
 from pynlpl.formats import folia, fql #pylint: disable=import-error,no-name-in-module
 from ucto import Tokenizer #pylint: disable=import-error,no-name-in-module
 
@@ -39,7 +41,6 @@ import gecco.helpers.evaluation
 from gecco.helpers.common import folia2json
 
 
-import argparse
 
 UCTOSEARCHDIRS = ('/usr/local/etc/ucto','/etc/ucto/','.')
 if 'VIRTUAL_ENV' in os.environ:
@@ -61,10 +62,7 @@ class DataThread(Process):
         self.dumpxml = dumpxml
         self.dumpjson = dumpjson
         self.waitforprocessors = waitforprocessors
-        if 'debug' in self.parameters and self.parameters['debug']:
-            self.debug = True
-        else:
-            self.debug = False
+        self.debug =  'debug' in self.parameters and self.parameters['debug']
         self._stop = False
 
         #Load FoLiA document
@@ -150,8 +148,7 @@ class DataThread(Process):
                     queries = module.processoutput(outputdata, inputdata, unit_id,**self.parameters)
                 except Exception as e: #pylint: disable=broad-except
                     self.corrector.log("***ERROR*** Exception processing output of " + module_id + ": " + str(e)) #not parallel, acts on same document anyway, should be fairly quick depending on module
-                    exc_type, exc_value, exc_traceback = sys.exc_info()
-                    formatted_lines = traceback.format_exc().splitlines()
+                    exc_type, exc_value, exc_traceback = sys.exc_info() #pylint: disable=unused-variable
                     traceback.print_tb(exc_traceback, limit=50, file=sys.stderr)
                     queries = None
                 if queries is not None:
@@ -168,19 +165,16 @@ class DataThread(Process):
                             self.corrector.log("***ERROR*** FQL Syntax error in " + module_id + ":" + str(e)) #not parallel, acts on same document anyway, should be fairly quick depending on module
                             self.corrector.log(" query: " + query)
                             exc_type, exc_value, exc_traceback = sys.exc_info()
-                            formatted_lines = traceback.format_exc().splitlines()
                             traceback.print_tb(exc_traceback, limit=50, file=sys.stderr)
                         except fql.QueryError as e:
                             self.corrector.log("***ERROR*** FQL Query error in " + module_id + ":" + str(e)) #not parallel, acts on same document anyway, should be fairly quick depending on module
                             self.corrector.log(" query: " + query)
                             exc_type, exc_value, exc_traceback = sys.exc_info()
-                            formatted_lines = traceback.format_exc().splitlines()
                             traceback.print_tb(exc_traceback, limit=50, file=sys.stderr)
-                        except Exception as e:
+                        except Exception as e: #pylint: disable=broad-except
                             self.corrector.log("***ERROR*** Error processing query for " + module_id + ": " + e.__class__.__name__ + " -- " +  str(e)) #not parallel, acts on same document anyway, should be fairly quick depending on module
                             self.corrector.log(" query: " + query)
-                            exc_type, exc_value, exc_traceback = sys.exc_info()
-                            formatted_lines = traceback.format_exc().splitlines()
+                            exc_type, exc_value, exc_traceback = sys.exc_info() #pylint: disable=unused-variable
                             traceback.print_tb(exc_traceback, limit=50, file=sys.stderr)
 
         self.infoqueue.put(None) #signals end
@@ -226,7 +220,6 @@ class ProcessorThread(Process):
 
 
     def run(self):
-        fatalerror = False
         while not self._stop:
             module_id, unit_id, inputdata = self.inputqueue.get(True,self.corrector.settings['timeout'])
             self.inputqueue.task_done()
@@ -249,7 +242,6 @@ class ProcessorThread(Process):
                                 duration = round(time.time() - begintime,4)
                                 module.log("[" + str(self.pid) + "] (...took " + str(duration) + "s)")
                         else:
-                            skipservers= []
                             connected = False
                             if self.debug:
                                 module.log("[" + str(self.pid) + "]  (Running " + module.id + " on " + repr(inputdata) + " [remote]")
@@ -258,7 +250,8 @@ class ProcessorThread(Process):
                             try:
                                 startseqnr = self.seqnr[module.id]
                                 while not connected:
-                                    server,port,load = module.getserver(self.seqnr[module.id])  #get the server for this sequence nr, sequence numbers ensure rotation between servers
+                                    #get the server for this sequence nr, sequence numbers ensure rotation between servers
+                                    server,port,load = module.getserver(self.seqnr[module.id])   #pylint: disable=unused-variable
                                     self.seqnr[module.id] += 1 #increase sequence number for this module
                                     if self.seqnr[module.id] >= startseqnr + (10 * len(module.servers)):
                                         break #max 10 retries over all servers
@@ -278,17 +271,15 @@ class ProcessorThread(Process):
                                     except ConnectionRefusedError:
                                         module.log("[" + str(self.pid) + "] Server " + server+":" + str(port) + ", module " + module.id + " refused connection, moving on...")
                                         del self.clients[(server,port)]
-                                    except Exception as e:
+                                    except Exception: #pylint: disable=broad-except
                                         module.log("[" + str(self.pid) + "] Server communication failed for server " + server +":" + str(port) + ", module " + module.id + ", passed unit " + unit_id + " (traceback follows in debug), moving on...")
-                                        exc_type, exc_value, exc_traceback = sys.exc_info()
-                                        formatted_lines = traceback.format_exc().splitlines()
+                                        exc_type, exc_value, exc_traceback = sys.exc_info() #pylint: disable=unused-variable
                                         traceback.print_tb(exc_traceback, limit=50, file=sys.stderr)
                                         del self.clients[(server,port)]
                             except IndexError:
                                 module.log("**ERROR** No servers started for " + module.id)
                             if not connected:
                                 module.log("**ERROR** Unable to connect client to server! All servers for module " + module.id + " are down, skipping!")
-                                fatalerrors = True
                             duration = time.time() - begintime
                             self.timequeue.put((module.id, duration))
                             if self.debug:
@@ -354,29 +345,29 @@ class Corrector:
                     self.root = os.path.abspath(d)
                     break
             if self.root is None:
-                raise Exception("Root directory not found: " + self.settings['root']) 
+                raise Exception("Root directory not found: " + self.settings['root'])
         else:
             self.root = self.settings['root'] = os.path.abspath('.')
 
         if self.root[-1] != '/': self.root += '/'
 
 
-        if not 'ucto' in self.settings:
+        if 'ucto' not in self.settings:
             if 'language' in self.settings:
-                for dir in UCTOSEARCHDIRS:
-                    if os.path.exists(dir + "/tokconfig-" + self.settings['language']):
-                        self.settings['ucto'] = dir + '/tokconfig-' + self.settings['language']
-            if not 'ucto' in self.settings:
-                for dir in UCTOSEARCHDIRS:
-                    if os.path.exists(dir + "/tokconfig-generic"):
-                        self.settings['ucto'] = dir + '/tokconfig-generic'
-                if not 'ucto' in self.settings:
+                for d in UCTOSEARCHDIRS:
+                    if os.path.exists(d + "/tokconfig-" + self.settings['language']):
+                        self.settings['ucto'] = d + '/tokconfig-' + self.settings['language']
+            if 'ucto' not in self.settings:
+                for d in UCTOSEARCHDIRS:
+                    if os.path.exists(d + "/tokconfig-generic"):
+                        self.settings['ucto'] = d + '/tokconfig-generic'
+                if 'ucto' not in self.settings:
                     raise Exception("Ucto configuration file not specified and no default found (use setting ucto=)")
         elif not os.path.exists(self.settings['ucto']):
             raise Exception("Specified ucto configuration file not found")
 
 
-        if not 'logfunction' in self.settings:
+        if 'logfunction' not in self.settings:
             self.settings['logfunction'] = lambda x: print(datetime.datetime.now().strftime("%H:%M:%S.%f") + " " + x,file=sys.stderr)
         self.log = self.settings['logfunction']
 
@@ -386,16 +377,21 @@ class Corrector:
         else:
             self.settings['timeout'] = 120
 
-        if not 'threads' in self.settings:
+        if 'threads' not in self.settings:
             self.settings['threads'] = 1
 
-        if not 'minpollinterval' in self.settings:
+        if 'minpollinterval' not in self.settings:
             self.settings['minpollinterval'] = 60 #60 sec
 
 
     def parseconfig(self,configfile):
-        self.configfile = configfile
+        self.configfile = configfile #pylint: disable=attribute-defined-outside-init
         config = yaml.load(open(configfile,'r',encoding='utf-8').read())
+
+        if 'inherit' in config:
+            baseconfig = yaml.load(open(config['inherit'],'r',encoding='utf-8').read())
+            baseconfig.update(config)
+            config = baseconfig
 
         if 'modules' not in config:
             raise Exception("No Modules specified")
@@ -408,10 +404,13 @@ class Corrector:
         for modulespec in modulespecs:
             if 'enabled' in modulespec and not modulespec['enabled'] or 'disabled' in modulespec and modulespec['disabled']:
                 continue
+            if not 'id' in modulespec:
+                raise Exception("Mising ID in module specification")
+
             #import modules:
             pymodule = '.'.join(modulespec['module'].split('.')[:-1])
             moduleclass = modulespec['module'].split('.')[-1]
-            exec("from " + pymodule + " import " + moduleclass)
+            exec("from " + pymodule + " import " + moduleclass) #pylint: disable=exec-used
             ModuleClass = locals()[moduleclass]
             if 'servers' in modulespec:
                 modulespec['servers'] =  tuple( ( (x['host'],x['port']) for x in modulespec['servers']) )
@@ -489,8 +488,8 @@ class Corrector:
     def __len__(self):
         return len(self.modules)
 
-    def _getitem__(self, id):
-        return self.modules[id]
+    def _getitem__(self, modid):
+        return self.modules[modid]
 
     def __iter__(self):
         #iterate in proper dependency order:
@@ -512,7 +511,7 @@ class Corrector:
             if modules == postpone:
                 raise Exception("There are unsolvable (circular?) dependencies in your module definitions")
             else:
-                modules = postpone
+                modules = iter(postpone)
 
     def append(self, module):
         assert isinstance(module, Module)
@@ -681,7 +680,7 @@ class Corrector:
         self.findservers()
 
         for module in self.modules.values():
-            for host,port,load in module.servers:
+            for host,port,load in module.servers: #pylint: disable=unused-variable
                 if not module.local and (not module_ids or module.id in module_ids) and host in MYHOSTS:
                     self.log("Stopping server " + module.id + "@" + host + ":" + str(port) + " ...")
                     with open(runpath + module.id + "." + host + "." + str(port) + ".pid",'r') as f:
@@ -793,7 +792,6 @@ class Corrector:
         #parser_tune.add_argument('-p',dest='parameters', help="Custom parameters passed to the modules, specify as -p parameter=value. This option can be issued multiple times", required=False, action="append")
         parser_reset  = subparsers.add_parser('reset', help="Reset modules, deletes all trained models that have sources. Issue prior to train if you want to start anew.")
         parser_reset.add_argument('modules', help="Only reset for modules with the specified IDs (comma-separated list) (if omitted, all modules are reset)", nargs='?',default="")
-
         parser_wipe = subparsers.add_parser('wipe', help="Forcibly deletes all knowledge of running servers, use only when you are sure no module servers are running (stop them with stopservers), or they will be orphaned. Used to clean up after a crash.")
 
 
@@ -878,7 +876,7 @@ class LineByLineClient:
         self.connected = False
 
     def connect(self):
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #pylind: disable=attribute-defined-outside-init
         self.socket.settimeout(self.timeout)
         self.socket.connect( (self.host,self.port) )
         self.connected = True
@@ -944,7 +942,6 @@ class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     def handle_error(self,request,client_address):
         print("An error occurred in the server for module " + self.module.id, file=sys.stderr)
         exc_type, exc_value, exc_traceback = sys.exc_info()
-        formatted_lines = traceback.format_exc().splitlines()
         print(exc_type, exc_value,file=sys.stderr)
         traceback.print_tb(exc_traceback, limit=50, file=sys.stderr)
 
@@ -1007,22 +1004,22 @@ class Module:
         if self.sources and len(self.sources) != len(self.models):
             raise Exception("Number of specified sources and models for module " + self.id + " should be equal!")
 
-        if not 'logfunction' in self.settings:
+        if 'logfunction' not in self.settings:
             self.settings['logfunction'] = lambda x: print(datetime.datetime.now().strftime("%H:%M:%S.%f") + " [" + self.id + "] " + x,file=sys.stderr) #will be rather messy when multithreaded
         self.log = self.settings['logfunction']
 
         #Some defaults for FoLiA processing
-        if not 'set' in self.settings:
+        if 'set' not in self.settings:
             self.settings['set'] = "https://raw.githubusercontent.com/proycon/folia/master/setdefinitions/spellingcorrection.foliaset.xml"
-        if not 'class' in self.settings:
+        if 'class' not in self.settings:
             self.settings['class'] = "nonworderror"
-        if not 'annotator' in self.settings:
+        if 'annotator' not in self.settings:
             self.settings['annotator'] = self.id
 
-        if not 'depends' in self.settings:
+        if 'depends' not in self.settings:
             self.settings['depends'] = []
 
-        if not 'submodules' in self.settings:
+        if 'submodules' not in self.settings:
             self.submodules = {}
         else:
             try:
@@ -1037,13 +1034,13 @@ class Module:
                     raise Exception("Module " + m.id + " is used as a submodule of " + self.id  + ", but they do not take the same unit")
 
 
-        if not 'submodule' in self.settings:
+        if 'submodule' not in self.settings:
             self.submodule = False
         else:
             self.submodule = bool(self.settings['submodule'])
 
 
-        if not 'local' in self.settings:
+        if 'local' not in self.settings:
             self.local = False
         else:
             self.local = bool(self.settings['local'])
@@ -1094,8 +1091,8 @@ class Module:
     def runserver(self, host, port):
         """Runs the server. Invoked by the Corrector on start. """
         server = ThreadedTCPServer((host, port), self.SERVER)
-        server.allow_reuse_address = True
-        server.module = self
+        server.allow_reuse_address = True #pylint: disable=attribute-defined-outside-init
+        server.module = self #pylint: disable=attribute-defined-outside-init
         # Start a thread with the server -- that thread will then fork for each request
         server_thread = Thread(target=server.serve_forever)
         # Exit the server thread when the main thread terminates
@@ -1296,7 +1293,7 @@ def helpmodules():
     print("Gecco Modules and Settings")
     print("=================================")
     print()
-    import gecco.modules
+    import gecco.modules #pylint: disable=redefined-outer-name
     for modulefile in sorted(glob(gecco.modules.__path__[0] + "/*.py")):
         modulename = os.path.basename(modulefile).replace('.py','')
         importlib.import_module('gecco.modules.' + modulename)
@@ -1307,7 +1304,7 @@ def helpmodules():
                 print("----------------------------------------------------------------------")
                 try:
                     print(C.__doc__)
-                except:
+                except: #pylint: disable=bare-except
                     pass
                 print()
     from gecco.helpers.hapaxing import Hapaxer

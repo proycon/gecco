@@ -10,8 +10,6 @@
 #
 #=======================================================================
 
-import sys
-import os
 from pynlpl.formats import folia
 from gecco.gecco import Module
 

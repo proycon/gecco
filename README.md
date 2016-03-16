@@ -1,4 +1,5 @@
 [![Language Machines Badge](http://applejack.science.ru.nl/lamabadge.php/gecco)](http://applejack.science.ru.nl/languagemachines/)
+[![Codacy Badge](https://api.codacy.com/project/badge/grade/56e381c80d6a48f2831dd00f76f3848c)](https://www.codacy.com/app/proycon/gecco)
 
 ========================================================================
 GECCO - Generic Environment for Context-Aware Correction of Orthography
@@ -100,20 +101,23 @@ Gecco relies on a large number of dependencies, including but not limited to:
 Dependencies:
  - *Generic*:
   - python 3.3 or higher
-  - pynlpl (https://github.com/proycon/pynlpl), needed for FoLiA support
-    (https://proycon.github.io/folia)
-  - python-ucto & ucto (in turn depending on libfolia, ticcutils)
+  - [PyNLPl](https://github.com/proycon/pynlpl), needed for FoLiA support (https://proycon.github.io/folia)
+  - [python-ucto](http://proycon.github.com/python-ucto) & [ucto](https://languagemachines.github.io/ucto) (in turn depending on libfolia, ticcutils)
  - *Module-specific*:
-  - Timbl (http://ilk.uvt.nl/timbl)
-  - Colibri Core (https://github.com/proycon/colibri-core/)
-  - Aspell (http://aspell.net)
-  - aspell-python-py3
-  - python-timbl
- - *Webservice*:
-  - CLAM (port to Python 3) (https://proycon.github.io/clam)
+  - [Timbl](https://languagemachines.github.io/timbl) *(mandatory)*
+    - [python-timbl](https://github.com/proycon/python-timbl)
+  - [Colibri Core](https://github.com/proycon/colibri-core/) *(mandatory)*
+  - For the Aspell Module: *(optional)*
+    - [Aspell](http://aspell.net)
+    - aspell-python-py3
+  - For the Hunspell Module: *(optional)*
+    - [Hunspell](http://hunspell.github.io)
+    - [PyHunspell](https://github.com/smathot/pyhunspell) *(not supported out of the box on Mac OS X)*
+ - *Webservice*: *(optional)*
+  - [CLAM](https://proycon.github.io/clam)
 
-To install Gecco, we *strongly* recommend you to use our LaMachine distribution:
-https://github.com/proycon/lamachine .
+To install Gecco, we *strongly* recommend you to use our LaMachine
+distribution, which can be obtained from https://github.com/proycon/lamachine .
 
 LaMachine includes Gecco and can be run in multiple ways: as a virtual machine,
 as a docker app, or as a compilation script setting up a Python virtual

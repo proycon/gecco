@@ -12,14 +12,13 @@
 
 import sys
 import os
-import json
 import io
 import bz2
 import gzip
 import time
 import datetime
 import itertools
-from collections import OrderedDict,defaultdict
+from collections import defaultdict
 from pynlpl.formats import folia
 from pynlpl.textprocessors import Windower
 from timbl import TimblClassifier #pylint: disable=import-error
@@ -31,6 +30,7 @@ from gecco.helpers.filters import nonumbers
 import colibricore #pylint: disable=import-error
 import Levenshtein #pylint: disable=import-error
 
+#pylint: disable=too-many-nested-blocks,attribute-defined-outside-init
 
 class TIMBLLMModule(Module):
     """The Language Model predicts words given their context (including right context). It uses a classifier-based approach.
@@ -44,7 +44,7 @@ class TIMBLLMModule(Module):
     * ``minlength``    - Minimum length (in characters) for a word to be considered by the LM module
     * ``probfactor``   - If the predicted word is in the target distribution, any suggestions must be more probable by this factor (default: 10)
     * ``algorithm``    - The Timbl algorithm to use (see -a parameter in timbl) (default: IGTree)
-    * ``class``        - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: confusion) 
+    * ``class``        - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: confusion)
 
     Sources and models:
     * a plain-text corpus (tokenized)  [``.txt``]     ->    a classifier instance base model [``.ibase``]
@@ -143,7 +143,7 @@ class TIMBLLMModule(Module):
             raise IOError("Missing expected lexicon model file: " + lexiconfile + ". Did you forget to train the system?")
         self.log("Loading model file " + modelfile + "...")
         fileprefix = modelfile.replace(".ibase","") #has been verified earlier
-        self.classifier = TimblClassifier(fileprefix, self.gettimbloptions(),threading=True, debug=self.debug) 
+        self.classifier = TimblClassifier(fileprefix, self.gettimbloptions(),threading=True, debug=self.debug)
         self.classifier.load()
 
         if lexiconfile:
@@ -251,10 +251,10 @@ class TIMBLLMModule(Module):
 
         wordstr = inputdata[0]
         features = tuple(inputdata[1])
-        if self.debug: 
+        if self.debug:
             self.log(" (Processing word " + wordstr + ", features: " + repr(features) + ")")
 
-        if self.hapaxer: 
+        if self.hapaxer:
             features = self.hapaxer(features) #pylint: disable=not-callable
             previousword = features[self.settings['leftcontext'] - 1]
             if previousword == self.hapaxer.placeholder:
@@ -292,7 +292,7 @@ class TIMBLLMModule(Module):
 
 
 
-        best,distribution,_ = self.classifier.classify(features,allowtopdistribution=False) 
+        best,distribution,_ = self.classifier.classify(features,allowtopdistribution=False)
         if self.debug:
             duration = round(time.time() - begintime,4)
             self.log(" (Classification took  " + str(duration) + "s, unfiltered distribution size=" + str(len(distribution)) + ")")
@@ -321,7 +321,7 @@ class TIMBLLMModule(Module):
         else:
             dist = [ x for x in distribution.items() if x[1] >= self.threshold ]
             self.cache.append(features, (best,dist))
-            return best, dist 
+            return best, dist
 
 class ColibriLMModule(Module):
 
@@ -330,12 +330,12 @@ class ColibriLMModule(Module):
     Settings:
     * ``threshold``    - Prediction confidence threshold, only when a prediction exceeds this threshold will it be recommended (default: 0.9, value must be higher than 0.5 by definition)
     * ``freqthreshold`` - Frequency threshold for patterns to be included in the model
-    * ``leftcontext``  - Maximum left context size (in words) 
-    * ``rightcontext``  - Maximum right context size (in words) 
+    * ``leftcontext``  - Maximum left context size (in words)
+    * ``rightcontext``  - Maximum right context size (in words)
     * ``maxdistance``  - Maximum Levenshtein distance between a word and its correction (larger distances are pruned from suggestions)
-    * ``class``        - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: confusion) 
+    * ``class``        - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: confusion)
     Sources and models:
-    * a plain-text corpus (tokenized)  [``.txt``]     ->    a colibri indexed pattern model 
+    * a plain-text corpus (tokenized)  [``.txt``]     ->    a colibri indexed pattern model
 
     """
 
@@ -356,7 +356,7 @@ class ColibriLMModule(Module):
         self.maxcontext = max(self.settings['leftcontext'], self.settings['rightcontext'])
 
         if 'freqthreshold' not in self.settings:
-            self.threshold = 25
+            self.freqthreshold = 25
 
         if 'threshold' not in self.settings:
             self.threshold = self.settings['threshold']
@@ -378,7 +378,7 @@ class ColibriLMModule(Module):
         self.cache = getcache(self.settings, 1000)
 
         try:
-            modelfile = self.models[0]
+            self.models[0]
         except:
             raise Exception("Expected one model, got 0 or more")
 
@@ -389,7 +389,7 @@ class ColibriLMModule(Module):
 
         if not os.path.exists(classfile):
             self.log("Building class file")
-            classencoder = colibricore.ClassEncoder() 
+            classencoder = colibricore.ClassEncoder()
             classencoder.build(sourcefile)
             classencoder.save(classfile)
         else:
@@ -408,7 +408,7 @@ class ColibriLMModule(Module):
             os.symlink(classfile, modelfile + '.cls')
 
         self.log("Generating pattern model")
-        options = colibricore.PatternModelOptions(mintokens=self.settings['freqthreshold'],minlength=1,maxlength=self.maxcontext) 
+        options = colibricore.PatternModelOptions(mintokens=self.settings['freqthreshold'],minlength=1,maxlength=self.maxcontext)
         model = colibricore.IndexedPatternModel()
         model.train(corpusfile, options)
 
@@ -433,14 +433,14 @@ class ColibriLMModule(Module):
         wordstr = str(word) #will be reused in processoutput
         leftcontext = [ str(w) for w in word.leftcontext(self.settings['leftcontext']) if w is not None ]
         rightcontext = [ str(w) for w in word.rightcontext(self.settings['rightcontext']) if w is not None ]
-        if self.hapaxer: 
+        if self.hapaxer:
             leftcontext = self.hapaxer(leftcontext) #pylint: disable=not-callable
             rightcontext = self.hapaxer(rightcontext) #pylint: disable=not-callable
         return wordstr, leftcontext, rightcontext
 
-    def run(self, input):
+    def run(self, inputdata):
         """This methods gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
-        word, leftcontext, rightcontext = input
+        word, leftcontext, rightcontext = inputdata
 
         if self.debug:
             begintime = time.time()
@@ -454,7 +454,7 @@ class ColibriLMModule(Module):
                 if not leftcontext.unknown() and leftcontext in self.model:
                     for p, freq in self.model.getrightneighbours(leftcontext, 0, 0, 1,10000): #unigram focus only, cutoff at 10000 (trades accuracy for speed)
                         rightdist[p] = freq
-                    if rightdist: 
+                    if rightdist:
                         break
                 #shorten for next round
                 if len(leftcontext) == 1:
@@ -469,7 +469,7 @@ class ColibriLMModule(Module):
                     for p, freq in self.model.getleftneighbours(rightcontext, 0, 0, 1,10000): #unigram focus only, cutoff at 10000 (trades accuracy for speed)
                         leftdist[p] = freq
 
-                    if leftdist: 
+                    if leftdist:
                         break
 
                 #shorten for next round
@@ -491,7 +491,7 @@ class ColibriLMModule(Module):
                 self.log("(Nothing found, " + str(lookupduration) + "s)")
             return None
         else:
-            it = itertools.chain(leftdist.items(), rightdist.items()) 
+            it = itertools.chain(leftdist.items(), rightdist.items())
 
 
 
@@ -504,14 +504,14 @@ class ColibriLMModule(Module):
             if self.debug: unfilteredcount += 1
             w = w.tostring(self.classdecoder)
             if self.settings['maxdistance'] and  abs(l - len(w)) <= self.settings['maxdistance'] and Levenshtein.distance(word,w) <= self.settings['maxdistance']:
-                distribution[w] += freq 
+                distribution[w] += freq
             elif not self.settings['maxdistance']:
-                distribution[w] += freq 
+                distribution[w] += freq
             if freq> bestfreq:
                 best = w
                 bestfreq = freq
 
-    
+
         total = sum(  distribution.values() )
         normdist = {}
         for w, freq in distribution.items():
@@ -524,7 +524,7 @@ class ColibriLMModule(Module):
             self.log(" (Lookup took  " + str(lookupduration) + "s, filtering took " + str(filterduration) + ", unfiltered distribution size=" + str(unfilteredcount) + ", filtered size= " + str(len(normdist)) + ")")
 
         return best, normdist
-            
+
 
     def processoutput(self, outputdata, inputdata, unit_id,**parameters):
         wordstr,_,_ = inputdata
