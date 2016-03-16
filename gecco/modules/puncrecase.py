@@ -10,16 +10,17 @@
 #
 #=======================================================================
 
+#pylint: disable=attribute-defined-outside-init
+
 import sys
 import os
-import json
 import io
 import bz2
 import gzip
 import datetime
+from pynlpl.textprocessors import Windower
 from pynlpl.formats import folia #pylint: disable=import-error
-from pynlpl.textprocessors import Windower #pylint: disable=import-error
-import colibricore
+import colibricore #pylint: disable=import-error
 from timbl import TimblClassifier #pylint: disable=import-error
 from gecco.gecco import Module
 from gecco.helpers.hapaxing import gethapaxer
@@ -29,19 +30,19 @@ from gecco.helpers.common import stripsourceextensions
 
 
 class ColibriPuncRecaseModule(Module):
-    """This is punctuation and recase module implemented using Colibri Core, it predicts where punctuation needs to be inserted, deleted, and whether a word needs to be written with an initial capital. 
+    """This is punctuation and recase module implemented using Colibri Core, it predicts where punctuation needs to be inserted, deleted, and whether a word needs to be written with an initial capital.
 
     Settings:
-    * ``deletionthreshold`` - If no punctuation insertion is predicted and this confidence threshold is reached, then a deletion will be predicted (should be a high number), default: 0.95
-    * ``insertionthreshold`` - Necessary confidence threshold to predict an insertion of punctuation (default: 0.5)
+    * ``deletionthreshold`` - The bigram stripped of punctuation must occur at least this many times for a deletion to be predicted (must be a high value)
+    * ``deletioncutoff`` - The original trigram with punctuation may not occur more than this many times. (must be a low value)
+    * ``insertionthreshold`` - The trigram with punctuation must occur at least this many times for an insertion to be predicted  (must be a high value)
+    * ``insertioncutoff`` - The original bigram may not occur over this-many times (must be a low value)
 
-    * ``freqthreshold`` - Minimum frequency threshold for bigrams and trigrams to be included in the model
-
-    Sources and models: 
+    Sources and models:
     * a plain-text corpus (tokenized)  [``.txt``]     ->    a classifier instance base model [``.ibase``]
     """
 
-    UNIT = folia.Word
+    UNIT = folia.Paragraph
     UNITFILTER = nonumbers
 
     EOSMARKERS = ('.','?','!')
@@ -54,16 +55,17 @@ class ColibriPuncRecaseModule(Module):
         super().verifysettings()
 
         if 'deletionthreshold' not in self.settings:
-            self.settings['deletionthreshold'] = 0.95
+            self.settings['deletionthreshold'] = 200
 
         if 'insertionthreshold' not in self.settings:
-            self.settings['insertionthreshold'] = 0.5
+            self.settings['insertionthreshold'] = 100
 
-        if 'capitalizationthreshold' not in self.settings:
-            self.settings['capitalizationthreshold'] = 0.5
+        if 'insertioncutoff' not in self.settings:
+            self.settings['insertioncutoff'] = 2
 
-        if 'freqthreshold' not in self.settings:
-            self.settings['freqthreshold'] = 2
+        if 'deletioncutoff' not in self.settings:
+            self.settings['deletioncutoff'] = 2
+
 
         if 'debug' in self.settings:
             self.debug = bool(self.settings['debug'])
@@ -93,7 +95,7 @@ class ColibriPuncRecaseModule(Module):
             classencoder.encodefile( sourcefile, corpusfile)
 
         self.log("Generating bigram frequency list")
-        options = colibricore.PatternModelOptions(mintokens=self.settings['freqthreshold'],minlength=2,maxlength=2) #bigrams
+        options = colibricore.PatternModelOptions(mintokens=self.settings['insertioncutoff'],minlength=2,maxlength=2) #bigrams
         model = colibricore.UnindexedPatternModel()
         model.train(corpusfile, options)
 
@@ -109,17 +111,156 @@ class ColibriPuncRecaseModule(Module):
                 filterpatterns.add(filterpattern)
 
         self.log("Generating filtered trigram frequency list")
-        options = colibricore.PatternModelOptions(mintokens=self.settings['freqthreshold'],minlength=3,maxlength=3) #trigrams
+        options = colibricore.PatternModelOptions(mintokens=self.settings['deletioncutoff'],minlength=3,maxlength=3) #trigrams
         model = colibricore.UnindexedPatternModel()
         model.train_filtered(corpusfile, options, filterpatterns)
 
         self.log("Saving model")
         model.write(modelfile + '.3')
 
+    def load(self):
+        """Load the requested modules from self.models"""
+        if not self.models:
+            raise Exception("Specify one or more models to load!")
+
+        self.log("Loading models...")
+        modelfile = self.models[0]
+        if not os.path.exists(modelfile):
+            raise IOError("Missing expected model file: " + modelfile + ". Did you forget to train the system?")
+
+        self.log("Loading class encoder/decoder for " + modelfile + " ...")
+        self.classencoder = colibricore.ClassEncoder(modelfile + '.cls')
+        self.classdecoder = colibricore.ClassDecoder(modelfile + '.cls')
+
+        self.log("Loading model files " + modelfile + " and " + modelfile + ".3 ...")
+        self.bigram_model = colibricore.UnIndexedPatternModel(modelfile)
+        self.trigram_model = colibricore.UnIndexedPatternModel(modelfile + '.3')
+
+    def prepareinput(self,paragraph,**parameters):
+        """Takes the specified FoLiA unit for the module, and returns a string that can be passed to process()"""
+        inputdata = []
+        for word in paragraph.words():
+            inputdata.append( (word.id, word.text()) )
+        return inputdata
+
+    def run(self, inputdata):
+        """This method gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
+        words = [ word_text for word_id, word_text in inputdata ] #pylint: disable=unused-variable
+        word_ids = [ word_id for word_id, word_text in inputdata ] #pylint: disable=unused-variable
+
+        actions = [None] * len(words) #array of actions to be taken for each token, actions are (None,freq) for deletions or (punct,freq) for insertions
+
+        #find possible deletions
+        for i, trigram in enumerate(Windower(words,3)):
+            if trigram[0] != "<begin>" and trigram[-1] != "<end>" and trigram[1] in self.PUNCTUATION and trigram[0] not in self.PUNCTUATION and trigram[-1] not in self.PUNCTUATION:
+                #trigram pattern focussing on a punctuation token
+                trigram_pattern = self.classencoder.buildpattern(" ".join(trigram))
+                trigram_oc = self.trigram_model[trigram_pattern]
+                if trigram_oc >= self.settings['deletioncutoff']:
+                    continue #trigram is too frequent to be considered for deletion
+
+
+                #bigram version without the punctuation token
+                bigram = (trigram[0], trigram[-1])
+                bigram_pattern = self.classencoder.buildpattern(" ".join(bigram))
+                if bigram_pattern.unknown():
+                    continue
+
+                #get occurrences
+                bigram_oc = self.bigram_model[bigram_pattern]
+                if bigram_oc >= self.settings['deletionthreshold']:
+                    #bigram is prevalent enough to warrant as a deletion solution
+                    actions[i-2] = ('delete',trigram[1],bigram_oc)
+
+        #find possible insertions
+        for i, bigram in enumerate(Windower(words,2,None,None)):
+            if bigram[0] not in self.PUNCTUATION and bigram[1] not in self.PUNCTUATION:
+                bigram_pattern = self.classencoder.buildpattern(" ".join(bigram))
+                bigram_oc = self.bigram_model[bigram_pattern]
+                if bigram_oc >= self.settings['insertioncutoff']:
+                    continue #bigram too prevalent to consider for insertion
+
+                for punct in self.PUNCTUATION:
+                    trigram = (bigram[0],punct,bigram[-1])
+                    trigram_pattern = self.classencoder.buildpattern(" ".join(trigram))
+                    if trigram_pattern.unknown():
+                        continue
+
+                    trigram_oc = self.trigram_model[trigram_pattern]
+                    if trigram_oc >= self.settings['insertionthreshold']:
+                        actions[i] = ('insert',punct, trigram_oc)
+
+        #Consolidate all the actions through a simple survival of the fittest mechanism
+        #making sure no adjacent deletions/insertion occur
+        for i, (prevaction, action) in enumerate(Windower(actions,2)):
+            i = i - 1
+            if action is not None:
+                if prevaction is not None and prevaction != "<begin>":
+                    if action[2] > prevaction[2]:
+                        actions[i-1] = None
+                    else:
+                        actions[i] = None
+
+        #enforce final period
+        if words[-1] not in self.EOSMARKERS and actions[-1] is None:
+            actions[-1] = ('insert','.',1)
+
+        return [ (word_id, (action,punct)) for word_id, (action, punct,freq) in zip(word_ids, actions)  ]
+
+
+    def processoutput(self, outputdata, inputdata, unit_id,**parameters):
+        queries = []
+        wordstr,prevword,prevword_id, _ = inputdata
+        cls, distribution = outputdata
+
+        recase = False
+
+        if cls[-1] == 'C':
+            if wordstr[0] == wordstr[0].lower():
+                if distribution[cls] >= self.settings['capitalizationthreshold']:
+                    recase = True
+                elif self.debug:
+                    self.log(" (Capitalization threshold not reached: " + str(distribution[cls]) + ")")
+            cls = cls[:-1]
+
+
+        if cls == '-':
+            if prevword and distribution[cls] >= self.settings['deletionthreshold'] and all( not c.isalpha() for c in  prevword ):
+                if self.debug:
+                    self.log(" (Redundant punctuation " + cls + " with threshold " + str(distribution[cls]) + ")")
+                queries.append( self.suggestdeletion(prevword_id,(prevword in TIMBLPuncRecaseModule.EOSMARKERS), cls='redundantpunctuation') )
+        elif cls and cls in distribution:
+            #insertion of punctuation
+            if distribution[cls] >= self.settings['insertionthreshold']:
+                if all(not c.isalnum() for c in prevword):
+                    #previous word is punctuation already
+                    if prevword != cls:
+                        self.log(" (Found punctuation confusion)")
+                        queries.append( self.addsuggestions(prevword_id,cls, cls='confusion') )
+                    else:
+                        recase = False #no punctuation insertion? then no recasing either
+                        if self.debug: self.log(" (Predicted punctuation already there, good, ignoring)")
+                else:
+                    if self.debug: self.log(" (Insertion " + cls + " with threshold " + str(distribution[cls]) + ")")
+                    queries.append( self.suggestinsertion(unit_id, cls, (cls in TIMBLPuncRecaseModule.EOSMARKERS) ) )
+            else:
+                recase = False #no punctuation insertion? then no recasing either
+                if self.debug: self.log(" (Insertion threshold not reached: " + str(distribution[cls]) + ")")
+
+        if recase and wordstr[0].isalpha():
+            #recase word
+            t = wordstr
+            if recase:
+                t = t[0].upper() + t[1:]
+            if self.debug:
+                self.log(" (Correcting capitalization for " + wordstr + ")")
+            queries.append( self.addsuggestions( unit_id, [t], cls='capitalizationerror') )
+
+        return queries
 
 
 class TIMBLPuncRecaseModule(Module):
-    """This is a memory-based classification module, implemented using Timbl, that predicts where punctuation needs to be inserted, deleted, and whether a word needs to be written with an initial capital. 
+    """This is a memory-based classification module, implemented using Timbl, that predicts where punctuation needs to be inserted, deleted, and whether a word needs to be written with an initial capital.
     NOTE: This module performs badly!!
 
     Settings:
@@ -129,7 +270,7 @@ class TIMBLPuncRecaseModule(Module):
     * ``deletionthreshold`` - If no punctuation insertion is predicted and this confidence threshold is reached, then a deletion will be predicted (should be a high number), default: 0.95
     * ``insertionthreshold`` - Necessary confidence threshold to predict an insertion of punctuation (default: 0.5)
 
-    Sources and models: 
+    Sources and models:
     * a plain-text corpus (tokenized)  [``.txt``]     ->    a classifier instance base model [``.ibase``]
     """
 
