@@ -511,7 +511,7 @@ class Corrector:
             if modules == postpone:
                 raise Exception("There are unsolvable (circular?) dependencies in your module definitions")
             else:
-                modules = iter(postpone)
+                modules = postpone
 
     def append(self, module):
         assert isinstance(module, Module)
