@@ -37,6 +37,9 @@ class ColibriPuncRecaseModule(Module):
     * ``deletioncutoff`` - The original trigram with punctuation may not occur more than this many times. (must be a low value)
     * ``insertionthreshold`` - The trigram with punctuation must occur at least this many times for an insertion to be predicted  (must be a high value)
     * ``insertioncutoff`` - The original bigram may not occur over this-many times (must be a low value)
+    * ``insertionclass`` - FoLiA class to use for insertion of punctuation (default: missingpunctuation)
+    * ``deletionclass`` - FoLiA class to use for deletion of punctuation (default: redundantpunctuation)
+    * ``recaseclass`` - FoLiA class to use for recasing (default: capitalizationerror)
 
     Sources and models:
     * a plain-text corpus (tokenized)  [``.txt``]     ->    a classifier instance base model [``.ibase``]
@@ -66,6 +69,14 @@ class ColibriPuncRecaseModule(Module):
         if 'deletioncutoff' not in self.settings:
             self.settings['deletioncutoff'] = 2
 
+        if 'deletionclass' not in self.settings:
+            self.settings['deletionclass'] = 'redundantpunctuation'
+
+        if 'insertionclass' not in self.settings:
+            self.settings['insertionclass'] = 'missingpunctuation'
+
+        if 'recaseclass' not in self.settings:
+            self.settings['recaseclass'] = 'capitalizationerror'
 
         if 'debug' in self.settings:
             self.debug = bool(self.settings['debug'])
@@ -161,7 +172,10 @@ class ColibriPuncRecaseModule(Module):
 
 
                 #bigram version without the punctuation token
-                bigram = (trigram[0], trigram[-1])
+                if trigram[1] in self.EOSMARKERS and trigram[-1].isalpha() and trigram[-1][0] == trigram[-1][0].upper(): #deletion candidate is an eos marker, remove casing
+                    bigram = (trigram[0], trigram[-1].lower())
+                else:
+                    bigram = (trigram[0], trigram[-1])
                 bigram_pattern = self.classencoder.buildpattern(" ".join(bigram))
                 if bigram_pattern.unknown():
                     continue
@@ -181,7 +195,10 @@ class ColibriPuncRecaseModule(Module):
                     continue #bigram too prevalent to consider for insertion
 
                 for punct in self.PUNCTUATION:
-                    trigram = (bigram[0],punct,bigram[-1])
+                    if punct in self.EOSMARKERS and bigram[-1].isalpha() and bigram[-1][0] == bigram[-1][0].lower():
+                        trigram = (bigram[0],punct,bigram[-1][0].upper() + bigram[-1][1:]) #insertion candidate is an eos marker, do recasing to initial capital
+                    else:
+                        trigram = (bigram[0],punct,bigram[-1])
                     trigram_pattern = self.classencoder.buildpattern(" ".join(trigram))
                     if trigram_pattern.unknown():
                         continue
@@ -192,14 +209,29 @@ class ColibriPuncRecaseModule(Module):
 
         #Consolidate all the actions through a simple survival of the fittest mechanism
         #making sure no adjacent deletions/insertion occur
+        recaseactions = [None] * len(words)
         for i, (prevaction, action) in enumerate(Windower(actions,2)):
             i = i - 1
             if action is not None:
                 if prevaction is not None and prevaction != "<begin>":
-                    if action[2] > prevaction[2]:
+                    if action[2] > prevaction[2]: #highest frequency wins
                         actions[i-1] = None
                     else:
                         actions[i] = None
+
+        #Add recasing actions after insertion/deletion of EOS markers
+        for i,action in enumerate(actions):
+            if action is not None:
+                if action[1] in self.EOSMARKERS: #Do we have have action on an EOS marker?
+                    if action[0] == 'insert': #Is it an insertion?
+                        if len(words) > i+1 and words[i+1].isalpha() and words[i+1] == words[i+1].lower(): #Is the next word lowercase?
+                            recaseactions[i+1] = words[i+1][0].upper() + words[i+1][1:] #yes, recase it
+                    elif action[0] == 'delete': #Is it an deletion?
+                        if len(words) > i+1 and words[i+1].isalpha() and words[i+1][0] == words[i+1][0].lower(): #Does the next word start with a capital?
+                            recaseactions[i+1] = words[i+1].lower() #yes, lowercase it
+        for i, recaseaction in enumerate(recaseactions):
+            if recaseaction is not None:
+                action[i] = ('recase',recaseaction, 1)
 
         #enforce final period
         if words[-1] not in self.EOSMARKERS and actions[-1] is None:
@@ -210,53 +242,21 @@ class ColibriPuncRecaseModule(Module):
 
     def processoutput(self, outputdata, inputdata, unit_id,**parameters):
         queries = []
-        wordstr,prevword,prevword_id, _ = inputdata
-        cls, distribution = outputdata
-
-        recase = False
-
-        if cls[-1] == 'C':
-            if wordstr[0] == wordstr[0].lower():
-                if distribution[cls] >= self.settings['capitalizationthreshold']:
-                    recase = True
-                elif self.debug:
-                    self.log(" (Capitalization threshold not reached: " + str(distribution[cls]) + ")")
-            cls = cls[:-1]
-
-
-        if cls == '-':
-            if prevword and distribution[cls] >= self.settings['deletionthreshold'] and all( not c.isalpha() for c in  prevword ):
-                if self.debug:
-                    self.log(" (Redundant punctuation " + cls + " with threshold " + str(distribution[cls]) + ")")
-                queries.append( self.suggestdeletion(prevword_id,(prevword in TIMBLPuncRecaseModule.EOSMARKERS), cls='redundantpunctuation') )
-        elif cls and cls in distribution:
-            #insertion of punctuation
-            if distribution[cls] >= self.settings['insertionthreshold']:
-                if all(not c.isalnum() for c in prevword):
-                    #previous word is punctuation already
-                    if prevword != cls:
-                        self.log(" (Found punctuation confusion)")
-                        queries.append( self.addsuggestions(prevword_id,cls, cls='confusion') )
-                    else:
-                        recase = False #no punctuation insertion? then no recasing either
-                        if self.debug: self.log(" (Predicted punctuation already there, good, ignoring)")
-                else:
-                    if self.debug: self.log(" (Insertion " + cls + " with threshold " + str(distribution[cls]) + ")")
-                    queries.append( self.suggestinsertion(unit_id, cls, (cls in TIMBLPuncRecaseModule.EOSMARKERS) ) )
+        for word_id, (action, content) in outputdata:
+            if action == 'insert':
+                self.log(" (Puncuation insertion: [" + content + "], after " + word_id + ")")
+                queries.append( self.suggestinsertion(word_id, content, (content in self.EOSMARKERS), mode='APPEND' ) )
+            elif action == 'delete':
+                self.log(" (Puncuation deletion: [" + content + "],  " + word_id + ")")
+                queries.append( self.suggestdeletion(word_id, (content in self.EOSMARKERS) ) )
+            elif action == 'recase':
+                self.log(" (Correcting capitalization: [" + content + "] , " + word_id + ")")
+                queries.append( self.addsuggestions( word_id, content, cls='capitalizationerror') )
             else:
-                recase = False #no punctuation insertion? then no recasing either
-                if self.debug: self.log(" (Insertion threshold not reached: " + str(distribution[cls]) + ")")
-
-        if recase and wordstr[0].isalpha():
-            #recase word
-            t = wordstr
-            if recase:
-                t = t[0].upper() + t[1:]
-            if self.debug:
-                self.log(" (Correcting capitalization for " + wordstr + ")")
-            queries.append( self.addsuggestions( unit_id, [t], cls='capitalizationerror') )
-
+                raise ValueError("Unknown action " + str(action))
         return queries
+
+
 
 
 class TIMBLPuncRecaseModule(Module):

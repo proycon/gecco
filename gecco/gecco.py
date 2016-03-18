@@ -1266,8 +1266,8 @@ class Module:
         #else:
         #   self.log(" ERROR: Unable to suggest deletion of " + str(word.id) + ", item index not found")
 
-    def suggestinsertion(self,pivotword_id, text,split=False):
-        q = "PREPEND (AS CORRECTION OF " + self.settings['set'] + " WITH class \"" + self.settings['class'] + "\" annotator \"" + self.settings['annotator'] + "\" annotatortype \"auto\" datetime now"
+    def suggestinsertion(self,pivotword_id, text,split=False,mode='PREPEND'):
+        q = mode + " (AS CORRECTION OF " + self.settings['set'] + " WITH class \"" + self.settings['class'] + "\" annotator \"" + self.settings['annotator'] + "\" annotatortype \"auto\" datetime now"
         if split:
             q += " SUGGESTION SPLIT (ADD w WITH text \"" + text.replace('"','\\"') + "\") "
         else:
