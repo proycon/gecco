@@ -476,14 +476,16 @@ class Corrector:
                 virtualduration += x
         for modid, d in sorted(virtualdurationpermod.items(),key=lambda x: x[1] * -1):
             print("\t"+modid + "\t" + str(round(d,4)) + "s\t" + str(callspermod[modid]) + " calls\t" + str(infopermod[modid]) + " corrections",file=sys.stderr)
-        self.log("Processing done (real total " + str(round(duration,2)) + "s , virtual output " + str(virtualduration) + "s, real input " + str(inputduration) + "s)")
 
 
+        self.log("Cleanup...")
         for thread in threads:
             thread.stop() #custom
-        for thread in threads:
-            thread.terminate()
-            del thread
+        self.log("Processing done (real total " + str(round(duration,2)) + "s , virtual output " + str(virtualduration) + "s, real input " + str(inputduration) + "s)")
+
+        if 'exit' in parameters and parameters['exit']:
+            os._exit() #very rought exit, hacky... (solves issue #8)
+
 
     def __len__(self):
         return len(self.modules)
