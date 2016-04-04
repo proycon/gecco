@@ -27,7 +27,7 @@ import importlib
 import inspect
 from collections import OrderedDict, defaultdict
 #from threading import Thread, Lock
-#from queue import Queue
+from queue import Empty
 from threading import Thread
 from multiprocessing import Process, Lock, JoinableQueue as Queue #pylint: disable=no-name-in-module
 from glob import glob
@@ -220,12 +220,19 @@ class ProcessorThread(Process):
 
 
     def run(self):
+        self.corrector.log("[" + str(self.pid) + "] Start of thread")
         while not self._stop:
-            module_id, unit_id, inputdata = self.inputqueue.get(True,self.corrector.settings['timeout'])
+            try:
+                module_id, unit_id, inputdata = self.inputqueue.get(True,self.corrector.settings['timeout'])
+            except Empty:
+                if self.debug: self.corrector.log(" (inputqueue timed out)")
+                self._stop = True
+                break
             self.inputqueue.task_done()
             if module_id is None: #signals the last item (there will be one for each thread)
                 if self.debug: self.corrector.log(" (end of input queue)")
                 self._stop = True
+                break
             else:
                 module =  self.corrector.modules[module_id]
                 if not module.UNITFILTER or module.UNITFILTER(inputdata):
@@ -285,6 +292,7 @@ class ProcessorThread(Process):
                             if self.debug:
                                 module.log("[" + str(self.pid) + "] (...took " + str(round(duration,4)) + "s)")
 
+        self.corrector.log("[" + str(self.pid) + "] End of thread")
 
 
     def stop(self):
@@ -446,6 +454,7 @@ class Corrector:
             thread.start()
 
         self.log(str(len(threads)) + " threads started.")
+        sys.stderr.flush()
 
         waitforprocessors.release()
         inputqueue.join()
