@@ -493,7 +493,7 @@ class Corrector:
         self.log("Processing done (real total " + str(round(duration,2)) + "s , virtual output " + str(virtualduration) + "s, real input " + str(inputduration) + "s)")
 
         if 'exit' in parameters and parameters['exit']:
-            os._exit() #very rought exit, hacky... (solves issue #8)
+            os._exit(0) #very rought exit, hacky... (solves issue #8)
 
 
     def __len__(self):
