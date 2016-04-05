@@ -42,7 +42,7 @@ class ColibriPuncRecaseModule(Module):
     * ``recaseclass`` - FoLiA class to use for recasing (default: capitalizationerror)
 
     Sources and models:
-    * a plain-text corpus (tokenized)  [``.txt``]     ->    a classifier instance base model [``.ibase``]
+    * a plain-text corpus (tokenized)  [``.txt``]     ->    a pattern model [``.colibri.patternmodel``]
     """
 
     UNIT = folia.Paragraph
@@ -117,7 +117,7 @@ class ColibriPuncRecaseModule(Module):
 
         filterpatterns = colibricore.PatternSet()
         for punc in ColibriPuncRecaseModule.PUNCTUATION:
-            filterpattern = classencoder.build('{?} ' + punc + ' {?}')
+            filterpattern = classencoder.buildpattern('{?} ' + punc + ' {?}')
             if not filterpattern.unknown():
                 filterpatterns.add(filterpattern)
 
