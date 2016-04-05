@@ -86,7 +86,6 @@ class ColibriPuncRecaseModule(Module):
 
 
     def train(self, sourcefile, modelfile, **parameters):
-        self.log("Preparing to generate bigram model")
         classfile = stripsourceextensions(sourcefile) +  ".cls"
         corpusfile = stripsourceextensions(sourcefile) +  ".dat"
 
