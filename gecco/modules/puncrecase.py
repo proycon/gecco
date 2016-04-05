@@ -105,29 +105,31 @@ class ColibriPuncRecaseModule(Module):
             self.log("Encoding corpus")
             classencoder.encodefile( sourcefile, corpusfile)
 
-        self.log("Generating bigram frequency list")
-        options = colibricore.PatternModelOptions(mintokens=self.settings['insertioncutoff'],minlength=2,maxlength=2) #bigrams
-        model = colibricore.UnindexedPatternModel()
-        model.train(corpusfile, options)
+        if not os.path.exist(modelfile):
+            self.log("Generating bigram frequency list")
+            options = colibricore.PatternModelOptions(mintokens=self.settings['insertioncutoff'],minlength=2,maxlength=2) #bigrams
+            model = colibricore.UnindexedPatternModel()
+            model.train(corpusfile, options)
 
-        self.log("Saving model")
-        model.write(modelfile)
-        del model
+            self.log("Saving model")
+            model.write(modelfile)
+            del model
 
+        if not os.path.exist(modelfile + '.3'):
+            self.log("Generating filtered trigram frequency list")
 
-        filterpatterns = colibricore.PatternSet()
-        for punc in ColibriPuncRecaseModule.PUNCTUATION:
-            filterpattern = classencoder.buildpattern('{?} ' + punc + ' {?}')
-            if not filterpattern.unknown():
-                filterpatterns.add(filterpattern)
+            filterpatterns = colibricore.PatternSet()
+            for punc in ColibriPuncRecaseModule.PUNCTUATION:
+                filterpattern = classencoder.buildpattern('{?} ' + punc + ' {?}')
+                if not filterpattern.unknown():
+                    filterpatterns.add(filterpattern)
 
-        self.log("Generating filtered trigram frequency list")
-        options = colibricore.PatternModelOptions(mintokens=self.settings['deletioncutoff'],minlength=3,maxlength=3) #trigrams
-        model = colibricore.UnindexedPatternModel()
-        model.train_filtered(corpusfile, options, filterpatterns)
+            options = colibricore.PatternModelOptions(mintokens=self.settings['deletioncutoff'],minlength=3,maxlength=3) #trigrams
+            model = colibricore.UnindexedPatternModel()
+            model.train_filtered(corpusfile, options, filterpatterns)
 
-        self.log("Saving model")
-        model.write(modelfile + '.3')
+            self.log("Saving model")
+            model.write(modelfile + '.3')
 
     def load(self):
         """Load the requested modules from self.models"""
