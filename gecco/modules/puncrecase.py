@@ -42,7 +42,8 @@ class ColibriPuncRecaseModule(Module):
     * ``recaseclass`` - FoLiA class to use for recasing (default: capitalizationerror)
 
     Sources and models:
-    * a plain-text corpus (tokenized)  [``.txt``]     ->    a pattern model [``.colibri.patternmodel``]
+    * a plain-text corpus (tokenized)  [``.txt``]     ->    a bigram model [``.colibri.patternmodel``]
+    * a plain-text corpus (tokenized)  [``.txt``]     ->    a trigram model  (with .3 extension!) [``.colibri.patternmodel.3``]
     """
 
     UNIT = folia.Paragraph
@@ -105,7 +106,8 @@ class ColibriPuncRecaseModule(Module):
             self.log("Encoding corpus")
             classencoder.encodefile( sourcefile, corpusfile)
 
-        if not os.path.exist(modelfile):
+        if not modelfile.endswith('.3'):
+            #bigram model
             self.log("Generating bigram frequency list")
             options = colibricore.PatternModelOptions(mintokens=self.settings['insertioncutoff'],minlength=2,maxlength=2) #bigrams
             model = colibricore.UnindexedPatternModel()
@@ -115,9 +117,9 @@ class ColibriPuncRecaseModule(Module):
             model.write(modelfile)
             del model
 
-        if not os.path.exist(modelfile + '.3'):
+        else:
+            #trigram model
             self.log("Generating filtered trigram frequency list")
-
             filterpatterns = colibricore.PatternSet()
             for punc in ColibriPuncRecaseModule.PUNCTUATION:
                 filterpattern = classencoder.buildpattern('{?} ' + punc + ' {?}')
@@ -129,7 +131,7 @@ class ColibriPuncRecaseModule(Module):
             model.train_filtered(corpusfile, options, filterpatterns)
 
             self.log("Saving model")
-            model.write(modelfile + '.3')
+            model.write(modelfile)
 
     def load(self):
         """Load the requested modules from self.models"""
