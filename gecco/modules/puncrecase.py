@@ -147,8 +147,8 @@ class ColibriPuncRecaseModule(Module):
         self.classdecoder = colibricore.ClassDecoder(modelfile + '.cls')
 
         self.log("Loading model files " + modelfile + " and " + modelfile + ".3 ...")
-        self.bigram_model = colibricore.UnIndexedPatternModel(modelfile)
-        self.trigram_model = colibricore.UnIndexedPatternModel(modelfile + '.3')
+        self.bigram_model = colibricore.UnindexedPatternModel(modelfile)
+        self.trigram_model = colibricore.UnindexedPatternModel(modelfile + '.3')
 
     def prepareinput(self,paragraph,**parameters):
         """Takes the specified FoLiA unit for the module, and returns a string that can be passed to process()"""
