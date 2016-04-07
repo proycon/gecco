@@ -169,7 +169,7 @@ class ColibriPuncRecaseModule(Module):
             if trigram[0] != "<begin>" and trigram[-1] != "<end>" and trigram[1] in self.PUNCTUATION and trigram[0] not in self.PUNCTUATION and trigram[-1] not in self.PUNCTUATION:
                 #trigram pattern focussing on a punctuation token
                 trigram_pattern = self.classencoder.buildpattern(" ".join(trigram))
-                trigram_oc = self.trigram_model[trigram_pattern]
+                trigram_oc = self.trigram_model.occurrencecount(trigram_pattern)
                 if trigram_oc >= self.settings['deletioncutoff']:
                     continue #trigram is too frequent to be considered for deletion
 
@@ -184,7 +184,7 @@ class ColibriPuncRecaseModule(Module):
                     continue
 
                 #get occurrences
-                bigram_oc = self.bigram_model[bigram_pattern]
+                bigram_oc = self.bigram_model.occurrencecount(bigram_pattern)
                 if bigram_oc >= self.settings['deletionthreshold']:
                     #bigram is prevalent enough to warrant as a deletion solution
                     actions[i-2] = ('delete',trigram[1],bigram_oc)
@@ -193,7 +193,7 @@ class ColibriPuncRecaseModule(Module):
         for i, bigram in enumerate(Windower(words,2,None,None)):
             if bigram[0] not in self.PUNCTUATION and bigram[1] not in self.PUNCTUATION:
                 bigram_pattern = self.classencoder.buildpattern(" ".join(bigram))
-                bigram_oc = self.bigram_model[bigram_pattern]
+                bigram_oc = self.bigram_model.occurrencecount(bigram_pattern)
                 if bigram_oc >= self.settings['insertioncutoff']:
                     continue #bigram too prevalent to consider for insertion
 
@@ -206,7 +206,7 @@ class ColibriPuncRecaseModule(Module):
                     if trigram_pattern.unknown():
                         continue
 
-                    trigram_oc = self.trigram_model[trigram_pattern]
+                    trigram_oc = self.trigram_model.occurrencecount(trigram_pattern)
                     if trigram_oc >= self.settings['insertionthreshold']:
                         actions[i] = ('insert',punct, trigram_oc)
 
