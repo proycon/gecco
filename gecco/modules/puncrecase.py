@@ -121,7 +121,7 @@ class ColibriPuncRecaseModule(Module):
             self.log("Generating filtered trigram frequency list")
             filterpatterns = colibricore.PatternSet()
             for punc in ColibriPuncRecaseModule.PUNCTUATION:
-                filterpattern = classencoder.buildpattern('{?} ' + punc + ' {?}')
+                filterpattern = classencoder.buildpattern('{*1*} ' + punc + ' {*1*}')
                 if not filterpattern.unknown():
                     filterpatterns.add(filterpattern)
             self.log("(" + str(len(filterpatterns)) + " filters)")
