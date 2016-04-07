@@ -240,6 +240,9 @@ class ColibriPuncRecaseModule(Module):
         if words[-1] not in self.EOSMARKERS and actions[-1] is None:
             actions[-1] = ('insert','.',1)
 
+        print("DEBUG word_ids: ", word_ids,file=sys.stderr)
+        print("DEBUG actions : ", actions,file=sys.stderr)
+
         return [ (word_id, (action,punct)) for word_id, (action, punct,freq) in zip(word_ids, actions)  ]
 
 
