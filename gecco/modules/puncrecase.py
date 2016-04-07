@@ -124,6 +124,7 @@ class ColibriPuncRecaseModule(Module):
                 filterpattern = classencoder.buildpattern('{?} ' + punc + ' {?}')
                 if not filterpattern.unknown():
                     filterpatterns.add(filterpattern)
+            self.log("(" + str(len(filterpatterns)) + " filters)")
 
             options = colibricore.PatternModelOptions(mintokens=self.settings['deletioncutoff'],minlength=3,maxlength=3) #trigrams
             model = colibricore.UnindexedPatternModel()
