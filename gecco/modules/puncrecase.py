@@ -62,10 +62,10 @@ class ColibriPuncRecaseModule(Module):
             self.settings['deletionthreshold'] = 200
 
         if 'insertionthreshold' not in self.settings:
-            self.settings['insertionthreshold'] = 100
+            self.settings['insertionthreshold'] = 10
 
         if 'insertioncutoff' not in self.settings:
-            self.settings['insertioncutoff'] = 2
+            self.settings['insertioncutoff'] = 5
 
         if 'deletioncutoff' not in self.settings:
             self.settings['deletioncutoff'] = 2
@@ -218,7 +218,7 @@ class ColibriPuncRecaseModule(Module):
                         continue
 
                     trigram_oc = self.trigram_model.occurrencecount(trigram_pattern)
-                    if trigram_oc >= self.settings['insertionthreshold']:
+                    if trigram_oc >= bigram_oc and trigram_oc >= self.settings['insertionthreshold']:
                         if self.debug: self.log(" (Punctuation insertion candidate: " + " ".join(trigram) +  " (" + str(trigram_oc) + ") vs " + " ".join(bigram) + " ("+str(bigram_oc)+")")
                         actions[i] = ('insert',punct, trigram_oc)
 
