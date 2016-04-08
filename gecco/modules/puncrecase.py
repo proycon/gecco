@@ -168,11 +168,11 @@ class ColibriPuncRecaseModule(Module):
         #find possible deletions
         for i, trigram in enumerate(Windower(words,3)):
             if trigram[0] != "<begin>" and trigram[-1] != "<end>" and trigram[1] in self.PUNCTUATION and trigram[0] not in self.PUNCTUATION and trigram[-1] not in self.PUNCTUATION:
-                #trigram pattern focussing on a punctuation token
+                #trigram pattern (X p Y) focussing on a punctuation token
                 trigram_pattern = self.classencoder.buildpattern(" ".join(trigram))
                 trigram_oc = self.trigram_model.occurrencecount(trigram_pattern)
                 if trigram_oc >= self.settings['deletioncutoff']:
-                    continue #trigram is too frequent to be considered for deletion
+                    continue #trigram (X p Y) is too frequent to be considered for deletion
 
 
                 #bigram version without the punctuation token
@@ -187,7 +187,16 @@ class ColibriPuncRecaseModule(Module):
                 #get occurrences
                 bigram_oc = self.bigram_model.occurrencecount(bigram_pattern)
                 if bigram_oc >= self.settings['deletionthreshold']:
-                    #bigram is prevalent enough to warrant as a deletion solution
+                    #bigram (X Y) is prevalent enough to warrant as a deletion solution
+
+                    #but first check if bigrams X p and p Y don't reach the cut-off threshold
+                    bigram_trailpunct = trigram_pattern[:2]
+                    if self.bigram_model.occurrencecount(bigram_trailpunct) >= self.settings['deletioncutoff']:
+                        continue
+                    bigram_initialpunct = trigram_pattern[1:]
+                    if self.bigram_model.occurrencecount(bigram_initialpunct) >= self.settings['deletioncutoff']:
+                        continue
+
                     if self.debug: self.log(" (Punctuation deletion candidate: " + " ".join(bigram) +  " (" + str(bigram_oc) + ") vs " + " ".join(trigram) + " ("+str(trigram_oc)+")")
                     actions[i-1] = ('delete',trigram[1],bigram_oc)
 
