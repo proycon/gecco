@@ -188,7 +188,7 @@ class ColibriPuncRecaseModule(Module):
                 bigram_oc = self.bigram_model.occurrencecount(bigram_pattern)
                 if bigram_oc >= self.settings['deletionthreshold']:
                     #bigram is prevalent enough to warrant as a deletion solution
-                    actions[i-2] = ('delete',trigram[1],bigram_oc)
+                    actions[i-1] = ('delete',trigram[1],bigram_oc)
 
         #find possible insertions
         for i, bigram in enumerate(Windower(words,2,None,None)):
@@ -249,10 +249,10 @@ class ColibriPuncRecaseModule(Module):
         queries = []
         for word_id, (action, content) in outputdata:
             if action == 'insert':
-                self.log(" (Puncuation insertion: [" + content + "], after " + word_id + ")")
+                self.log(" (Punctuation insertion: [" + content + "], after " + word_id + ")")
                 queries.append( self.suggestinsertion(word_id, content, (content in self.EOSMARKERS), mode='APPEND' ) )
             elif action == 'delete':
-                self.log(" (Puncuation deletion: [" + content + "],  " + word_id + ")")
+                self.log(" (Punctuation deletion: [" + content + "],  " + word_id + ")")
                 queries.append( self.suggestdeletion(word_id, (content in self.EOSMARKERS) ) )
             elif action == 'recase':
                 self.log(" (Correcting capitalization: [" + content + "] , " + word_id + ")")
