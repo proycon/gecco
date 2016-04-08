@@ -188,6 +188,7 @@ class ColibriPuncRecaseModule(Module):
                 bigram_oc = self.bigram_model.occurrencecount(bigram_pattern)
                 if bigram_oc >= self.settings['deletionthreshold']:
                     #bigram is prevalent enough to warrant as a deletion solution
+                    if self.debug: self.log(" (Punctuation deletion candidate: " + " ".join(bigram) +  " (" + str(bigram_oc) + ") vs " + " ".join(trigram) + " ("+str(trigram_oc)+")")
                     actions[i-1] = ('delete',trigram[1],bigram_oc)
 
         #find possible insertions
@@ -209,6 +210,7 @@ class ColibriPuncRecaseModule(Module):
 
                     trigram_oc = self.trigram_model.occurrencecount(trigram_pattern)
                     if trigram_oc >= self.settings['insertionthreshold']:
+                        if self.debug: self.log(" (Punctuation deletion candidate: " + " ".join(trigram) +  " (" + str(trigram_oc) + ") vs " + " ".join(bigram) + " ("+str(bigram_oc)+")")
                         actions[i] = ('insert',punct, trigram_oc)
 
         #Consolidate all the actions through a simple survival of the fittest mechanism
