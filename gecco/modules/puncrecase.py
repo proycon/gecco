@@ -190,10 +190,10 @@ class ColibriPuncRecaseModule(Module):
                     #bigram (X Y) is prevalent enough to warrant as a deletion solution
 
                     #but first check if bigrams X p and p Y don't reach the cut-off threshold
-                    bigram_trailpunct = trigram_pattern[:2]
+                    bigram_trailpunct = trigram_pattern[0:2]
                     if self.bigram_model.occurrencecount(bigram_trailpunct) >= self.settings['deletioncutoff']:
                         continue
-                    bigram_initialpunct = trigram_pattern[1:]
+                    bigram_initialpunct = trigram_pattern[1:3]
                     if self.bigram_model.occurrencecount(bigram_initialpunct) >= self.settings['deletioncutoff']:
                         continue
 
