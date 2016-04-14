@@ -11,11 +11,11 @@ GECCO - Generic Environment for Context-Aware Correction of Orthography
     Licensed under the GNU Public License v3
 
 Gecco is a generic modular and distributed framework for spelling correction. Aimed to
-build complete context-aware spelling correction system given your own data
+build a complete context-aware spelling correction system given your own data
 set.  Most modules will be language-independent and trainable from a source
 corpus. Training is explicitly included in the framework. The framework aims to
 easily extendible, modules can be written in Python 3. Moreover, the framework
-is scalable and distributable over multiple servers. 
+is scalable and can be distributed over multiple servers. 
 
 Given an input text, Gecco will add various suggestions for correction. 
 

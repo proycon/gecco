@@ -34,12 +34,12 @@ class ColibriPuncRecaseModule(Module):
 
     Settings:
     * ``deletionthreshold`` - The bigram stripped of punctuation must occur at least this many times for a deletion to be predicted (must be a high value)
-    * ``deletioncutoff`` - The original trigram with punctuation may not occur more than this many times. (must be a low value)
+    * ``deletioncutoff`` - The original trigram with punctuation may not occur more than this many times. (must be a low value). The module needs to be retrained if you lower this value.
     * ``insertionthreshold`` - The trigram with punctuation must occur at least this many times for an insertion to be predicted  (must be a high value)
-    * ``insertioncutoff`` - The original bigram may not occur over this-many times (must be a low value)
+    * ``insertioncutoff`` - The original bigram may not occur over this-many times (must be a low value).  The module needs to be retrained if you lower this value.
     * ``insertionclass`` - FoLiA class to use for insertion of punctuation (default: missingpunctuation)
-    * ``recasethreshold`` - The re-cased bigrams must occur at least this many times for a recase action to occur
-    * ``deletionclass`` - FoLiA class to use for deletion of punctuation (default: redundantpunctuation)
+    * ``recasethreshold`` - The re-cased bigrams must occur at least this many times for a recase action to occur.  The module needs to be retrained if you lower this value.
+    * ``deletionclass`` - FoLiA class to use for deletion of punctuation (default: redundantpunctuation).
     * ``recaseclass`` - FoLiA class to use for recasing (default: capitalizationerror)
 
     Sources and models:
