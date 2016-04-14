@@ -262,6 +262,7 @@ class ColibriPuncRecaseModule(Module):
             i = i - 1
             if action is not None:
                 if prevaction is not None and prevaction != "<begin>":
+                    if self.debug: self.log("(Consolidating punc/recase actions, removing conflict)")
                     if action[2] > prevaction[2]: #highest frequency wins
                         actions[i-1] = None
                     else:
@@ -274,16 +275,20 @@ class ColibriPuncRecaseModule(Module):
                 if action[1] in self.EOSMARKERS: #Do we have have action on an EOS marker?
                     if action[0] == 'insert': #Is it an insertion?
                         if len(words) > i+1 and words[i+1].isalpha() and words[i+1] == words[i+1].lower(): #Is the next word lowercase?
+                            if self.debug: self.log(" (Recasing after EOS insertion)")
                             recaseactions[i+1] = words[i+1][0].upper() + words[i+1][1:] #yes, recase it
                     elif action[0] == 'delete': #Is it an deletion?
                         if len(words) > i+1 and words[i+1].isalpha() and words[i+1][0] == words[i+1][0].lower(): #Does the next word start with a capital?
+                            if self.debug: self.log(" (Recasing after EOS deletion)")
                             recaseactions[i+1] = words[i+1].lower() #yes, lowercase it
+
         for i, recaseaction in enumerate(recaseactions):
             if recaseaction is not None:
                 action[i] = ('recase',recaseaction, 1)
 
         #enforce final period
         if words[-1] not in self.EOSMARKERS and actions[-1] is None:
+            if self.debug: self.log(" (Enforcing final period)")
             actions[-1] = ('insert','.',1)
 
         #                    action, punc
