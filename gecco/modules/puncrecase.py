@@ -177,33 +177,32 @@ class ColibriPuncRecaseModule(Module):
                     trigram_pattern = self.classencoder.buildpattern(" ".join(trigram))
                     trigram_oc = self.trigram_model.occurrencecount(trigram_pattern)
                     if trigram_oc >= self.settings['deletioncutoff']:
-                        continue #trigram (X p Y) is too frequent to be considered for deletion
-
-
-                    #bigram version without the punctuation token
-                    if trigram[1] in self.EOSMARKERS and trigram[-1].isalpha() and trigram[-1][0] == trigram[-1][0].upper(): #deletion candidate is an eos marker, remove casing
-                        bigram = (trigram[0], trigram[-1].lower())
+                        if self.debug: self.log(" (Trigram '" + " ".join(trigram) + "' too frequent to consider for deletion (" + str(trigram_oc) + ")")
                     else:
-                        bigram = (trigram[0], trigram[-1])
-                    bigram_pattern = self.classencoder.buildpattern(" ".join(bigram))
-                    if bigram_pattern.unknown():
-                        continue
+                        #bigram version without the punctuation token
+                        if trigram[1] in self.EOSMARKERS and trigram[-1].isalpha() and trigram[-1][0] == trigram[-1][0].upper(): #deletion candidate is an eos marker, remove casing
+                            bigram = (trigram[0], trigram[-1].lower())
+                        else:
+                            bigram = (trigram[0], trigram[-1])
+                        bigram_pattern = self.classencoder.buildpattern(" ".join(bigram))
+                        if not bigram_pattern.unknown():
+                            #get occurrences
+                            bigram_oc = self.bigram_model.occurrencecount(bigram_pattern)
+                            if bigram_oc >= self.settings['deletionthreshold']:
+                                #bigram (X Y) is prevalent enough to warrant as a deletion solution
+                                if self.debug: self.log(" (Bigram candidate without punctuation prevalent enough to warrant as a deletion solution: '" + " ".join(bigram) + "')")
 
-                    #get occurrences
-                    bigram_oc = self.bigram_model.occurrencecount(bigram_pattern)
-                    if bigram_oc >= self.settings['deletionthreshold']:
-                        #bigram (X Y) is prevalent enough to warrant as a deletion solution
-
-                        #but first check if bigrams X p and p Y don't reach the cut-off threshold
-                        bigram_trailpunct = trigram_pattern[0:2]
-                        if self.bigram_model.occurrencecount(bigram_trailpunct) >= self.settings['deletioncutoff']:
-                            continue
-                        bigram_initialpunct = trigram_pattern[1:3]
-                        if self.bigram_model.occurrencecount(bigram_initialpunct) >= self.settings['deletioncutoff']:
-                            continue
-
-                        if self.debug: self.log(" (Punctuation deletion candidate: " + " ".join(bigram) +  " (" + str(bigram_oc) + ") vs " + " ".join(trigram) + " ("+str(trigram_oc)+")")
-                        actions[i-1] = ('delete',trigram[1],bigram_oc)
+                                #but first check if bigrams X p and p Y don't reach the cut-off threshold
+                                bigram_trailpunct = trigram_pattern[0:2]
+                                if self.bigram_model.occurrencecount(bigram_trailpunct) >= self.settings['deletioncutoff']:
+                                    if self.debug: self.log(" (Bigram with trailing punctuation exceeds cut-off threshold, no deletion)")
+                                else:
+                                    bigram_initialpunct = trigram_pattern[1:3]
+                                    if self.bigram_model.occurrencecount(bigram_initialpunct) >= self.settings['deletioncutoff']:
+                                        if self.debug: self.log(" (Bigram with initial punctuation does not reach cut-off threshold, no deletion)")
+                                    else:
+                                        if self.debug: self.log(" (Punctuation deletion candidate: " + " ".join(bigram) +  " (" + str(bigram_oc) + ") vs " + " ".join(trigram) + " ("+str(trigram_oc)+")")
+                                        actions[i-1] = ('delete',trigram[1],bigram_oc)
 
                 if actions[i-1] is None:
                     #Recasing
@@ -218,17 +217,19 @@ class ColibriPuncRecaseModule(Module):
                             firstchar == firstchar.lower()
                         bigram_left_recased = (bigram_left[0], firstchar + bigram_left[1][1:])
                         bigram_left_recased_pattern = self.classencoder.buildpattern(" ".join(bigram_left_recased))
+                        if self.debug: self.log(" (Considering recasing " + bigram_left[1] + "-> " + bigram_left_recased[1] + ")")
                         if not bigram_left_recased_pattern.unknown():
-                            bigram_left_oc =  self.bigram_model.occurrencecount(bigram_left_recased_pattern)
-                            if bigram_left_oc > self.settings['recasethreshold'] and bigram_left_oc > self.bigram_model.occurrencecount(self.classencoder.buildpattern(" ".join(bigram_left))):
+                            bigram_left_recased_oc =  self.bigram_model.occurrencecount(bigram_left_recased_pattern)
+                            if bigram_left_recased_oc > self.settings['recasethreshold'] and bigram_left_recased_oc > self.bigram_model.occurrencecount(self.classencoder.buildpattern(" ".join(bigram_left))):
+                                if self.debug: self.log(" (left bigram suggests recasing (" + str(bigram_left_recased_oc) + ")")
                                 bigram_right = trigram[1:]
                                 bigram_right_recased = (firstchar + bigram_right[0][1:], bigram_right[1])
                                 bigram_right_recased_pattern = self.classencoder.buildpattern(" ".join(bigram_right_recased))
                                 if not bigram_right_recased_pattern.unknown():
-                                    bigram_right_oc =  self.bigram_model.occurrencecount(bigram_left_recased_pattern)
-                                    if bigram_right_oc > self.settings['recasethreshold'] and bigram_right_oc > self.bigram_model.occurrencecount(bigram_right_recased_pattern) > self.bigram_model.occurrencecount(self.classencoder.buildpattern(" ".join(bigram_right))):
+                                    bigram_right_recased_oc =  self.bigram_model.occurrencecount(bigram_left_recased_pattern)
+                                    if bigram_right_recased_oc > self.settings['recasethreshold'] and bigram_right_recased_oc > self.bigram_model.occurrencecount(bigram_right_recased_pattern) > self.bigram_model.occurrencecount(self.classencoder.buildpattern(" ".join(bigram_right))):
                                         #checks pass, recase:
-                                        if self.debug: self.log(" (Recase: " + " ".join(trigram))
+                                        if self.debug: self.log(" (Recasing: " + " ".join(trigram))
                                         actions[i-1] = ('recase',bigram_right[0],1)
 
 
