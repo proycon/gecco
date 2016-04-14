@@ -217,7 +217,7 @@ class ColibriPuncRecaseModule(Module):
                             firstchar = firstchar.lower()
                         bigram_left_recased = (bigram_left[0], firstchar + bigram_left[1][1:])
                         bigram_left_recased_pattern = self.classencoder.buildpattern(" ".join(bigram_left_recased))
-                        if self.debug: self.log(" (Considering recasing " + bigram_left[1] + "-> " + bigram_left_recased[1] + ")")
+                        if self.debug: self.log(" (Considering recasing " + bigram_left[1] + " -> " + bigram_left_recased[1] + ")")
                         if not bigram_left_recased_pattern.unknown():
                             bigram_left_recased_oc =  self.bigram_model.occurrencecount(bigram_left_recased_pattern)
                             if bigram_left_recased_oc > self.settings['recasethreshold'] and bigram_left_recased_oc > self.bigram_model.occurrencecount(self.classencoder.buildpattern(" ".join(bigram_left))):
@@ -226,11 +226,11 @@ class ColibriPuncRecaseModule(Module):
                                 bigram_right_recased = (firstchar + bigram_right[0][1:], bigram_right[1])
                                 bigram_right_recased_pattern = self.classencoder.buildpattern(" ".join(bigram_right_recased))
                                 if not bigram_right_recased_pattern.unknown():
-                                    bigram_right_recased_oc =  self.bigram_model.occurrencecount(bigram_left_recased_pattern)
+                                    bigram_right_recased_oc =  self.bigram_model.occurrencecount(bigram_right_recased_pattern)
                                     if bigram_right_recased_oc > self.settings['recasethreshold'] and bigram_right_recased_oc > self.bigram_model.occurrencecount(bigram_right_recased_pattern) > self.bigram_model.occurrencecount(self.classencoder.buildpattern(" ".join(bigram_right))):
                                         #checks pass, recase:
                                         if self.debug: self.log(" (Recasing: " + " ".join(trigram))
-                                        actions[i-1] = ('recase',bigram_right[0],1)
+                                        actions[i-1] = ('recase',bigram_right_recased[0],1)
 
 
         #find possible insertions
