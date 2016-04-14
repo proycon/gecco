@@ -212,9 +212,9 @@ class ColibriPuncRecaseModule(Module):
                     firstchar = bigram_left[-1][0]
                     if firstchar.isalpha():
                         if firstchar == firstchar.lower():
-                            firstchar == firstchar.upper()
+                            firstchar = firstchar.upper()
                         else:
-                            firstchar == firstchar.lower()
+                            firstchar = firstchar.lower()
                         bigram_left_recased = (bigram_left[0], firstchar + bigram_left[1][1:])
                         bigram_left_recased_pattern = self.classencoder.buildpattern(" ".join(bigram_left_recased))
                         if self.debug: self.log(" (Considering recasing " + bigram_left[1] + "-> " + bigram_left_recased[1] + ")")
