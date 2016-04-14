@@ -220,8 +220,8 @@ class ColibriPuncRecaseModule(Module):
                             firstchar = firstchar.lower()
                         bigram_left_recased = (bigram_left[0], firstchar + bigram_left[1][1:])
                         bigram_left_recased_pattern = self.classencoder.buildpattern(" ".join(bigram_left_recased))
-                        if self.debug: self.log(" (Considering recasing " + bigram_left[1] + " -> " + bigram_left_recased[1] + ")")
                         if not bigram_left_recased_pattern.unknown():
+                            if self.debug: self.log(" (Considering recasing " + bigram_left[1] + " -> " + bigram_left_recased[1] + ")")
                             bigram_left_recased_oc =  self.bigram_model.occurrencecount(bigram_left_recased_pattern)
                             if bigram_left_recased_oc > self.settings['recasethreshold'] and bigram_left_recased_oc > self.bigram_model.occurrencecount(self.classencoder.buildpattern(" ".join(bigram_left))):
                                 if self.debug: self.log(" (left bigram suggests recasing (" + str(bigram_left_recased_oc) + ")")
