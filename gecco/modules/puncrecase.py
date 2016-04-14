@@ -83,6 +83,9 @@ class ColibriPuncRecaseModule(Module):
         if 'recaseclass' not in self.settings:
             self.settings['recaseclass'] = 'capitalizationerror'
 
+        if 'enforcefinalperiod' not in self.settings:
+            self.settings['enforcefinalperiod'] = True
+
         if 'debug' in self.settings:
             self.debug = bool(self.settings['debug'])
         else:
@@ -286,10 +289,11 @@ class ColibriPuncRecaseModule(Module):
             if recaseaction is not None:
                 action[i] = ('recase',recaseaction, 1)
 
-        #enforce final period
-        if words[-1] not in self.EOSMARKERS and actions[-1] is None:
-            if self.debug: self.log(" (Enforcing final period)")
-            actions[-1] = ('insert','.',1)
+        if self.settings['enforcefinalperiod']:
+            #enforce final period
+            if words[-1] not in self.EOSMARKERS and actions[-1] is None:
+                if self.debug: self.log(" (Enforcing final period)")
+                actions[-1] = ('insert','.',1)
 
         #                    action, punc
         return [ (word_id, (action[0],action[1])) for word_id, action in zip(word_ids, actions) if action is not None  ]
