@@ -38,6 +38,7 @@ class ColibriPuncRecaseModule(Module):
     * ``insertionthreshold`` - The trigram with punctuation must occur at least this many times for an insertion to be predicted  (must be a high value)
     * ``insertioncutoff`` - The original bigram may not occur over this-many times (must be a low value)
     * ``insertionclass`` - FoLiA class to use for insertion of punctuation (default: missingpunctuation)
+    * ``recasethreshold`` - The re-cased bigrams must occur at least this many times for a recase action to occur
     * ``deletionclass`` - FoLiA class to use for deletion of punctuation (default: redundantpunctuation)
     * ``recaseclass`` - FoLiA class to use for recasing (default: capitalizationerror)
 
@@ -69,6 +70,9 @@ class ColibriPuncRecaseModule(Module):
 
         if 'deletioncutoff' not in self.settings:
             self.settings['deletioncutoff'] = 2
+
+        if 'recasethreshold' not in self.settings:
+            self.settings['recasethreshold'] = 2
 
         if 'deletionclass' not in self.settings:
             self.settings['deletionclass'] = 'redundantpunctuation'
@@ -108,7 +112,7 @@ class ColibriPuncRecaseModule(Module):
         if not modelfile.endswith('.3'):
             #bigram model
             self.log("Generating bigram frequency list")
-            options = colibricore.PatternModelOptions(mintokens=self.settings['insertioncutoff'],minlength=2,maxlength=2) #bigrams
+            options = colibricore.PatternModelOptions(mintokens=min(self.settings['insertioncutoff'],self.settings['recasethreshold']),minlength=2,maxlength=2) #bigrams
             model = colibricore.UnindexedPatternModel()
             model.train(corpusfile, options)
 
@@ -214,13 +218,18 @@ class ColibriPuncRecaseModule(Module):
                             firstchar == firstchar.lower()
                         bigram_left_recased = (bigram_left[0], firstchar + bigram_left[1][1:])
                         bigram_left_recased_pattern = self.classencoder.buildpattern(" ".join(bigram_left_recased))
-                        if not bigram_left_recased_pattern.unknown() and self.bigram_model.occurrencecount(bigram_left_recased_pattern) > self.bigram_model.occurrencecount(self.classencoder.buildpattern(" ".join(bigram_left))):
-                            bigram_right = trigram[1:]
-                            bigram_right_recased = (firstchar + bigram_right[0][1:], bigram_right[1])
-                            bigram_right_recased_pattern = self.classencoder.buildpattern(" ".join(bigram_right_recased))
-                            if not bigram_right_recased_pattern.unknown() and self.bigram_model.occurrencecount(bigram_right_recased_pattern) > self.bigram_model.occurrencecount(self.classencoder.buildpattern(" ".join(bigram_right))):
-                                #checks pass, recase:
-                                actions[i-1] = ('recase',bigram_right[0],1)
+                        if not bigram_left_recased_pattern.unknown():
+                            bigram_left_oc =  self.bigram_model.occurrencecount(bigram_left_recased_pattern)
+                            if bigram_left_oc > self.settings['recasethreshold'] and bigram_left_oc > self.bigram_model.occurrencecount(self.classencoder.buildpattern(" ".join(bigram_left))):
+                                bigram_right = trigram[1:]
+                                bigram_right_recased = (firstchar + bigram_right[0][1:], bigram_right[1])
+                                bigram_right_recased_pattern = self.classencoder.buildpattern(" ".join(bigram_right_recased))
+                                if not bigram_right_recased_pattern.unknown():
+                                    bigram_right_oc =  self.bigram_model.occurrencecount(bigram_left_recased_pattern)
+                                    if bigram_right_oc > self.settings['recasethreshold'] and bigram_right_oc > self.bigram_model.occurrencecount(bigram_right_recased_pattern) > self.bigram_model.occurrencecount(self.classencoder.buildpattern(" ".join(bigram_right))):
+                                        #checks pass, recase:
+                                        if self.debug: self.log(" (Recase: " + " ".join(trigram))
+                                        actions[i-1] = ('recase',bigram_right[0],1)
 
 
         #find possible insertions
