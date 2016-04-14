@@ -29,7 +29,7 @@ class RunOnModule(Module):
     """Detects words that have been joined together but should be split. It uses a bigram model.
 
     Settings:
-    * ``freqthreshold`` - Frequency threshold for unigrams and bigrams to make it into the model (default: 10)  (you need to retrain the model if you change this value)
+    * ``freqthreshold`` - Frequency threshold for unigrams and bigrams to make it into the model (default: 10)  (you need to retrain the model if you lower this value)
     * ``partthreshold`` - Each of the parts must occur over this threshold (default: 10), should be >= freqthreshold
     * ``freqratio``     - The bigram frequency must be larger than the joined unigram frequency by this factor (default: 10)
     * ``class``         - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: runonerror)
@@ -155,7 +155,7 @@ class SplitModule(Module):
     """Detects words that have been split but should be merged together as one
 
     Settings:
-    * ``freqthreshold`` - Frequency threshold for bigrams to make it into the model (default: 10)  (you need to retrain the model if you change this value)
+    * ``freqthreshold`` - Frequency threshold for bigrams to make it into the model (default: 10)  (you need to retrain the model if you lower this value)
     * ``freqratio``     - The unigram frequency must be higher than the bigram frequency by this factor (default: 10)
     * ``class``         - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: runonerror)
     """
