@@ -319,8 +319,8 @@ class ColibriPuncRecaseModule(Module):
         recaseactions = [None] * len(words)
         for i, (prevaction, action) in enumerate(Windower(actions,2)):
             i = i - 1
-            if action is not None:
-                if prevaction is not None and prevaction != "<begin>":
+            if action is not None and action[0] != 'recase':
+                if prevaction is not None and prevaction != "<begin>" and prevaction[0] != 'recase':
                     if self.debug: self.log("(Consolidating punc/recase actions, removing conflict)")
                     if action[2] > prevaction[2]: #highest frequency wins
                         actions[i-1] = None
