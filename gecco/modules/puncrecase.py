@@ -271,13 +271,19 @@ class ColibriPuncRecaseModule(Module):
                                             bigram_right_pattern = self.classencoder.buildpattern(" ".join(bigram_right))
                                             bigram_right_recased = (firstchar + bigram_right[0][1:], bigram_right[1])
                                             bigram_right_recased_pattern = self.classencoder.buildpattern(" ".join(bigram_right_recased))
+                                            bigram_right_oc = self.bigram_model.occurrencecount(bigram_right_pattern)
                                             if not bigram_right_recased_pattern.unknown():
                                                 bigram_right_recased_oc =  self.bigram_model.occurrencecount(bigram_right_recased_pattern)
-                                                if bigram_right_recased_oc > self.settings['recasethreshold'] and bigram_right_recased_oc > self.bigram_model.occurrencecount(bigram_right_recased_pattern) > self.bigram_model.occurrencecount(self.classencoder.buildpattern(" ".join(bigram_right))):
+                                                if bigram_right_oc == 0 or bigram_right_recased_oc > bigram_right_oc:
                                                     #checks pass, recase:
                                                     recase = True
-                                            if not recase and bigram_right_pattern.unknown() or self.bigram_model.occurrencecount(bigram_right_pattern) == 0:
+                                                else:
+                                                    if self.debug: self.log(" (right bigram refutes recasing '" + " ".join(bigram_right) + "' (" + str(bigram_right_oc) + ") -> '" + " ".join(bigram_right_recased) +  "' (" + str(bigram_right_recased_oc) + ")")
+                                            elif bigram_right_oc == 0:
                                                 recase = True
+                                            else:
+                                                if self.debug: self.log(" (right bigram refutes recasing '" + " ".join(bigram_right) + "' (" + str(bigram_right_oc) + ") -> '" + " ".join(bigram_right_recased) +  "' (not found)")
+
 
                             if recase:
                                 if self.debug: self.log(" (Recasing: '" + word + "' -> '" + word_recased + "' in " + " ".join(trigram))
