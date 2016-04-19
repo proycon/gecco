@@ -119,7 +119,7 @@ class ColibriPuncRecaseModule(Module):
 
         if not os.path.exists(corpusfile):
             self.log("Encoding corpus")
-            classencoder.encodefile( sourcefile, corpusfile)
+            classencoder.encodefile( sourcefile, corpusfile, ignorenewlines=True)
 
 
         if modelfile.endswith('.1'):
@@ -226,40 +226,47 @@ class ColibriPuncRecaseModule(Module):
                                         if self.debug: self.log(" (Punctuation deletion candidate: " + " ".join(bigram) +  " (" + str(bigram_oc) + ") vs " + " ".join(trigram) + " ("+str(trigram_oc)+")")
                                         actions[i-1] = ('delete',trigram[1],bigram_oc)
 
-                if actions[i-1] is None:
-                    #Recasing
-                    #given a trigram x y z
-                    #check if x Y is more frequent than x y and if Y z is more frequent than y z
-                    recase = False
-                    bigram_left = trigram[:-1]
-                    firstchar = bigram_left[-1][0]
-                    if firstchar.isalpha():
-                        if firstchar == firstchar.lower():
-                            firstchar = firstchar.upper()
-                        else:
-                            firstchar = firstchar.lower()
+            if actions[i-1] is None:
+                #Recasing
+                #given a trigram x y z
+                #check if x Y is more frequent than x y and if Y z is more frequent than y z
+                recase = False
+                bigram_left = trigram[:-1]
+                firstchar = bigram_left[-1][0]
+                if firstchar.isalpha():
+                    if firstchar == firstchar.lower():
+                        firstchar = firstchar.upper()
+                    else:
+                        firstchar = firstchar.lower()
 
-                        word = bigram_left[1]
-                        word_recased = firstchar + bigram_left[1][1:]
-                        word_pattern = self.classencoder.buildpattern(word)
-                        word_pattern_recased = self.classencoder.buildpattern(word_recased)
-                        if not word_pattern_recased.unknown():
-                            word_pattern_recased_oc = self.unigram_model.occurrencecount(word_pattern_recased)
-                            if word_pattern_recased_oc >= self.settings['recasethreshold']:
-                                word_pattern_oc = self.unigram_model.occurrencecount(word_pattern)
-                                if word_pattern_recased_oc >= word_pattern_oc * self.settings['recasefactor'] or (word_pattern_oc == 0 and word_pattern_recased_oc >= self.settings['recasefactor']):
-                                    #contextless approach
-                                    recase = True
+                    word = bigram_left[1]
+                    word_recased = firstchar + bigram_left[1][1:]
+                    word_pattern = self.classencoder.buildpattern(word)
+                    word_pattern_recased = self.classencoder.buildpattern(word_recased)
+                    if not word_pattern_recased.unknown():
+                        word_pattern_recased_oc = self.unigram_model.occurrencecount(word_pattern_recased)
+                        if word_pattern_recased_oc >= self.settings['recasethreshold']:
+                            word_pattern_oc = self.unigram_model.occurrencecount(word_pattern)
+                            if word_pattern_recased_oc >= word_pattern_oc * self.settings['recasefactor'] or (word_pattern_oc == 0 and word_pattern_recased_oc >= self.settings['recasefactor']):
+                                #contextless approach
+                                recase = True
 
-                                if not recase:
-                                    #context-based approach
+                            if not recase:
+                                #context-based approach
+                                if bigram_left[0] == "<begin>":
+                                    #first word
+                                    if word_pattern_recased_oc >= word_pattern_oc and firstchar == firstchar.upper():
+                                        recase = True
+                                else:
                                     bigram_left_recased = (bigram_left[0], firstchar + bigram_left[1][1:])
                                     bigram_left_recased_pattern = self.classencoder.buildpattern(" ".join(bigram_left_recased))
                                     if not bigram_left_recased_pattern.unknown():
                                         #if self.debug >= 3: self.log(" (Considering recasing " + bigram_left[1] + " -> " + bigram_left_recased[1] + ")")
                                         bigram_left_recased_oc =  self.bigram_model.occurrencecount(bigram_left_recased_pattern)
+                                        bigram_left_pattern = self.classencoder.buildpattern(" ".join(bigram_left))
+                                        bigram_left_oc =  self.bigram_model.occurrencecount(bigram_left_pattern)
                                         if bigram_left_recased_oc >= self.settings['recasethreshold2'] and bigram_left_recased_oc > self.bigram_model.occurrencecount(self.classencoder.buildpattern(" ".join(bigram_left))):
-                                            if self.debug: self.log(" (left bigram suggests recasing '" + " ".join(bigram_left) + "' -> '" + " ".join(bigram_left_recased) +  "' (" + str(bigram_left_recased_oc) + ")")
+                                            if self.debug: self.log(" (left bigram suggests recasing '" + " ".join(bigram_left) + "' (" + str(bigram_left_oc) + ") -> '" + " ".join(bigram_left_recased) +  "' (" + str(bigram_left_recased_oc) + ")")
                                             bigram_right = trigram[1:]
                                             bigram_right_pattern = self.classencoder.buildpattern(" ".join(bigram_right))
                                             bigram_right_recased = (firstchar + bigram_right[0][1:], bigram_right[1])
@@ -272,9 +279,9 @@ class ColibriPuncRecaseModule(Module):
                                             if not recase and bigram_right_pattern.unknown() or self.bigram_model.occurrencecount(bigram_right_pattern) == 0:
                                                 recase = True
 
-                                if recase:
-                                    if self.debug: self.log(" (Recasing: " + " ".join(trigram))
-                                    actions[i-1] = ('recase',word_recased,1)
+                            if recase:
+                                if self.debug: self.log(" (Recasing: '" + word + "' -> '" + word_recased + "' in " + " ".join(trigram))
+                                actions[i-1] = ('recase',word_recased,1)
 
 
         #find possible insertions

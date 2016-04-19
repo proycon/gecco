@@ -19,7 +19,7 @@ def read(fname):
 
 setup(
     name = "Gecco",
-    version = "0.2",
+    version = "0.2.1",
     author = "Maarten van Gompel, Wessel Stoop",
     author_email = "proycon@anaproy.nl",
     description = ("Generic Environment for Context-Aware Correction of Orthography"),
@@ -45,5 +45,5 @@ setup(
         ]
     },
     package_data = {'gecco':[] },
-    install_requires=['lxml >= 2.2','pynlpl >= 0.7.9','pyyaml','colibricore >= 2.1', 'python-ucto >= 0.2.2','python3-timbl','psutil','python-Levenshtein']
+    install_requires=['lxml >= 2.2','pynlpl >= 0.7.9','pyyaml','colibricore >= 2.4', 'python-ucto >= 0.2.2','python3-timbl','psutil','python-Levenshtein']
 )
