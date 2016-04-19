@@ -103,7 +103,7 @@ class ColibriPuncRecaseModule(Module):
 
     def train(self, sourcefile, modelfile, **parameters):
         classfile = stripsourceextensions(sourcefile) +  ".cls"
-        corpusfile = stripsourceextensions(sourcefile) +  ".dat"
+        corpusfile = stripsourceextensions(sourcefile) +  ".nonewlines.dat"
 
         if not os.path.exists(classfile):
             self.log("Building class file")
