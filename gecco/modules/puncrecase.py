@@ -228,8 +228,8 @@ class ColibriPuncRecaseModule(Module):
 
             if i > 0 and len(actions) > i-1 and actions[i-1] is None:
                 #Recasing
-                #given a trigram x y z
-                #check if x Y is more frequent than x y and if Y z is more frequent than y z
+                #given a bigram x y       (from trigram x y z)
+                #check if x Y is more frequent than x y 
                 recase = False
                 bigram_left = trigram[:-1]
                 firstchar = bigram_left[-1][0]
@@ -267,22 +267,24 @@ class ColibriPuncRecaseModule(Module):
                                         bigram_left_oc =  self.bigram_model.occurrencecount(bigram_left_pattern)
                                         if bigram_left_recased_oc >= self.settings['recasethreshold2'] and bigram_left_recased_oc > self.bigram_model.occurrencecount(self.classencoder.buildpattern(" ".join(bigram_left))):
                                             if self.debug: self.log(" (left bigram suggests recasing '" + " ".join(bigram_left) + "' (" + str(bigram_left_oc) + ") -> '" + " ".join(bigram_left_recased) +  "' (" + str(bigram_left_recased_oc) + ")")
-                                            bigram_right = trigram[1:]
-                                            bigram_right_pattern = self.classencoder.buildpattern(" ".join(bigram_right))
-                                            bigram_right_recased = (firstchar + bigram_right[0][1:], bigram_right[1])
-                                            bigram_right_recased_pattern = self.classencoder.buildpattern(" ".join(bigram_right_recased))
-                                            bigram_right_oc = self.bigram_model.occurrencecount(bigram_right_pattern)
-                                            if not bigram_right_recased_pattern.unknown():
-                                                bigram_right_recased_oc =  self.bigram_model.occurrencecount(bigram_right_recased_pattern)
-                                                if bigram_right_oc == 0 or bigram_right_recased_oc > bigram_right_oc:
-                                                    #checks pass, recase:
-                                                    recase = True
-                                                else:
-                                                    if self.debug: self.log(" (right bigram refutes recasing '" + " ".join(bigram_right) + "' (" + str(bigram_right_oc) + ") -> '" + " ".join(bigram_right_recased) +  "' (" + str(bigram_right_recased_oc) + ")")
-                                            elif bigram_right_oc == 0:
-                                                recase = True
-                                            else:
-                                                if self.debug: self.log(" (right bigram refutes recasing '" + " ".join(bigram_right) + "' (" + str(bigram_right_oc) + ") -> '" + " ".join(bigram_right_recased) +  "' (not found)")
+                                            recase = True
+
+                                            #bigram_right = trigram[1:]
+                                            #bigram_right_pattern = self.classencoder.buildpattern(" ".join(bigram_right))
+                                            #bigram_right_recased = (firstchar + bigram_right[0][1:], bigram_right[1])
+                                            #bigram_right_recased_pattern = self.classencoder.buildpattern(" ".join(bigram_right_recased))
+                                            #bigram_right_oc = self.bigram_model.occurrencecount(bigram_right_pattern)
+                                            #if not bigram_right_recased_pattern.unknown():
+                                            #    bigram_right_recased_oc =  self.bigram_model.occurrencecount(bigram_right_recased_pattern)
+                                            #    if bigram_right_oc == 0 or bigram_right_recased_oc > bigram_right_oc:
+                                            #        #checks pass, recase:
+                                            #        recase = True
+                                            #    else:
+                                            #        if self.debug: self.log(" (right bigram refutes recasing '" + " ".join(bigram_right) + "' (" + str(bigram_right_oc) + ") -> '" + " ".join(bigram_right_recased) +  "' (" + str(bigram_right_recased_oc) + ")")
+                                            #elif bigram_right_oc == 0:
+                                            #    recase = True
+                                            #else:
+                                            #    if self.debug: self.log(" (right bigram refutes recasing '" + " ".join(bigram_right) + "' (" + str(bigram_right_oc) + ") -> '" + " ".join(bigram_right_recased) +  "' (not found)")
 
 
                             if recase:
