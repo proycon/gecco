@@ -226,7 +226,7 @@ class ColibriPuncRecaseModule(Module):
                                         if self.debug: self.log(" (Punctuation deletion candidate: " + " ".join(bigram) +  " (" + str(bigram_oc) + ") vs " + " ".join(trigram) + " ("+str(trigram_oc)+")")
                                         actions[i-1] = ('delete',trigram[1],bigram_oc)
 
-            if i > 0 and actions[i-1] is None:
+            if i > 0 and len(actions) > i-1 and actions[i-1] is None:
                 #Recasing
                 #given a trigram x y z
                 #check if x Y is more frequent than x y and if Y z is more frequent than y z
