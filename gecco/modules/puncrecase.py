@@ -343,7 +343,7 @@ class ColibriPuncRecaseModule(Module):
 
         for i, recaseaction in enumerate(recaseactions):
             if recaseaction is not None:
-                action[i] = ('recase',recaseaction, 1)
+                actions[i] = ('recase',recaseaction, 1)
 
         if self.settings['enforcefinalperiod']:
             #enforce final period
