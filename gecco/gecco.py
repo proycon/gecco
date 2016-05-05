@@ -199,7 +199,7 @@ class DataThread(Process):
             print(self.foliadoc)
         if self.dumpjson:
             self.corrector.log("Dumping JSON")
-            json.dumps(folia2json(self.foliadoc))
+            print(json.dumps(folia2json(self.foliadoc)))
 
 
     def stop(self):
