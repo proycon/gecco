@@ -768,7 +768,7 @@ class Corrector:
         parser_run = subparsers.add_parser('run', help="Run the spelling corrector on the specified input file")
         parser_run.add_argument('-o',dest="outputfile", help="Output filename (if not specified, the input file will be edited in-place",required=False,default="")
         parser_run.add_argument('-O',dest="dumpxml", help="Print result document to stdout as FoLiA XML", required=False)
-        parser_run.add_argument('--json',dest="dumpjson", help="Print result document to stdout as JSON", required=False)
+        parser_run.add_argument('--json',dest="dumpjson", help="Print result document to stdout as JSON", action='store_true',default=False, required=False)
         parser_run.add_argument('filename', help="The file to correct, can be either a FoLiA XML file or a plain-text file which will be automatically tokenised and converted on-the-fly. The XML file will also be the output file. The XML file is edited in place, it will also be the output file unless -o is specified")
         parser_run.add_argument('modules', help="Only run the modules with the specified IDs (comma-separated list) (if omitted, all modules are run)", nargs='?',default="")
         parser_run.add_argument('-p',dest='parameters', help="Custom parameters passed to the modules, specify as -p parameter=value. This option can be issued multiple times", required=False, action="append")
