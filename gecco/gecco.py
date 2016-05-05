@@ -195,8 +195,10 @@ class DataThread(Process):
             self.foliadoc.save()
 
         if self.dumpxml:
+            self.corrector.log("Dumping XML")
             print(self.foliadoc)
         if self.dumpjson:
+            self.corrector.log("Dumping JSON")
             json.dumps(folia2json(self.foliadoc))
 
 
@@ -493,7 +495,7 @@ class Corrector:
         self.log("Processing done (real total " + str(round(duration,2)) + "s , virtual output " + str(virtualduration) + "s, real input " + str(inputduration) + "s)")
 
         if 'exit' in parameters and parameters['exit']:
-            os._exit(0) #very rought exit, hacky... (solves issue #8)
+            os._exit(0) #very rough exit, hacky... (solves issue #8)
 
 
     def __len__(self):
