@@ -19,7 +19,7 @@ def read(fname):
 
 setup(
     name = "Gecco",
-    version = "0.2.2",
+    version = "0.2.3",
     author = "Maarten van Gompel, Wessel Stoop",
     author_email = "proycon@anaproy.nl",
     description = ("Generic Environment for Context-Aware Correction of Orthography"),
