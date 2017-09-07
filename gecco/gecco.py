@@ -647,7 +647,7 @@ class Corrector:
         MYHOSTS = set( [socket.getfqdn() , socket.gethostname(), socket.gethostbyname(socket.gethostname()), '127.0.0.1'] )
         self.log("Starting servers for "  + "/".join(MYHOSTS) )
 
-        if not os.path.isdir(self.root + "/run"):
+        if not os.path.exists(self.root + "/run"):
             os.mkdir(self.root + "/run")
 
 
@@ -687,7 +687,7 @@ class Corrector:
         self.log("Stopping servers for "  + "/".join(MYHOSTS) )
 
         runpath = self.root + "/run/"
-        if not os.path.isdir(runpath):
+        if not os.path.exists(runpath):
             os.mkdir(runpath)
 
         self.findservers()
@@ -717,7 +717,7 @@ class Corrector:
         servers = []
 
         runpath = self.root + "/run/"
-        if os.path.isdir(runpath):
+        if os.path.exists(runpath):
             for filename in glob(runpath + "/*.pid"):
                 filename = os.path.basename(filename)
                 fields = filename.split('.')[:-1]
