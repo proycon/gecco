@@ -1,0 +1,6 @@
+include README.md
+include LICENSE
+include requirements.txt
+include gecco/gecco/*.py
+include gecco/modules/*.py
+include gecco/helpers/*.py

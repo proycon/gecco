@@ -46,7 +46,7 @@ UCTOSEARCHDIRS = ('/usr/local/share/ucto','/usr/share/ucto', '/usr/local/etc/uct
 if 'VIRTUAL_ENV' in os.environ:
     UCTOSEARCHDIRS = (os.environ['VIRTUAL_ENV'] + '/share/ucto/', os.environ['VIRTUAL_ENV'] + '/etc/ucto/',) + UCTOSEARCHDIRS
 
-VERSION = '0.2.3'
+VERSION = '0.2.4'
 
 class DataThread(Process):
     def __init__(self, corrector, foliadoc, module_ids, outputfile,  inputqueue, outputqueue, infoqueue,waitforprocessors,dumpxml, dumpjson,**parameters):
