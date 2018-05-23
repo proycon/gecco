@@ -19,8 +19,8 @@ def read(fname):
 
 setup(
     name = "Gecco",
-    version = "0.2.4", #also update gecco.py VERSION variable!
-    author = "Maarten van Gompel, Wessel Stoop",
+    version = "0.2.5", #also update gecco.py VERSION variable!
+    author = "Maarten van Gompel",
     author_email = "proycon@anaproy.nl",
     description = ("Generic Environment for Context-Aware Correction of Orthography"),
     license = "GPL",
