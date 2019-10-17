@@ -1,5 +1,6 @@
 [![Language Machines Badge](http://applejack.science.ru.nl/lamabadge.php/gecco)](http://applejack.science.ru.nl/languagemachines/)
 [![Codacy Badge](https://api.codacy.com/project/badge/grade/56e381c80d6a48f2831dd00f76f3848c)](https://www.codacy.com/app/proycon/gecco)
+[![Project Status: Inactive – The project has reached a stable, usable state but is no longer being actively developed; support/maintenance will be provided as time allows.](https://www.repostatus.org/badges/latest/inactive.svg)](https://www.repostatus.org/#inactive)
 
 ========================================================================
 GECCO - Generic Environment for Context-Aware Correction of Orthography
@@ -15,9 +16,9 @@ build a complete context-aware spelling correction system given your own data
 set.  Most modules will be language-independent and trainable from a source
 corpus. Training is explicitly included in the framework. The framework aims to
 easily extendible, modules can be written in Python 3. Moreover, the framework
-is scalable and can be distributed over multiple servers. 
+is scalable and can be distributed over multiple servers.
 
-Given an input text, Gecco will add various suggestions for correction. 
+Given an input text, Gecco will add various suggestions for correction.
 
 The system can be invoked from the command-line, as a Python binding, as a
 RESTful webservice, or through the web application (two interfaces).
@@ -55,7 +56,7 @@ RESTful webservice, or through the web application (two interfaces).
         - The lexicon module enables you to automatically generate a lexicon
           from corpus data and use it. This is not a context-sensitive method.
         - Typed words are matched against the lexicon and the module will come
-          with suggestions within a certain Levenshtein distance. 
+          with suggestions within a certain Levenshtein distance.
     - **Errorlist Module**
         - The errorlist module is a very simple module that checks whether a
           word is in a known error list, and if so, provides the suggestions
@@ -91,7 +92,7 @@ RESTful webservice, or through the web application (two interfaces).
      - Automatic input conversion from plain text using ucto
 
 Gecco is the successor of Valkuil.net and Fowlt.net.
- 
+
 -----------------------
 Installation
 -----------------------
@@ -137,7 +138,7 @@ Configuration
 
 To build an actual spelling correction system, you need to have corpus sources
 and create a gecco configuration that enable the modules you desire with the
-parameters you want. 
+parameters you want.
 
 A Gecco system consists of a configuration, either in the form of a simple Python
 script or an external YAML configuration file.
@@ -150,9 +151,9 @@ Example YAML configuration:
     modules:
         - module: gecco.modules.confusibles.TIMBLWordConfusibleModule
           id: confusibles
-          source: 
+          source:
             - train.txt
-          model: 
+          model:
             - confusible.model
           confusibles: [then,than]
 
@@ -180,7 +181,7 @@ It is recommended to adopt a file/directory structure as described below. If you
 
 An example system spelling correction system for English is provided with Gecco and resides in the ``example/`` directory.
 
- 
+
 
 ----------------
 Server setup
@@ -191,13 +192,13 @@ FoLiA document or plaintext document, it starts a master process that will
 invoke all the modules, which may be distributed over multiple servers. If
 multiple server instances of the same module are available, the load will be
 distributed over them. Output will be delivered in the FoLiA XML format and
-will contain suggestions for correction.  
+will contain suggestions for correction.
 
 To start module servers on a host, issue `gecco <yourconfig.yml> startservers`.
 You can optionally specify which servers you want to start, if you do not want
 to start all. You can start servers multiple times, either on the same or on
 multiple hosts. The master process will distribute the load amongst all
-servers. 
+servers.
 
 To stop the servers, run `gecco <yourconfig.yml> stopservers` on each host that
 has servers running. A list of all running servers can be obtained by `gecco
@@ -220,9 +221,9 @@ Command line usage
 
 Invoke all gecco functionality through a single command line tool
 
-    $ gecco myconfig.yml [subcommand] 
+    $ gecco myconfig.yml [subcommand]
 
-or 
+or
 
     $ myspellingcorrector.py [subcommand]
 
