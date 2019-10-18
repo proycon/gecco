@@ -495,4 +495,4 @@ class HunspellModule(ExternalSpellModule):
         if self.speller.spell(word):
             return [word]
         else:
-            return [ str(w,'utf-8') for w in self.speller.suggest(word) ]
+            return [ w for w in self.speller.suggest(word) ]
