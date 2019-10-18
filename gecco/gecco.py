@@ -402,10 +402,10 @@ class Corrector:
 
     def parseconfig(self,configfile):
         self.configfile = configfile #pylint: disable=attribute-defined-outside-init
-        config = yaml.load(open(configfile,'r',encoding='utf-8').read())
+        config = yaml.safe_load(open(configfile,'r',encoding='utf-8').read())
 
         if 'inherit' in config:
-            baseconfig = yaml.load(open(config['inherit'],'r',encoding='utf-8').read())
+            baseconfig = yaml.safe_load(open(config['inherit'],'r',encoding='utf-8').read())
             baseconfig.update(config)
             config = baseconfig
 
