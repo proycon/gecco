@@ -850,7 +850,7 @@ class Corrector:
         elif args.command == 'listservers' or args.command == 'ls':
             servers = self.findservers()
             if not servers:
-                print("No servers are running", file=sys.stderr)
+                print("No servers are running (root=",self.root+")", file=sys.stderr)
             else:
                 for module, host, port, load in servers:
                     print(module + "@" + host + ":" + str(port) + " (load " + str(load) + ")")
