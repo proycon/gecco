@@ -326,6 +326,7 @@ class Corrector:
 
     def load(self):
         if not self.loaded:
+            self.log("Root directory is " + self.root)
             begintime =time.time()
             self.log("Loading remote modules")
             servers = self.findservers()
