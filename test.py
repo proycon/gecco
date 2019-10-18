@@ -2,7 +2,7 @@
 import unittest
 import sys
 import os
-from pynlpl.formats import folia
+import folia.main as folia
 
 TESTDIR = "./"
 
