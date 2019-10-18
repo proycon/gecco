@@ -38,7 +38,7 @@ from pynlpl.formats import folia, fql #pylint: disable=import-error,no-name-in-m
 from ucto import Tokenizer #pylint: disable=import-error,no-name-in-module
 
 import gecco.helpers.evaluation
-from gecco.helpers.common import folia2json
+from gecco.helpers.common import folia2json, makencname
 
 
 
@@ -46,7 +46,7 @@ UCTOSEARCHDIRS = ('/usr/local/share/ucto','/usr/share/ucto', '/usr/local/etc/uct
 if 'VIRTUAL_ENV' in os.environ:
     UCTOSEARCHDIRS = (os.environ['VIRTUAL_ENV'] + '/share/ucto/', os.environ['VIRTUAL_ENV'] + '/etc/ucto/',) + UCTOSEARCHDIRS
 
-VERSION = '0.2.5'
+VERSION = '0.2.6'
 
 class DataThread(Process):
     def __init__(self, corrector, foliadoc, module_ids, outputfile,  inputqueue, outputqueue, infoqueue,waitforprocessors,dumpxml, dumpjson,**parameters):
@@ -80,7 +80,12 @@ class DataThread(Process):
                 else:
                     outputtextfile = inputtextfile + '.folia.xml'
 
-                tokenizer = Tokenizer(self.corrector.settings['ucto'],xmloutput=True)
+                try:
+                    docid = makencname(inputtextfile.split('.')[0])
+                except ValueError:
+                    docid = "untitled"
+
+                tokenizer = Tokenizer(self.corrector.settings['ucto'],xmloutput=True,docid=docid)
                 tokenizer.tokenize(inputtextfile, outputtextfile)
 
                 foliadoc = outputtextfile

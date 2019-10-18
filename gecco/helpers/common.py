@@ -5,6 +5,18 @@ def stripsourceextensions(filename):
     return filename.replace('.txt','').replace('.bz2','').replace('.gz','').replace('.tok','')
 
 
+def makencname(name):
+    ncname = ""
+    for i, c in enumerate(name):
+        if i == 0:
+            if not c.isalpha() and c != '_':
+                ncname += "I"
+        if c.isalnum() or c in ('-','_','.'):
+            ncname += c
+    if not ncname:
+        raise ValueError("Unable to convert '" + str(name) + "' to a valid XML NCName")
+    return ncname
+
 def folia2json(doc):
     data = []
     for correction in doc.data[0].select(folia.Correction):
