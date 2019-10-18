@@ -18,7 +18,7 @@ import bz2
 import gzip
 import sys
 import datetime
-from pynlpl.formats import folia
+import folia.main as folia
 from pynlpl.textprocessors import Windower
 from timbl import TimblClassifier #pylint: disable=import-error
 import colibricore #pylint: disable=import-error

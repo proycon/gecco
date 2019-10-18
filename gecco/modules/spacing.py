@@ -14,7 +14,7 @@
 
 import os
 import json
-from pynlpl.formats import folia
+import folia.main as folia
 from gecco.gecco import Module
 from gecco.helpers.common import stripsourceextensions
 from gecco.helpers.filters import hasalpha

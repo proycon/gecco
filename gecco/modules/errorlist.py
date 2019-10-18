@@ -12,7 +12,7 @@
 
 import sys
 import os
-from pynlpl.formats import folia
+import folia.main as folia
 from gecco.gecco import Module
 from gecco.helpers.filters import hasalpha
 
@@ -24,7 +24,7 @@ class WordErrorListModule(Module):
     * ``delimiter``    - The delimiter between the frequency and the word in the model file, may be 'space', 'tab' (default), 'comma', 'tilde'
     * ``reversedformat``     - Set to true if the model has correct->wrong pairs rather than wrong->correct pairs (default: False)
 
-    * ``class``        - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: nonworderror) 
+    * ``class``        - Errors found by this module will be assigned the specified class in the resulting FoLiA output (default: nonworderror)
 
     Models:
     * An error list   (manually compiled, not trainable from source)

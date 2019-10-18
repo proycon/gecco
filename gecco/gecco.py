@@ -34,7 +34,8 @@ from glob import glob
 import argparse
 import psutil
 import yaml
-from pynlpl.formats import folia, fql #pylint: disable=import-error,no-name-in-module
+import folia.fql as fql #pylint: disable=import-error,no-name-in-module
+import folia.main as folia #pylint: disable=import-error,no-name-in-module
 from ucto import Tokenizer #pylint: disable=import-error,no-name-in-module
 
 import gecco.helpers.evaluation
@@ -46,7 +47,7 @@ UCTOSEARCHDIRS = ('/usr/local/share/ucto','/usr/share/ucto', '/usr/local/etc/uct
 if 'VIRTUAL_ENV' in os.environ:
     UCTOSEARCHDIRS = (os.environ['VIRTUAL_ENV'] + '/share/ucto/', os.environ['VIRTUAL_ENV'] + '/etc/ucto/',) + UCTOSEARCHDIRS
 
-VERSION = '0.2.6'
+VERSION = '0.3.0'
 
 class DataThread(Process):
     def __init__(self, corrector, foliadoc, module_ids, outputfile,  inputqueue, outputqueue, infoqueue,waitforprocessors,dumpxml, dumpjson,**parameters):
@@ -94,7 +95,7 @@ class DataThread(Process):
 
             #good, load
             self.corrector.log("Reading FoLiA document")
-            self.foliadoc = folia.Document(file=foliadoc)
+            self.foliadoc = folia.Document(file=foliadoc, processor=folia.Processor.create(name="gecco", version=VERSION))
         else:
             self.foliadoc = foliadoc
 

@@ -10,7 +10,7 @@
 #
 #=======================================================================
 
-from pynlpl.formats import folia
+import folia.main as folia
 from gecco.gecco import Module
 
 class DummyModule(Module):

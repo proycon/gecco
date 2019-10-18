@@ -20,7 +20,7 @@ import os
 import glob
 import random
 from collections import defaultdict
-from pynlpl.formats import folia
+import folia.main as folia
 
 
 def getrandomid(doc,prefix="C"):

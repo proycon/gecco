@@ -13,7 +13,7 @@
 #pylint: disable=too-many-nested-blocks,attribute-defined-outside-init
 
 import os
-from pynlpl.formats import folia
+import folia.main as folia
 #from pynlpl.statistics import levenshtein
 import Levenshtein #pylint: disable=import-error
 from gecco.gecco import Module

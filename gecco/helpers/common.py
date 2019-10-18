@@ -1,4 +1,4 @@
-from pynlpl.formats import folia
+import folia.main as folia
 
 def stripsourceextensions(filename):
     #strip some common source extensions

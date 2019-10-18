@@ -19,7 +19,7 @@ import bz2
 import gzip
 import datetime
 from pynlpl.textprocessors import Windower
-from pynlpl.formats import folia #pylint: disable=import-error
+import folia.main as folia
 import colibricore #pylint: disable=import-error
 from timbl import TimblClassifier #pylint: disable=import-error
 from gecco.gecco import Module
@@ -229,7 +229,7 @@ class ColibriPuncRecaseModule(Module):
             if i > 0 and len(actions) > i-1 and actions[i-1] is None:
                 #Recasing
                 #given a bigram x y       (from trigram x y z)
-                #check if x Y is more frequent than x y 
+                #check if x Y is more frequent than x y
                 recase = False
                 bigram_left = trigram[:-1]
                 firstchar = bigram_left[-1][0]

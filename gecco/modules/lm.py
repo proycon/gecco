@@ -19,7 +19,7 @@ import time
 import datetime
 import itertools
 from collections import defaultdict
-from pynlpl.formats import folia
+import folia.main as folia
 from pynlpl.textprocessors import Windower
 from timbl import TimblClassifier #pylint: disable=import-error
 from gecco.gecco import Module
