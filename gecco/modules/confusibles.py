@@ -457,9 +457,12 @@ class TIMBLSuffixConfusibleModule(Module):
     def prepareinput(self,word,**parameters):
         """Takes the specified FoLiA unit for the module, and returns a string that can be passed to process()"""
         wordstr = str(word)
-        if wordstr in self.confusibles:
-            features = self.getfeatures(word)
-            return wordstr, features
+        try:
+            if wordstr in self.confusibles:
+                features = self.getfeatures(word)
+                return wordstr, features
+        except AttributeError:
+            self.log("No confusibles have been loaded! Unable to prepare input!")
 
     def run(self, inputdata):
         """This method gets called by the module's server and handles a message by the client. The return value (str) is returned to the client"""
