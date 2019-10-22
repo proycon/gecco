@@ -1196,6 +1196,10 @@ class Module:
     # These methods are *NOT* available to module.run(), only to
     # module.processoutput()
 
+    def processorquery(self):
+        return "PROCESSOR id \"proc.gecco.{annotator}\" name \"{annotator}\" type \"auto\" IN PROCESSOR name \"gecco\" ".format(annotator=self.settings['annotator'])
+
+
     def addsuggestions(self, element_id, suggestions, **kwargs):
         self.log("Adding correction for " + element_id)
 
@@ -1207,7 +1211,8 @@ class Module:
         if isinstance(suggestions,str):
             suggestions = [suggestions]
 
-        q = "EDIT t (AS CORRECTION OF " + self.settings['set'] + " WITH class \"" + cls + "\" annotator \"" + self.settings['annotator'] + "\" annotatortype \"auto\" datetime now"
+        q = self.processorquery()
+        q += "EDIT t (AS CORRECTION OF {foliaset} WITH class \"{cls}\" datetime now".format(foliaset=self.settings['set'],cls=cls)
         for suggestion in suggestions:
             if isinstance(suggestion, tuple) or isinstance(suggestion, list):
                 suggestion, confidence = suggestion
@@ -1225,13 +1230,14 @@ class Module:
         self.log("Adding correction for " + element_id )
 
         #add the correction
-        return "ADD errordetection OF " + self.settings['set'] + " WITH class \"" + self.settings['class'] + "\" annotator \"" + self.settings['annotator'] + "\" annotatortype \"auto\" datetime now FOR ID \"" + element_id + "\" RETURN nothing"
+        return self.proceessorquery() + "ADD errordetection OF " + self.settings['set'] + " WITH class \"" + self.settings['class'] + "\" annotator \"" + self.settings['annotator'] + "\" annotatortype \"auto\" datetime now FOR ID \"" + element_id + "\" RETURN nothing"
 
     def splitcorrection(self, word_id, suggestions):
         #split one word into multiple
 
         #suggestions is a list of  ([word], confidence) tuples
-        q = "SUBSTITUTE (AS CORRECTION OF " + self.settings['set'] + " WITH class \"" + self.settings['class'] + "\" annotator \"" + self.settings['annotator'] + "\" annotatortype \"auto\" datetime now"
+        q = self.processorquery()
+        q += "SUBSTITUTE (AS CORRECTION OF " + self.settings['set'] + " WITH class \"" + self.settings['class'] + "\" annotator \"" + self.settings['annotator'] + "\" annotatortype \"auto\" datetime now"
         for suggestion, confidence in suggestions:
             q += " SUGGESTION ("
             for i, newword in enumerate(suggestion):
@@ -1245,7 +1251,8 @@ class Module:
     def mergecorrection(self, newword, originalwords):
         #merge multiple words into one
 
-        q = "SUBSTITUTE (AS CORRECTION OF " + self.settings['set'] + " WITH class \"" + self.settings['class'] + "\" annotator \"" + self.settings['annotator'] + "\" annotatortype \"auto\" datetime now"
+        q = self.processorquery()
+        q += "SUBSTITUTE (AS CORRECTION OF " + self.settings['set'] + " WITH class \"" + self.settings['class'] + "\" annotator \"" + self.settings['annotator'] + "\" annotatortype \"auto\" datetime now"
         q += " SUGGESTION"
         q += " (SUBSTITUTE w WITH text \"" + newword.replace('"','\\"') + "\")"
         #q += " WITH confidence " + str(confidence)
@@ -1261,7 +1268,8 @@ class Module:
             cls = kwargs['cls']
         else:
             cls = self.settings['class']
-        q = "SUBSTITUTE (AS CORRECTION OF " + self.settings['set'] + " WITH class \"" + cls + "\" annotator \"" + self.settings['annotator'] + "\" annotatortype \"auto\" datetime now"
+        q = self.processorquery()
+        q += "SUBSTITUTE (AS CORRECTION OF " + self.settings['set'] + " WITH class \"" + cls + "\" annotator \"" + self.settings['annotator'] + "\" annotatortype \"auto\" datetime now"
         if merge:
             q += " SUGGESTION MERGE DELETION "
         else:
@@ -1287,7 +1295,8 @@ class Module:
         #   self.log(" ERROR: Unable to suggest deletion of " + str(word.id) + ", item index not found")
 
     def suggestinsertion(self,pivotword_id, text,split=False,mode='PREPEND'):
-        q = mode + " (AS CORRECTION OF " + self.settings['set'] + " WITH class \"" + self.settings['class'] + "\" annotator \"" + self.settings['annotator'] + "\" annotatortype \"auto\" datetime now"
+        q = self.processorquery()
+        q += mode + " (AS CORRECTION OF " + self.settings['set'] + " WITH class \"" + self.settings['class'] + "\" annotator \"" + self.settings['annotator'] + "\" annotatortype \"auto\" datetime now"
         if split:
             q += " SUGGESTION SPLIT (ADD w WITH text \"" + text.replace('"','\\"') + "\") "
         else:
