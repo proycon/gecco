@@ -736,7 +736,7 @@ class Corrector:
                 host = ".".join(fields[1:-1])
                 port = int(fields[-1])
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                sock.settimeout(0.25) #module servers have to respond very quickly or we ignore them
+                sock.settimeout(0.5) #module servers have to respond very quickly or we ignore them
                 try:
                     sock.connect( (host,port) )
                     sock.sendall(b"%GETLOAD%\n")
