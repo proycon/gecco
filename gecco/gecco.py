@@ -787,7 +787,7 @@ class Corrector:
         parser_run.add_argument('--local', help="Run all modules locally, ignore remote servers", required=False, action='store_true',default=False)
         parser_startservers = subparsers.add_parser('startservers', help="Starts all the module servers, or the modules explicitly specified, on the current host. Issue once for each host.")
         parser_startservers.add_argument('modules', help="Only start server for modules with the specified IDs (comma-separated list) (if omitted, all modules are run)", nargs='?',default="")
-        parser_startservers.add_argument('-b',"--blocking", help="Start in blocking/foreground mode, remains running until all servers have ended", default=False)
+        parser_startservers.add_argument('-b',"--blocking", help="Start in blocking/foreground mode, remains running until all servers have ended", action="store_true")
         parser_stopservers = subparsers.add_parser('stopservers', help="Stops all the module servers, or the modules explicitly specified,  on the current host. Issue once for each host.")
         parser_stopservers.add_argument('modules', help="Only stop server for modules with the specified IDs (comma-separated list) (if omitted, all modules are run)", nargs='?',default="")
         parser_listservers = subparsers.add_parser('listservers', help="Lists all the module servers on all hosts.")
