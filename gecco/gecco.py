@@ -646,7 +646,7 @@ class Corrector:
 
 
 
-    def startservers(self, module_ids=[]): #pylint: disable=dangerous-default-value
+    def startservers(self, module_ids=[], blocking=False): #pylint: disable=dangerous-default-value
         """Starts all servers on the current host"""
 
         processes = []
@@ -685,9 +685,10 @@ class Corrector:
                 print("Module " + module.id + " is local",file=sys.stderr)
 
         self.log(str(len(processes)) + " server(s) started.")
-        #if processes:
-        #    os.wait() #blocking
-        #self.log("All servers ended.")
+        if blocking:
+            if processes:
+                os.wait() #blocking
+            self.log("All servers ended.")
 
     def stopservers(self, module_ids=[]): #pylint: disable=dangerous-default-value
         MYHOSTS = set( [socket.getfqdn() , socket.gethostname(), socket.gethostbyname(socket.gethostname()), '127.0.0.1'] )
@@ -786,6 +787,7 @@ class Corrector:
         parser_run.add_argument('--local', help="Run all modules locally, ignore remote servers", required=False, action='store_true',default=False)
         parser_startservers = subparsers.add_parser('startservers', help="Starts all the module servers, or the modules explicitly specified, on the current host. Issue once for each host.")
         parser_startservers.add_argument('modules', help="Only start server for modules with the specified IDs (comma-separated list) (if omitted, all modules are run)", nargs='?',default="")
+        parser_startservers.add_argument('-b',"--blocking", help="Start in blocking/foreground mode, remains running until all servers have ended", default=False)
         parser_stopservers = subparsers.add_parser('stopservers', help="Stops all the module servers, or the modules explicitly specified,  on the current host. Issue once for each host.")
         parser_stopservers.add_argument('modules', help="Only stop server for modules with the specified IDs (comma-separated list) (if omitted, all modules are run)", nargs='?',default="")
         parser_listservers = subparsers.add_parser('listservers', help="Lists all the module servers on all hosts.")
@@ -841,7 +843,7 @@ class Corrector:
             self.run(args.filename,modules,args.outputfile,args.dumpxml, args.dumpjson,**parameters)
         elif args.command == 'startservers':
             if args.modules: modules = args.modules.split(',')
-            self.startservers(modules)
+            self.startservers(modules, args.blocking)
         elif args.command == 'stopservers':
             if args.modules: modules = args.modules.split(',')
             self.stopservers(modules)
