@@ -28,6 +28,7 @@ setup(
     url = "https://github.com/proycon/gecco",
     packages=['gecco','gecco.modules','gecco.helpers'],
     long_description=read('README.md'),
+    long_description_content_type="text/markdown",
     classifiers=[
         "Development Status :: 4 - Beta",
         "Topic :: Text Processing :: Linguistic",
